@@ -1,0 +1,304 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Baikal-M Mini-ITX board device tree (test version)
+ *
+ */
+
+/dts-v1/;
+
+#include "bm-soc.dtsi"
+#include "bm-mali.dtsi"
+
+/ {
+
+	model = "Baikal Electronics Baikal-M mitx board";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cmu_cluster0 {
+		clock-frequency = <1500000000>;
+	};
+
+	cmu_cluster1 {
+		clock-frequency = <1500000000>;
+	};
+
+	cmu_cluster2 {
+		clock-frequency = <1500000000>;
+	};
+
+	cmu_cluster3 {
+		clock-frequency = <1500000000>;
+	};
+
+	chosen {
+		/*stdout-path = "serial0:115200n8";
+		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
+		linux,initrd-start = <0x0 0x80490000>;
+		linux,initrd-end = <0x0 0x81490000>;*/
+	};
+
+	/*
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		display_reserved: framebuffer@90200000 {
+			reg = <0x90200000 0xfe00000>;
+		};
+	};*/
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "MITX-Sound-Card";
+		simple-audio-card,bitclock-master = <&codec0>;
+		simple-audio-card,frame-master = <&codec0>;
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Headphone", "Headphones",
+			"Speaker", "AUX Out",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphones", "RHP",
+			"Headphones", "LHP",
+			"AUX Out", "AUXOUT1",
+			"AUX Out", "AUXOUT2",
+			"L2", "Mic Jack",
+			"R2", "Mic Jack",
+			"LAUX", "Line In",
+			"RAUX", "Line In";
+
+		simple-audio-card,hp-det-gpio = <&porta 27 GPIO_ACTIVE_LOW>;
+		simple-audio-card,mic-det-gpio = <&porta 26 GPIO_ACTIVE_LOW>;
+		simple-audio-card,format = "i2s";
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s>;
+		};
+		codec0: simple-audio-card,codec {
+			sound-dai = <&nau8822 0>;
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+&gmac1 {
+	status = "okay";
+};
+
+&vdu0 {
+//	status = "okay";
+	num-lanes = <4>;
+	port {
+		vdu_lvds_out: endpoint {
+			remote-endpoint = <&stdp_lvds_in>;
+		};
+	};
+
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&ddr2 {
+	status = "okay";
+};
+
+&gpu {
+	system-coherency = <0>;
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&mmc0 {
+//	status = "okay";
+};
+
+&pcie_lcru {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&pcie2 {
+	status = "okay";
+	reset-gpios = <&porta 3 GPIO_ACTIVE_LOW>;
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&pvt0 {
+	status = "okay";
+};
+
+&pvt1 {
+	status = "okay";
+};
+
+&pvt2 {
+	status = "okay";
+};
+
+&pvt3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	bmc@8 {
+		compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
+		reg = <0x08>;
+	};
+
+	nau8822: nau8822@1a {
+		compatible = "nuvoton,nau8822";
+		#sound-dai-cells = <1>;
+		reg = <0x1a>;
+	};
+
+	gpio@50 {
+		compatible = "nxp,pca9670";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x50>;
+	};
+
+	rtc@51 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x51>;
+	};
+
+	hwmon@52 {
+		compatible = "tp,bm_mitx_hwmon";
+		reg = <0x52>;
+	};
+
+	eeprom@53 {
+		compatible = "atmel,24c32";
+		pagesize = <32>;
+		reg = <0x53>;
+	};
+
+	ps2port@54 {
+		compatible = "tp,tp_serio";
+		reg = <0x54>;
+		interrupt-parent = <&porta>;
+		interrupts = <14 8>;
+	};
+
+};
+
+&i2c1 {
+	status = "disabled";
+
+	stdp_bridge@73 {
+		compatible = "megachips,stdp4028-lvds-dp";
+		reg = <0x73>;
+		channels = <4>;
+		chan-cfg = <6>;
+		interrupt-parent = <&porta>;
+		interrupts = <20 IRQ_TYPE_LEVEL_HIGH>;
+		reset-gpios = <&porta 19 GPIO_ACTIVE_HIGH>;
+
+		port {
+			stdp_lvds_in: endpoint {
+				remote-endpoint = <&vdu_lvds_out>;
+			};
+		};
+	};
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+
+	cs-gpios = <0>;
+	status = "okay";
+
+};
+
+&porta {
+	pcieclk {
+		line_name = "pcie-x8-clock";
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_LOW>;
+		output-high;
+	};
+};
+
+&i2s {
+	status = "okay";
+	system-clock-frequency = <12000000>;
+	#sound-dai-cells = <0>;
+};
+
+&mdio0 {
+	status = "disabled";
+};

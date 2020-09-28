@@ -1,0 +1,315 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Baikal-M evaluation board device tree (test version)
+ *
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/sound/tlv320aic31xx-micbias.h>
+
+#include "bm-soc.dtsi"
+#include "bm-mali.dtsi"
+
+/ {
+
+	model = "Baikal Electronics Baikal-M evaluation board";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen {
+		/*stdout-path = "serial0:115200n8";
+		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
+		linux,initrd-start = <0x0 0x80490000>;
+		linux,initrd-end = <0x0 0x81490000>;*/
+	};
+
+	/*
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		display_reserved: framebuffer@90200000 {
+			reg = <0x90200000 0xfe00000>;
+		};
+	};*/
+
+	panel: panel {
+		compatible = "edt,et057090dhu";
+
+		port {
+			lcd_panel: endpoint {
+				remote-endpoint = <&vdu_pads>;
+			};
+		};
+	};
+	sound {
+			compatible = "baikal,snd_soc_be";
+
+			baikal,cpu-dai = <&i2s>;
+			baikal,audio-codec = <&tlv320aic3x>;
+
+		};
+
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+&gmac1 {
+	status = "okay";
+};
+
+&xgmac0 {
+	status = "okay";
+};
+
+&xgmac1 {
+	status = "okay";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&vdu0 {
+	port {
+		vdu_pads: endpoint {
+			remote-endpoint = <&lcd_panel>;
+		};
+	};
+};
+
+
+&vdu1 {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&ddr2 {
+	status = "okay";
+};
+
+&gpu {
+	system-coherency = <0>;
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&mmc0 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&pcie_lcru {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+};
+
+&pcie1 {
+	status = "okay";
+};
+
+&pcie2 {
+	status = "okay";
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&pvt0 {
+	status = "okay";
+};
+
+&pvt1 {
+	status = "okay";
+};
+
+&pvt2 {
+	status = "okay";
+};
+
+&pvt3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	tlv320aic3x: tlv320aic3x@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3x";
+		reg = <0x18>;
+		gpio-reset = <&porta 4 GPIO_ACTIVE_LOW>;
+		status = "okay";
+
+		ai31xx-micbias-vg = <MICBIAS_2_0V>;
+	};
+
+	rtc@56 {
+		compatible = "abracon,abeoz9";
+		reg = <0x56>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&i2s {
+	status = "okay";
+	sound-dai = <&tlv320aic3x>;
+	system-clock-frequency = <12000000>;
+};
+
+&spi0 {
+	num-cs = <4>;
+
+	cs-gpios =
+		<&porta 24 1>,   /* ss0 xp8  - DD53 normal flash */
+		<&porta 25 1>,   /* ss1 xp9  */
+		<&porta 26 1>,   /* ss2 xp10 */
+		<&porta 27 1>;   /* ss3 xp11 */
+	status = "okay";
+
+	/* SPI flash chip #1 */
+	flash0: m25p80@0 {
+		compatible = "micron,n25q256a", "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		status = "okay";
+
+		/* Flash chip0 partitions */
+		mtd0@00000000 {
+			label = "bl1";
+			reg = <0x00000000 0x00040000>;
+			read-only;
+		};
+
+		mtd1@00040000 {
+			label = "fip";
+			reg = <0x00040000 0x007c0000>;
+		};
+
+		mtd2@00800000 {
+			label = "rescue";
+			reg = <0x00800000 0x01800000>;
+		};
+	};
+};
+
+#if 0
+/* undefined */
+&spi1 {
+	num-cs = <4>;
+	cs-gpios =
+		<&porta 20 1>,   /* ss0 xp15  - DD57 boot flash */
+		<&porta 21 1>,   /* ss1 xp16 */
+		<&porta 22 1>,   /* ss2 xp17 */
+		<&porta 23 1>;   /* ss3 xp18 */
+	status = "okay";
+
+	/* SPI flash chip #2 */
+	flash0: m25p80@0 {
+		compatible = "micron,n25q256a", "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		status = "okay";
+
+		/* Flash chip1 partitions */
+		mtd0@00000000 {
+			label = "fip_backup";
+			reg = <0x00000000 0x00400000>;
+			read-only;
+		};
+
+		mtd1@00400000 {
+			label = "env_backup";
+			reg = <0x00400000 0x00100000>;
+			read-only;
+		};
+
+		mtd2@00500000 {
+			label = "data1";
+			reg = <0x00500000 0x01b00000>;
+		};
+	};
+};
+#endif
+
+&espi0 {
+	cs-gpios = <&porta 28 1>;   /* todo: get real gpio */
+	status = "okay";
+
+	/* test device #0 */
+	espi_test0 {
+		compatible = "rohm,dh2228fv"; /* same as spidev */
+		reg = <0>;
+		spi-max-frequency = <12000000>;
+		status = "okay";
+	};
+};

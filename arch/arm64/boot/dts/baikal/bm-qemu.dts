@@ -1,0 +1,233 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Baikal-M software emulator (QEMU) platform device tree
+ *
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+#include "bm-soc.dtsi"
+
+/*
+ * ! ACHTUNG !
+ * Device "flash@0" was added to allow UEFI to boot
+ * on emulator.
+ * TODO:
+ *   later it needs to be replaced by actual Baikal-M components
+ */
+
+/ {
+
+	model = "Baikal Electronics Baikal-M virtual platform";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
+		/*linux,initrd-start = <0x0 0x80490000>;
+		linux,initrd-end = <0x0 0x81490000>;*/
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		/* 2GB */
+		/*reg = <0x00000000 0x80000000 0x0 0x80000000>;*/
+		/* 16GB */
+		reg = <0x00000000 0x80000000 0x0 0x80000000
+		       0x00000008 0x80000000 0x1 0x80000000>;
+	};
+
+	/* XXX: Temporary fix for qemu to work */
+	/* Device is necessary for UEFI to boot on QEMU, need to replace it with something later */
+	flash@0 {
+		compatible = "cfi-flash";
+		reg = <0x0 0x4000000 0x0 0x4000000>;
+		bank-width = <0x4>;
+	};
+
+	panel: panel {
+		compatible = "auo,b133htn01";           /* 1920x1080 */
+		/*compatible = "auo,b133xtn01;          /* 1366x768 */
+		/*compatible = "auo,b101aw03";          /* 1024x600 */
+		/*compatible = "innolux,g121x1-l03";    /* 1024x768 */
+		/*compatible = "auo,b101ean01";         /* 1280x800 */
+
+		port {
+			lcd_panel: endpoint {
+				remote-endpoint = <&vdu_pads>;
+			};
+		};
+	};
+
+	/*panel_hdmi: panel {
+		compatible = "edt,et057090dhu";
+
+		port {
+			lcd_hdmi_panel: endpoint {
+				remote-endpoint = <&vdu_hdmi_pads>;
+			};
+		};
+	};*/
+
+};
+
+&vdu0 {
+	port {
+		vdu_pads: endpoint {
+			remote-endpoint = <&lcd_panel>;
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+&gmac1 {
+	status = "okay";
+};
+
+
+/*&i2c0 {
+	status = "okay";
+
+	eeprom@50 {
+		compatible = "atmel,24c02";
+		pagesize = <8>;
+		reg = <0x50>;
+	};
+
+	eeprom@51 {
+		compatible = "atmel,24c02";
+		pagesize = <8>;
+		reg = <0x51>;
+	};
+
+	eeprom@68 {
+		compatible = "dallas,ds1307";
+		reg = <0x68>;
+	};
+
+	gpioexp0: gpioexp@20 {
+		compatible = "nxp,pca9500";
+		#gpio-cells = <2>;
+		reg = <0x20>;
+		gpio-controller;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+
+	eeprom@50 {
+		compatible = "atmel,24c02";
+		pagesize = <8>;
+		reg = <0x50>;
+	};
+
+	eeprom@51 {
+		compatible = "atmel,24c02";
+		pagesize = <8>;
+		reg = <0x51>;
+	};
+
+	eeprom@54 {
+		compatible = "atmel,24c02";
+		pagesize = <8>;
+		reg = <0x54>;
+	};
+
+	gpioexp1: gpioexp@18 {
+		compatible = "nxp,pca9500";
+		#gpio-cells = <2>;
+		reg = <0x18>;
+		gpio-controller;
+	};
+};*/
+
+&spi0 {
+	num-cs = <6>;
+
+	status = "okay";
+
+	/* SPI flash chip #1 */
+	flash0: m25p80@0 {
+		compatible = "micron,n25q256a", "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <50000000>;
+		status = "okay";
+
+		/* Flash chip0 partitions */
+		mtd0@00000000 {
+			label = "fip";
+			reg = <0x00000000 0x00400000>;
+			read-only;
+		};
+
+		mtd1@00400000 {
+			label = "env";
+			reg = <0x00400000 0x00100000>;
+		};
+
+		mtd2@00500000 {
+			label = "kernel";
+			reg = <0x00500000 0x00400000>;
+		};
+
+		mtd3@00900000 {
+			label = "rootfs";
+			reg = <0x00900000 0x00800000>;
+		};
+
+		mtd4@01100000 {
+			label = "data0";
+			reg = <0x01100000 0x00f00000>;
+		};
+	};
+
+	/* SPI flash chip #2 */
+	flash1: m25p80@1 {
+		compatible = "micron,n25q256a", "jedec,spi-nor";
+		reg = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <50000000>;
+		status = "okay";
+
+		/* Flash chip1 partitions */
+		mtd0@00000000 {
+			label = "fip_backup";
+			reg = <0x00000000 0x00400000>;
+			read-only;
+		};
+
+		mtd1@00400000 {
+			label = "env_backup";
+			reg = <0x00400000 0x00100000>;
+			read-only;
+		};
+
+		mtd2@00500000 {
+			label = "data1";
+			reg = <0x00500000 0x01b00000>;
+		};
+	};
+};
