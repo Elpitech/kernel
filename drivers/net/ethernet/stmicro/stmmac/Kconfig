@@ -56,6 +56,16 @@ config DWMAC_GENERIC
 	  platform specific code to function or is using platform
 	  data for setup.
 
+config DWMAC_BAIKAL
+	tristate "Baikal Electronics DWMAC support"
+	default MIPS_BAIKAL || ARCH_BAIKAL
+	depends on OF
+	help
+	  Support for Baikal Electronics DWMAC Ethernet.
+
+	  This selects the Baikal-T/BAIKAL-M SoC glue layer support
+	  for the stmmac device driver.
+
 config DWMAC_ANARION
 	tristate "Adaptrum Anarion GMAC support"
 	default ARC
