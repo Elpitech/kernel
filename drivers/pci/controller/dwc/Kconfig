@@ -82,6 +82,18 @@ config PCIE_DW_PLAT_EP
 	  order to enable device-specific features PCI_DW_PLAT_EP must be
 	  selected.
 
+config PCIE_BAIKAL
+	bool "Baikal SoC PCIe controller"
+	depends on ARCH_BAIKAL
+	depends on OF && HAS_IOMEM
+	depends on PCI_MSI_IRQ_DOMAIN
+	select PCIE_DW
+	select PCIE_DW_HOST
+	help
+	  Enables support for the PCIe controller in the Baikal SoC.  There
+	  are three instances of PCIe controller in Baikal-M.  Two of the controllers
+	  support PCIe 3.0 x4 and the remaining one supports PCIe 3.0 x8.
+
 config PCI_EXYNOS
 	bool "Samsung Exynos PCIe controller"
 	depends on SOC_EXYNOS5440 || COMPILE_TEST
