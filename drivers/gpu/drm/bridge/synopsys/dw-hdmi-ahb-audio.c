@@ -427,6 +427,11 @@ static int dw_hdmi_prepare(struct snd_pcm_substream *substream)
 			HDMI_AHB_DMA_CONF0_INCR8;
 		threshold = 128;
 		break;
+	case 0x2a: /* this revision is used in Baikal-M SoC */
+		conf0 = HDMI_AHB_DMA_CONF0_BURST_MODE |
+			HDMI_AHB_DMA_CONF0_INCR16;
+		threshold = 128;
+		break;
 	default:
 		/* NOTREACHED */
 		return -EINVAL;
@@ -538,7 +543,7 @@ static int snd_dw_hdmi_probe(struct platform_device *pdev)
 	hdmi_writeb(data, HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL,
 		    HDMI_IH_MUTE_AHBDMAAUD_STAT0);
 	revision = hdmi_readb(data, HDMI_REVISION_ID);
-	if (revision != 0x0a && revision != 0x1a) {
+	if (revision != 0x0a && revision != 0x1a && revision != 0x2a) {
 		dev_err(dev, "dw-hdmi-audio: unknown revision 0x%02x\n",
 			revision);
 		return -ENXIO;
