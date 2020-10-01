@@ -141,8 +141,8 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 
 	ppl = mode->hdisplay / 16;
 	hsw = mode->hsync_end - mode->hsync_start - 1;
-	hfp = mode->hsync_start - mode->hdisplay;
-	hbp = mode->htotal - mode->hsync_end;
+	hfp = mode->hsync_start - mode->hdisplay - 1;
+	hbp = mode->htotal - mode->hsync_end - 1;
 
 	lpp = mode->vdisplay;
 	vsw = mode->vsync_end - mode->vsync_start;
@@ -177,13 +177,13 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 	/* Set polarities */
 	reg = readl(priv->regs + CR1);
 	if (mode->flags & DRM_MODE_FLAG_NHSYNC)
-		reg |= CR1_VSP;
-	else
-		reg &= ~CR1_VSP;
-	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
 		reg |= CR1_HSP;
 	else
 		reg &= ~CR1_HSP;
+	if (mode->flags & DRM_MODE_FLAG_NVSYNC)
+		reg |= CR1_VSP;
+	else
+		reg &= ~CR1_VSP;
 	reg |= CR1_DEP; // set DE to active high;
 	writel(reg, priv->regs + CR1);
 
