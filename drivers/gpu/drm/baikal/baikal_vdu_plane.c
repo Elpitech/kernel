@@ -123,20 +123,32 @@ static void baikal_vdu_primary_plane_atomic_update(struct drm_plane *plane,
 	end = ((addr + fb->height * fb->pitches[0] - 1) & MRR_DEAR_MRR_MASK) |
 		MRR_OUTSTND_RQ(4);
 
-	spin_lock_irqsave(&priv->lock, flags);
-	arm_smccc_smc(BAIKAL_SMC_VDU_UPDATE_HDMI, addr, end,
-		      0, 0, 0, 0, 0, &res);
-	spin_unlock_irqrestore(&priv->lock, flags);
+	if (priv->type == VDU_TYPE_HDMI) {
+		spin_lock_irqsave(&priv->lock, flags);
+		arm_smccc_smc(BAIKAL_SMC_VDU_UPDATE_HDMI, addr, end,
+			      0, 0, 0, 0, 0, &res);
+		spin_unlock_irqrestore(&priv->lock, flags);
 
-	if (res.a0 == -EBUSY) {
-		priv->counters[15]++;
+		if (res.a0 == -EBUSY) {
+			priv->counters[15]++;
+			priv->fb_addr = addr;
+			priv->fb_end = end;
+			smp_wmb();
+			schedule_delayed_work(&priv->update_work,
+					      usecs_to_jiffies(250));
+		} else
+			priv->counters[16]++;
+	} else { /* the above isn't supported for vdu_lvds */
+		spin_lock_irqsave(&priv->lock, flags);
 		priv->fb_addr = addr;
 		priv->fb_end = end;
-		smp_wmb();
-		schedule_delayed_work(&priv->update_work,
-				      usecs_to_jiffies(250));
-	} else
-		priv->counters[16]++;
+		writel(addr, priv->regs + DBAR);
+		/* enable vblank (or call baikal_vdu_enable_vblank()?) */
+		/* clear interrupt status */
+		writel(0x3ffff, priv->regs + ISR);
+		writel(INTR_VCT + INTR_FER, priv->regs + IMR);
+		spin_unlock_irqrestore(&priv->lock, flags);
+	}
 
 	cntl = readl(priv->regs + CR1);
 	cntl &= ~CR1_BPP_MASK;

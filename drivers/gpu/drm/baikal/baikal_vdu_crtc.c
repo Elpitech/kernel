@@ -69,6 +69,10 @@ irqreturn_t baikal_vdu_irq(int irq, void *data)
 
 	if (irq_stat & INTR_VCT) {
 		priv->counters[10]++;
+		if (priv->type == VDU_TYPE_LVDS && priv->fb_end) {
+			writel(priv->fb_end, priv->regs + MRR);
+			priv->fb_end = 0;
+		}
 		drm_crtc_handle_vblank(&priv->crtc);
 		status = IRQ_HANDLED;
 	}
@@ -213,6 +217,17 @@ static void baikal_vdu_crtc_helper_enable(struct drm_crtc *crtc,
 	cntl = readl(priv->regs + CR1);
 	cntl |= CR1_LCE + CR1_FDW_16_WORDS + CR1_OPS_LCD24;
 	writel(cntl, priv->regs + CR1);
+
+	if (priv->type == VDU_TYPE_LVDS) {
+		/* TODO: set format type? */
+		cntl = GPIOR_UHD_ENB;
+		if (priv->num_lanes == 4)
+			cntl |= GPIOR_UHD_QUAD_PORT;
+		else if (priv->num_lanes == 2)
+			cntl |= GPIOR_UHD_DUAL_PORT;
+		/* else cntl |= GPIOR_UHD_SNGL_PORT - no-op */
+		writel(cntl, priv->regs + GPIOR);
+	}
 
 	drm_panel_enable(priv->connector.panel);
 }

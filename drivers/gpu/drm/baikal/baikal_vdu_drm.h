@@ -44,6 +44,11 @@ struct baikal_vdu_private {
 	u32 counters[20];
 	int mode_fixup;
 
+	int type;
+#define VDU_TYPE_HDMI	0
+#define VDU_TYPE_LVDS	1
+	int num_lanes; /* connected lanes (1, 2 or 4) - used for vdu_lvds */
+
 	u32 fb_addr;
 	u32 fb_end;
 

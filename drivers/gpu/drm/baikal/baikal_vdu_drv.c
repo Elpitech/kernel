@@ -264,6 +264,15 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	if (pdev->dev.of_node &&
+	    of_property_read_bool(pdev->dev.of_node, "lvds-out")) {
+		priv->type = VDU_TYPE_LVDS;
+		ret = of_property_read_u32(pdev->dev.of_node, "num-lanes",
+					   &priv->num_lanes);
+		if (ret)
+			priv->num_lanes = 1;
+	}
+
 	ret = vdu_modeset_init(drm);
 	if (ret != 0) {
 		dev_err(dev, "Failed to init modeset\n");
