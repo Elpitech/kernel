@@ -150,6 +150,12 @@ config DRM_TI_SN65DSI86
 	help
 	  Texas Instruments SN65DSI86 DSI to eDP Bridge driver
 
+config DRM_STDP4028
+	tristate "MegaChips STDP4028 DP bridge"
+	depends on OF
+	help
+	  MegaChips STDP4028 DP bridge driver
+
 source "drivers/gpu/drm/bridge/analogix/Kconfig"
 
 source "drivers/gpu/drm/bridge/adv7511/Kconfig"
