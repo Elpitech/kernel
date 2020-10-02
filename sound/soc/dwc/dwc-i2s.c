@@ -616,7 +616,7 @@ static int dw_i2s_probe(struct platform_device *pdev)
 	const struct i2s_platform_data *pdata = pdev->dev.platform_data;
 	struct dw_i2s_dev *dev;
 	struct resource *res;
-	int ret, irq;
+	int ret, irq, irq_num;
 	struct snd_soc_dai_driver *dw_i2s_dai;
 	const char *clk_id;
 
@@ -639,13 +639,23 @@ static int dw_i2s_probe(struct platform_device *pdev)
 
 	dev->dev = &pdev->dev;
 
-	irq = platform_get_irq(pdev, 0);
-	if (irq >= 0) {
-		ret = devm_request_irq(&pdev->dev, irq, i2s_irq_handler, 0,
-				pdev->name, dev);
-		if (ret < 0) {
-			dev_err(&pdev->dev, "failed to request irq\n");
-			return ret;
+	irq_num = platform_irq_count(pdev);
+
+	if (irq_num < 0) /* -EPROBE_DEFER */
+		return irq_num;
+	else if (!irq_num)
+		dev_err(&pdev->dev, "No irq found on device\n");
+
+	while (irq_num-- > 0) {
+		irq = platform_get_irq(pdev, irq_num);
+		if (irq >= 0) {
+			ret = devm_request_irq(&pdev->dev, irq,
+					i2s_irq_handler, 0,
+					pdev->name, dev);
+			if (ret < 0) {
+				dev_err(&pdev->dev, "failed to request irq\n");
+				return ret;
+			}
 		}
 	}
 
