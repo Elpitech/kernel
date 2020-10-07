@@ -132,12 +132,25 @@ struct snd_dw_hdmi {
 	u8 cs[192][8];
 };
 
-static void dw_hdmi_writel(u32 val, void __iomem *ptr)
+static inline void hdmi_writeb(const struct dw_hdmi_audio_data *data, u8 val,
+			       int offset)
 {
+	writeb(val, data->base + (offset << data->reg_shift));
+}
+
+static inline u8 hdmi_readb(const struct dw_hdmi_audio_data *data, int offset)
+{
+	return readb_relaxed(data->base + (offset << data->reg_shift));
+}
+
+static void dw_hdmi_writel(struct dw_hdmi_audio_data *data, u32 val, int offset)
+{
+	void __iomem *ptr = data->base + (offset << data->reg_shift);
+
 	writeb_relaxed(val, ptr);
-	writeb_relaxed(val >> 8, ptr + 1);
-	writeb_relaxed(val >> 16, ptr + 2);
-	writeb_relaxed(val >> 24, ptr + 3);
+	writeb_relaxed(val >> 8, ptr + (1 << data->reg_shift));
+	writeb_relaxed(val >> 16, ptr + (2 << data->reg_shift));
+	writeb_relaxed(val >> 24, ptr + (3 << data->reg_shift));
 }
 
 /*
@@ -232,7 +245,6 @@ static void dw_hdmi_create_cs(struct snd_dw_hdmi *dw,
 
 static void dw_hdmi_start_dma(struct snd_dw_hdmi *dw)
 {
-	void __iomem *base = dw->data.base;
 	unsigned offset = dw->buf_offset;
 	unsigned period = dw->buf_period;
 	u32 start, stop;
@@ -240,18 +252,18 @@ static void dw_hdmi_start_dma(struct snd_dw_hdmi *dw)
 	dw->reformat(dw, offset, period);
 
 	/* Clear all irqs before enabling irqs and starting DMA */
-	writeb_relaxed(HDMI_IH_AHBDMAAUD_STAT0_ALL,
-		       base + HDMI_IH_AHBDMAAUD_STAT0);
+	hdmi_writeb(&dw->data, HDMI_IH_AHBDMAAUD_STAT0_ALL,
+		    HDMI_IH_AHBDMAAUD_STAT0);
 
 	start = dw->buf_addr + offset;
 	stop = start + period - 1;
 
 	/* Setup the hardware start/stop addresses */
-	dw_hdmi_writel(start, base + HDMI_AHB_DMA_STRADDR0);
-	dw_hdmi_writel(stop, base + HDMI_AHB_DMA_STPADDR0);
+	dw_hdmi_writel(&dw->data, start, HDMI_AHB_DMA_STRADDR0);
+	dw_hdmi_writel(&dw->data, stop, HDMI_AHB_DMA_STPADDR0);
 
-	writeb_relaxed((u8)~HDMI_AHB_DMA_MASK_DONE, base + HDMI_AHB_DMA_MASK);
-	writeb(HDMI_AHB_DMA_START_START, base + HDMI_AHB_DMA_START);
+	hdmi_writeb(&dw->data, (u8)~HDMI_AHB_DMA_MASK_DONE, HDMI_AHB_DMA_MASK);
+	hdmi_writeb(&dw->data, HDMI_AHB_DMA_START_START, HDMI_AHB_DMA_START);
 
 	offset += period;
 	if (offset >= dw->buf_size)
@@ -262,8 +274,8 @@ static void dw_hdmi_start_dma(struct snd_dw_hdmi *dw)
 static void dw_hdmi_stop_dma(struct snd_dw_hdmi *dw)
 {
 	/* Disable interrupts before disabling DMA */
-	writeb_relaxed(~0, dw->data.base + HDMI_AHB_DMA_MASK);
-	writeb_relaxed(HDMI_AHB_DMA_STOP_STOP, dw->data.base + HDMI_AHB_DMA_STOP);
+	hdmi_writeb(&dw->data, ~0, HDMI_AHB_DMA_MASK);
+	hdmi_writeb(&dw->data, HDMI_AHB_DMA_STOP_STOP, HDMI_AHB_DMA_STOP);
 }
 
 static irqreturn_t snd_dw_hdmi_irq(int irq, void *data)
@@ -272,11 +284,11 @@ static irqreturn_t snd_dw_hdmi_irq(int irq, void *data)
 	struct snd_pcm_substream *substream;
 	unsigned stat;
 
-	stat = readb_relaxed(dw->data.base + HDMI_IH_AHBDMAAUD_STAT0);
+	stat = hdmi_readb(&dw->data, HDMI_IH_AHBDMAAUD_STAT0);
 	if (!stat)
 		return IRQ_NONE;
 
-	writeb_relaxed(stat, dw->data.base + HDMI_IH_AHBDMAAUD_STAT0);
+	hdmi_writeb(&dw->data, stat, HDMI_IH_AHBDMAAUD_STAT0);
 
 	substream = dw->substream;
 	if (stat & HDMI_IH_AHBDMAAUD_STAT0_DONE && substream) {
@@ -319,7 +331,6 @@ static int dw_hdmi_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_dw_hdmi *dw = substream->private_data;
-	void __iomem *base = dw->data.base;
 	int ret;
 
 	runtime->hw = dw_hdmi_hw;
@@ -345,16 +356,16 @@ static int dw_hdmi_open(struct snd_pcm_substream *substream)
 		return ret;
 
 	/* Clear FIFO */
-	writeb_relaxed(HDMI_AHB_DMA_CONF0_SW_FIFO_RST,
-		       base + HDMI_AHB_DMA_CONF0);
+	hdmi_writeb(&dw->data, HDMI_AHB_DMA_CONF0_SW_FIFO_RST,
+		    HDMI_AHB_DMA_CONF0);
 
 	/* Configure interrupt polarities */
-	writeb_relaxed(~0, base + HDMI_AHB_DMA_POL);
-	writeb_relaxed(~0, base + HDMI_AHB_DMA_BUFFPOL);
+	hdmi_writeb(&dw->data, ~0, HDMI_AHB_DMA_POL);
+	hdmi_writeb(&dw->data, ~0, HDMI_AHB_DMA_BUFFPOL);
 
 	/* Keep interrupts masked, and clear any pending */
-	writeb_relaxed(~0, base + HDMI_AHB_DMA_MASK);
-	writeb_relaxed(~0, base + HDMI_IH_AHBDMAAUD_STAT0);
+	hdmi_writeb(&dw->data, ~0, HDMI_AHB_DMA_MASK);
+	hdmi_writeb(&dw->data, ~0, HDMI_IH_AHBDMAAUD_STAT0);
 
 	ret = request_irq(dw->data.irq, snd_dw_hdmi_irq, IRQF_SHARED,
 			  "dw-hdmi-audio", dw);
@@ -362,9 +373,9 @@ static int dw_hdmi_open(struct snd_pcm_substream *substream)
 		return ret;
 
 	/* Un-mute done interrupt */
-	writeb_relaxed(HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL &
+	hdmi_writeb(&dw->data, HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL &
 		       ~HDMI_IH_MUTE_AHBDMAAUD_STAT0_DONE,
-		       base + HDMI_IH_MUTE_AHBDMAAUD_STAT0);
+		       HDMI_IH_MUTE_AHBDMAAUD_STAT0);
 
 	return 0;
 }
@@ -374,8 +385,8 @@ static int dw_hdmi_close(struct snd_pcm_substream *substream)
 	struct snd_dw_hdmi *dw = substream->private_data;
 
 	/* Mute all interrupts */
-	writeb_relaxed(HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL,
-		       dw->data.base + HDMI_IH_MUTE_AHBDMAAUD_STAT0);
+	hdmi_writeb(&dw->data, HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL,
+		    HDMI_IH_MUTE_AHBDMAAUD_STAT0);
 
 	free_irq(dw->data.irq, dw);
 
@@ -430,9 +441,9 @@ static int dw_hdmi_prepare(struct snd_pcm_substream *substream)
 	conf1 = default_hdmi_channel_config[runtime->channels - 2].conf1;
 	ca = default_hdmi_channel_config[runtime->channels - 2].ca;
 
-	writeb_relaxed(threshold, dw->data.base + HDMI_AHB_DMA_THRSLD);
-	writeb_relaxed(conf0, dw->data.base + HDMI_AHB_DMA_CONF0);
-	writeb_relaxed(conf1, dw->data.base + HDMI_AHB_DMA_CONF1);
+	hdmi_writeb(&dw->data, threshold, HDMI_AHB_DMA_THRSLD);
+	hdmi_writeb(&dw->data, conf0, HDMI_AHB_DMA_CONF0);
+	hdmi_writeb(&dw->data, conf1, HDMI_AHB_DMA_CONF1);
 
 	dw_hdmi_set_channel_count(dw->data.hdmi, runtime->channels);
 	dw_hdmi_set_channel_allocation(dw->data.hdmi, ca);
@@ -524,9 +535,9 @@ static int snd_dw_hdmi_probe(struct platform_device *pdev)
 	unsigned revision;
 	int ret;
 
-	writeb_relaxed(HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL,
-		       data->base + HDMI_IH_MUTE_AHBDMAAUD_STAT0);
-	revision = readb_relaxed(data->base + HDMI_REVISION_ID);
+	hdmi_writeb(data, HDMI_IH_MUTE_AHBDMAAUD_STAT0_ALL,
+		    HDMI_IH_MUTE_AHBDMAAUD_STAT0);
+	revision = hdmi_readb(data, HDMI_REVISION_ID);
 	if (revision != 0x0a && revision != 0x1a) {
 		dev_err(dev, "dw-hdmi-audio: unknown revision 0x%02x\n",
 			revision);
