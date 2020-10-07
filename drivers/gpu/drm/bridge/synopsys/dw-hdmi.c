@@ -3570,6 +3570,7 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
 		audio.phys = iores->start;
 		audio.base = hdmi->regs;
 		audio.irq = irq;
+		audio.reg_shift = hdmi->reg_shift;
 		audio.hdmi = hdmi;
 		audio.get_eld = hdmi_audio_get_eld;
 		hdmi->enable_audio = dw_hdmi_ahb_audio_enable;
