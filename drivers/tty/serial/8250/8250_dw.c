@@ -289,6 +289,8 @@ static void dw8250_set_termios(struct uart_port *p, struct ktermios *termios,
 		ret = rate;
 	else if (rate == 0)
 		ret = -ENOENT;
+	else if (rate > baud * 17 || rate < baud * 15)
+		ret = -EINVAL; /* cannot set rate with acceptable accuracy */
 	else
 		ret = clk_set_rate(d->clk, rate);
 	clk_prepare_enable(d->clk);
