@@ -198,9 +198,6 @@ static struct drm_driver vdu_drm_driver = {
 	.gem_free_object = drm_gem_cma_free_object,
 	.gem_vm_ops = &drm_gem_cma_vm_ops,
 
-	.enable_vblank = baikal_vdu_enable_vblank,
-	.disable_vblank = baikal_vdu_disable_vblank,
-
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 	.gem_prime_import = drm_gem_prime_import,

@@ -66,11 +66,6 @@ irqreturn_t baikal_vdu_irq(int irq, void *data);
 
 int baikal_vdu_primary_plane_init(struct drm_device *dev);
 
-/*int baikal_vdu_display_init(struct drm_device *dev);*/
-int baikal_vdu_enable_vblank(struct drm_device *drm, unsigned int crtc);
-void baikal_vdu_disable_vblank(struct drm_device *drm, unsigned int crtc);
-/*irqreturn_t baikal_vdu_irq(int irq, void *data);*/
-
 /* Connector Functions */
 int baikal_vdu_connector_create(struct drm_device *dev);
 

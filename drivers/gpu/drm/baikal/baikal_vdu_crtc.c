@@ -265,9 +265,9 @@ static void baikal_vdu_crtc_helper_atomic_flush(struct drm_crtc *crtc,
 	}
 }
 
-int baikal_vdu_enable_vblank(struct drm_device *drm, unsigned int crtc)
+static int baikal_vdu_enable_vblank(struct drm_crtc *crtc)
 {
-	struct baikal_vdu_private *priv = drm->dev_private;
+	struct baikal_vdu_private *priv = crtc->dev->dev_private;
 
 	//clk_prepare_enable(priv->clk);
 
@@ -279,9 +279,9 @@ int baikal_vdu_enable_vblank(struct drm_device *drm, unsigned int crtc)
 	return 0;
 }
 
-void baikal_vdu_disable_vblank(struct drm_device *drm, unsigned int crtc)
+static void baikal_vdu_disable_vblank(struct drm_crtc *crtc)
 {
-	struct baikal_vdu_private *priv = drm->dev_private;
+	struct baikal_vdu_private *priv = crtc->dev->dev_private;
 
 	/* clear interrupt status */
 	writel(0x3ffff, priv->regs + ISR);
@@ -296,6 +296,8 @@ const struct drm_crtc_funcs crtc_funcs = {
 	.destroy = drm_crtc_cleanup,
 	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
 	.atomic_destroy_state = drm_atomic_helper_crtc_destroy_state,
+	.enable_vblank = baikal_vdu_enable_vblank,
+	.disable_vblank = baikal_vdu_disable_vblank,
 };
 
 const struct drm_crtc_helper_funcs crtc_helper_funcs = {
