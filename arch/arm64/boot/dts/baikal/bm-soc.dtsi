@@ -436,7 +436,7 @@
 
 		/* AVLSP: UART1 (20230000, 10000, SPI_133_H) */
 		uart0: serial0@20230000 {
-			compatible = "snps,dw-apb-uart";
+			compatible = "snps,dw-apb-uart", "ns16550a";
 			reg = <0x0 0x20230000 0x0 0x10000>;
 			interrupts = <GIC_SPI 101 IRQ_TYPE_LEVEL_HIGH>;
 			reg-shift = <2>;
@@ -444,6 +444,7 @@
 
 			clocks = <&cmu0_avlsp 1>;
 			clock-names = "baudclk";
+			clock-frequency = <7373800>;
 			/*dcd-override;*/
 			/*dsr-override;*/
 			/*cts-override;*/
@@ -454,7 +455,7 @@
 
 		/* AVLSP: UART2 (20240000, 10000, SPI_134_H) */
 		uart1: serial1@20240000 {
-			compatible = "snps,dw-apb-uart";
+			compatible = "snps,dw-apb-uart", "ns16550a";
 			reg = <0x0 0x20240000 0x0 0x10000>;
 			interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
 			reg-shift = <2>;
@@ -462,6 +463,8 @@
 
 			clocks = <&cmu0_avlsp 2>;
 			clock-names = "baudclk";
+			clock-frequency = <7373800>;
+
 			status = "disabled";
 		};
 
