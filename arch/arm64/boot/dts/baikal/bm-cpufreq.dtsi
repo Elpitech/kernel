@@ -1,0 +1,79 @@
+/ {
+	cpufreq {
+		cpu_opp: opp_table0 {
+			compatible = "operating-points-v2";
+			opp-shared;
+
+			opp@1300 {
+				opp-hz = /bits/ 64 <1300000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@1200 {
+				opp-hz = /bits/ 64 <1200000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@1100 {
+				opp-hz = /bits/ 64 <1100000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@1000 {
+				opp-hz = /bits/ 64 <1000000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@900 {
+				opp-hz = /bits/ 64 <900000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@800 {
+				opp-hz = /bits/ 64 <800000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <100000>;
+			};
+			opp@500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <100000>;
+			};
+		};
+
+	};
+};
+
+&CPU0 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU1 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU2 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU3 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU4 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU5 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU6 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
+&CPU7 {
+	operating-points-v2 = <&cpu_opp>;
+};
+
