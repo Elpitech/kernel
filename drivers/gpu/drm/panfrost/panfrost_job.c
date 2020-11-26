@@ -181,7 +181,7 @@ static void panfrost_job_hw_submit(struct panfrost_job *job, int js)
 		job_write(pfdev, JS_FLUSH_ID_NEXT(js), job->flush_id);
 
 	/* GO ! */
-	dev_dbg(pfdev->dev, "JS: Submitting atom %p to js[%d] with head=0x%llx",
+	dev_dbg(pfdev->dev, "JS: Submitting atom %px to js[%d] with head=0x%llx",
 				job, js, jc_head);
 
 	job_write(pfdev, JS_COMMAND_NEXT(js), JS_COMMAND_START);
@@ -389,7 +389,7 @@ static void panfrost_job_timedout(struct drm_sched_job *sched_job)
 	if (dma_fence_is_signaled(job->done_fence))
 		return;
 
-	dev_err(pfdev->dev, "gpu sched timeout, js=%d, config=0x%x, status=0x%x, head=0x%x, tail=0x%x, sched_job=%p",
+	dev_err(pfdev->dev, "gpu sched timeout, js=%d, config=0x%x, status=0x%x, head=0x%x, tail=0x%x, sched_job=%px",
 		js,
 		job_read(pfdev, JS_CONFIG(js)),
 		job_read(pfdev, JS_STATUS(js)),
@@ -403,7 +403,7 @@ static void panfrost_job_timedout(struct drm_sched_job *sched_job)
 	for (i = 0; i < NUM_JOB_SLOTS; i++) {
 		struct drm_gpu_scheduler *sched = &pfdev->js->queue[i].sched;
 
-		drm_sched_stop(sched, sched_job);
+		drm_sched_stop(sched, pfdev->jobs[i] ? &pfdev->jobs[i]->base : NULL);
 		if (js != i)
 			/* Ensure any timeouts on other slots have finished */
 			cancel_delayed_work_sync(&sched->work_tdr);
