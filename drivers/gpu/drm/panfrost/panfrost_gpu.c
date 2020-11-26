@@ -62,7 +62,7 @@ int panfrost_gpu_soft_reset(struct panfrost_device *pfdev)
 	gpu_write(pfdev, GPU_CMD, GPU_CMD_SOFT_RESET);
 
 	ret = readl_relaxed_poll_timeout(pfdev->iomem + GPU_INT_RAWSTAT,
-		val, val & GPU_IRQ_RESET_COMPLETED, 100, 10000);
+		val, val & GPU_IRQ_RESET_COMPLETED, 5, 10000);
 
 	if (ret) {
 		dev_err(pfdev->dev, "gpu soft reset timed out\n");
@@ -302,24 +302,33 @@ static void panfrost_gpu_init_features(struct panfrost_device *pfdev)
 void panfrost_gpu_power_on(struct panfrost_device *pfdev)
 {
 	int ret;
-	u32 val;
+	ktime_t timeout;
 
+	panfrost_gpu_init_quirks(pfdev);
 	/* Just turn on everything for now */
 	gpu_write(pfdev, L2_PWRON_LO, pfdev->features.l2_present);
-	ret = readl_relaxed_poll_timeout(pfdev->iomem + L2_READY_LO,
-		val, val == pfdev->features.l2_present, 100, 1000);
-
 	gpu_write(pfdev, STACK_PWRON_LO, pfdev->features.stack_present);
-	ret |= readl_relaxed_poll_timeout(pfdev->iomem + STACK_READY_LO,
-		val, val == pfdev->features.stack_present, 100, 1000);
-
 	gpu_write(pfdev, SHADER_PWRON_LO, pfdev->features.shader_present);
-	ret |= readl_relaxed_poll_timeout(pfdev->iomem + SHADER_READY_LO,
-		val, val == pfdev->features.shader_present, 100, 1000);
-
 	gpu_write(pfdev, TILER_PWRON_LO, pfdev->features.tiler_present);
-	ret |= readl_relaxed_poll_timeout(pfdev->iomem + TILER_READY_LO,
-		val, val == pfdev->features.tiler_present, 100, 1000);
+
+	timeout = ktime_add_us(ktime_get(), 1000);
+	ret = 0;
+	for (;;) {
+		if (gpu_read(pfdev, L2_READY_LO) ==
+			pfdev->features.l2_present &&
+		    gpu_read(pfdev, STACK_READY_LO) ==
+			pfdev->features.stack_present &&
+		    gpu_read(pfdev, SHADER_READY_LO) ==
+			pfdev->features.shader_present &&
+		    gpu_read(pfdev, TILER_READY_LO) ==
+			pfdev->features.tiler_present)
+			break;
+		if (ktime_compare(ktime_get(), timeout) > 0) {
+			ret = 1;
+			break;
+		}
+		usleep_range(3, 5);
+	}
 
 	if (ret)
 		dev_err(pfdev->dev, "error powering up gpu");
@@ -327,10 +336,11 @@ void panfrost_gpu_power_on(struct panfrost_device *pfdev)
 
 void panfrost_gpu_power_off(struct panfrost_device *pfdev)
 {
-	gpu_write(pfdev, TILER_PWROFF_LO, 0);
-	gpu_write(pfdev, SHADER_PWROFF_LO, 0);
-	gpu_write(pfdev, STACK_PWROFF_LO, 0);
-	gpu_write(pfdev, L2_PWROFF_LO, 0);
+	dev_dbg(pfdev->dev, "gpu_power_off...\n");
+	gpu_write(pfdev, TILER_PWROFF_LO, pfdev->features.tiler_present);
+	gpu_write(pfdev, SHADER_PWROFF_LO, pfdev->features.shader_present);
+	gpu_write(pfdev, STACK_PWROFF_LO, pfdev->features.stack_present);
+	gpu_write(pfdev, L2_PWROFF_LO, pfdev->features.l2_present);
 }
 
 int panfrost_gpu_init(struct panfrost_device *pfdev)
@@ -357,7 +367,6 @@ int panfrost_gpu_init(struct panfrost_device *pfdev)
 		return err;
 	}
 
-	panfrost_gpu_init_quirks(pfdev);
 	panfrost_gpu_power_on(pfdev);
 
 	return 0;
