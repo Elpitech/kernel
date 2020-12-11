@@ -143,6 +143,8 @@ static void panfrost_job_write_affinity(struct panfrost_device *pfdev,
 	 * multiple (2) coherent core groups
 	 */
 	affinity = pfdev->features.shader_present;
+	if (panfrost_model_eq(pfdev, 0x620) && js == 1)
+		affinity &= 0xf;
 
 	job_write(pfdev, JS_AFFINITY_NEXT_LO(js), affinity & 0xFFFFFFFF);
 	job_write(pfdev, JS_AFFINITY_NEXT_HI(js), affinity >> 32);
