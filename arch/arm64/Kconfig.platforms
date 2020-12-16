@@ -41,28 +41,6 @@ config ARCH_BAIKAL
 	help
 	  This enables support for Baikal Electronics Baikal-M SoC Family
 
-config ARCH_BAIKAL_REAL
-	bool "Baikal Electronics Baikal-M SoC Family REAL"
-	select GPIOLIB
-	select PINCTRL
-	select OF_GPIO
-	select GPIO_SYSFS
-	select GPIO_DWAPB
-	select GPIO_GENERIC
-	select STMMAC_ETH
-	select STMMAC_PLATFORM
-	select STMMAC_DEBUG_FS
-	select PHYLIB
-	select DEBUG_LL
-	select TIMER_GENERIC
-	select ARCH_WANT_OPTIONAL_GPIOLIB
-	select SPI_DESIGNWARE
-	select SPI_DW_MMIO
-	select DW_APB_TIMER
-	select DW_APB_TIMER_OF
-	help
-	  This enables support for Baikal Electronics Baikal-M SoC Family
-
 config ARCH_BCM2835
 	bool "Broadcom BCM2835 family"
 	select TIMER_OF
