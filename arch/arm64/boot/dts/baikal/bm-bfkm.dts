@@ -37,15 +37,33 @@
 		};
 	};*/
 
-	panel: panel {
-		compatible = "edt,et057090dhu";
-
+	panel {
+		compatible = "panel-lvds";
+		width-mm = <223>;
+		height-mm = <125>;
+		data-mapping = "vesa-24";
+		panel-timing {
+		// 1920x1080 @60Hz
+			clock-frequency = <148500000>;
+			hactive = <1920>;
+			vactive = <1080>;
+			hsync-len = <44>;
+			hfront-porch = <88>;
+			hback-porch = <148>;
+			vsync-len = <5>;
+			vfront-porch = <4>;
+			vback-porch = <36>;
+		};
 		port {
-			lcd_panel: endpoint {
-				remote-endpoint = <&vdu_pads>;
+			panel0_lvds0: endpoint@0 {
+				remote-endpoint = <&vdu_lvds0_pads>;
+			};
+			panel0_lvds1: endpoint@1 {
+				remote-endpoint = <&vdu_lvds1_pads>;
 			};
 		};
 	};
+
 	sound {
 			compatible = "baikal,snd_soc_be";
 
@@ -93,10 +111,20 @@
 };
 
 &vdu0 {
+	status = "okay";
 	port {
-		vdu_pads: endpoint {
-			remote-endpoint = <&lcd_panel>;
+		vdu_lvds0_pads: endpoint@0 {
+			remote-endpoint = <&panel0_lvds0>;
 		};
+		vdu_lvds1_pads: endpoint@1 {
+			remote-endpoint = <&panel0_lvds1>;
+		};
+		/*vdu_lvds2_pads: endpoint@2 {
+			remote-endpoint = <&panel0_lvds2>;
+		};
+		vdu_lvds3_pads: endpoint@3 {
+			remote-endpoint = <&panel0_lvds3>;
+		};*/
 	};
 };
 

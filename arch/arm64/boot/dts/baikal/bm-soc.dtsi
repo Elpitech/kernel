@@ -212,47 +212,45 @@
 					 <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	/* DDR: DDR0 (0E200000, 10000, SPI_161-166_?) */
-	ddr1: memory-controller1@0E200000 {
-		compatible = "be,emc", "be,memory-controller";
-		reg = <0x0 0x0E200000 0x0 0x10000>;
-		interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_HIGH>, /* ddr dfi alert err */
+	soc0: soc {
+		compatible = "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/* DDR: DDR0 (0E200000, 10000, SPI_161-166_?) */
+		ddr1: memory-controller1@0E200000 {
+			compatible = "be,emc", "be,memory-controller";
+			reg = <0x0 0x0E200000 0x0 0x10000>;
+			interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_HIGH>, /* ddr dfi alert err */
 					 <GIC_SPI 130 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err */
 					 <GIC_SPI 131 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc uncorrected err */
 					 <GIC_SPI 132 IRQ_TYPE_LEVEL_HIGH>, /* ddr sbr done */
 					 <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err fault */
 					 <GIC_SPI 134 IRQ_TYPE_LEVEL_HIGH>; /* ddr ecc uncorrected err fault */
 
-		clocks = <&soc_smc50mhz>;
-		clock-names = "apb_pclk";
-		status = "disabled";
-	};
+			clocks = <&soc_smc50mhz>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
 
-	/* DDR: DDR0_PHY (0E210000, 10000, ?) */
+		/* DDR: DDR0_PHY (0E210000, 10000, ?) */
 
-	/* DDR: DDR1 (22200000, 10000, SPI_171-176_?) */
-	ddr2: memory-controller2@22200000 {
-		compatible = "be,emc", "be,memory-controller";
-		reg = <0x0 0x22200000 0x0 0x10000>;
-		interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>, /* ddr dfi alert err */
+		/* DDR: DDR1 (22200000, 10000, SPI_171-176_?) */
+		ddr2: memory-controller2@22200000 {
+			compatible = "be,emc", "be,memory-controller";
+			reg = <0x0 0x22200000 0x0 0x10000>;
+			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>, /* ddr dfi alert err */
 					 <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err */
 					 <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc uncorrected err */
 					 <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>, /* ddr sbr done */
 					 <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err fault */
 					 <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>; /* ddr ecc uncorrected err fault */
 
-		clocks = <&soc_smc50mhz>;
-		clock-names = "apb_pclk";
-		status = "disabled";
-	};
-
-	/* DDR: DDR1_PHY (22210000, 10000, ?) */
-
-	soc0: soc {
-		compatible = "simple-bus";
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
+			clocks = <&soc_smc50mhz>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
 
 		/* PCIe LCRU */
 		pcie_lcru: lcru@2000000 {
@@ -632,7 +630,6 @@
 					 <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>; /* VDU INTR_CDD */
 			clocks = <&cmu1_avlsp_div7>, <&cmu0_avlsp 26>;
 			clock-names = "pclk", "aclk";
-			max-memory-bandwidth = <3840000000>; /* AXI3 128 bit master @ 240 MHz */
 			lvds-out;
 			status = "disabled";
 		};
@@ -807,7 +804,7 @@
 				txd3-skew-ps = <0>;
 				txc-skew-ps  = <0xff>;
 				};
-		       };
+			};
 		};
 
 		/* XGBE MM: GMAC1 (30250000, 10000, SPI_324_H) */
@@ -846,7 +843,7 @@
 				txd3-skew-ps = <0>;
 				txc-skew-ps  = <0xff>;
 				};
-		       };
+			};
 		};
 
 		/* Baikal internal MDIO */
@@ -994,12 +991,6 @@
 						remote-endpoint = <&hdmi_con>;
 					};
 				};
-				/*port@2 {
-					reg = <2>;
-					rcar_dw_hdmi0_sound_in: endpoint {
-						remote-endpoint = <&hdmi_sound_out>;
-					};
-				};*/
 			};
 		};
 	}; /* end of soc node */

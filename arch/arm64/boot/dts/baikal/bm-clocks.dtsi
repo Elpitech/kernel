@@ -101,7 +101,7 @@
 			cmu-id = <0x20010000>;
 			max = <2100000000>;
 			min = <13500000>;
-			clock-frequency = <525000000>;
+			clock-frequency = <1039500000>;
 		};
 
 		cmu_cluster3: cmu_cluster3 {
@@ -134,9 +134,9 @@
 			clock-indices = <0>;
 			clock-names = "aclk";
 			cmu-id = <0x2A000000>;
-			max = <750000000>;
+			max = <800000000>;
 			min = <400000000>;
-			clock-frequency = <700000000>;
+			clock-frequency = <750000000>;
 		};
 
 		cmu0_xgbe: cmu0_xgbe {
@@ -263,7 +263,7 @@
 		gpu_clk: gpu_clk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency = <500000000>;
+			clock-frequency = <750000000>;
 			clock-output-names = "gpuclk";
 		};
 
