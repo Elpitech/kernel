@@ -41,6 +41,7 @@
 #define OWDEAR1     0x628
 #define MRR         0xFFC
 
+#define INTR_LDD    BIT(8)
 #define INTR_BAU    BIT(7)
 #define INTR_VCT    BIT(6)
 #define INTR_MBE    BIT(5)
@@ -66,6 +67,7 @@
 #define CR1_BPP16           (4 << 2)
 #define CR1_BPP18           (5 << 2)
 #define CR1_BPP24           (6 << 2)
+#define CR1_FMT_MASK        (CR1_FBP | CR1_OPS_555 | CR1_BPP_MASK)
 #define CR1_LCE             BIT(0)
 
 #define CR1_BPP16_555 ((CR1_BPP16) | (CR1_OPS_555))
@@ -127,8 +129,8 @@
 
 #define GPIOR_UHD_MASK      GENMASK(23, 16)
 #define GPIOR_UHD_FMT_LDI   (0 << 20)
-#define GPIOR_UHD_FMT_VESA  (1 << 20)
-#define GPIOR_UHD_FMT_JEIDA (2 << 20)
+#define GPIOR_UHD_FMT_VESA  (0 << 20)
+#define GPIOR_UHD_FMT_JEIDA (1 << 20)
 #define GPIOR_UHD_SNGL_PORT (0 << 18)
 #define GPIOR_UHD_DUAL_PORT (1 << 18)
 #define GPIOR_UHD_QUAD_PORT (2 << 18)

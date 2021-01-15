@@ -25,7 +25,6 @@
 #include <linux/of_graph.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include <linux/workqueue.h>
 
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_bridge.h>
@@ -46,7 +45,7 @@
 
 #define DRIVER_NAME                 "baikal-vdu"
 #define DRIVER_DESC                 "DRM module for Baikal VDU"
-#define DRIVER_DATE                 "20200131"
+#define DRIVER_DATE                 "20200611"
 
 #define BAIKAL_SMC_SCP_LOG_DISABLE  0x82000200
 
@@ -72,9 +71,9 @@ static int vdu_modeset_init(struct drm_device *dev)
 	mode_config = &dev->mode_config;
 	mode_config->funcs = &mode_config_funcs;
 	mode_config->min_width = 1;
-	mode_config->max_width = 4096;
+	mode_config->max_width = 4095;
 	mode_config->min_height = 1;
-	mode_config->max_height = 4096;
+	mode_config->max_height = 4095;
 
 	ret = baikal_vdu_primary_plane_init(dev);
 	if (ret != 0) {
@@ -143,6 +142,8 @@ static int vdu_modeset_init(struct drm_device *dev)
 	drm_fb_helper_remove_conflicting_framebuffers(NULL, "baikal-vdudrmfb",
 						      false);
 
+	dev->vblank_disable_immediate = true;
+
 	ret = drm_vblank_init(dev, 1);
 	if (ret != 0) {
 		dev_err(dev->dev, "Failed to init vblank\n");
@@ -150,8 +151,6 @@ static int vdu_modeset_init(struct drm_device *dev)
 	}
 
 	arm_smccc_smc(BAIKAL_SMC_SCP_LOG_DISABLE, 0, 0, 0, 0, 0, 0, 0, &res);
-	INIT_DEFERRABLE_WORK(&priv->update_work,
-			     baikal_vdu_update_work);
 
 	drm_mode_config_reset(dev);
 
@@ -194,18 +193,16 @@ static struct drm_driver vdu_drm_driver = {
 	.major = 1,
 	.minor = 0,
 	.patchlevel = 0,
-	.dumb_create = baikal_vdu_dumb_create,
-	.gem_free_object = drm_gem_cma_free_object,
+	.gem_create_object = drm_cma_gem_create_object_default_funcs,
+	.dumb_create = drm_gem_cma_dumb_create,
 	.gem_vm_ops = &drm_gem_cma_vm_ops,
+	.get_vblank_timestamp = drm_calc_vbltimestamp_from_scanoutpos,
+	.get_scanout_position = baikal_vdu_get_scanpos,
 
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
-	.gem_prime_import = drm_gem_prime_import,
 	.gem_prime_import_sg_table = drm_gem_cma_prime_import_sg_table,
-	.gem_prime_export = drm_gem_prime_export,
-	.gem_prime_get_sg_table	= drm_gem_cma_prime_get_sg_table,
 	.gem_prime_mmap = drm_gem_cma_prime_mmap,
-	.gem_prime_vmap = drm_gem_cma_prime_vmap,
 
 #if defined(CONFIG_DEBUG_FS)
 	.debugfs_init = baikal_vdu_debugfs_init,
@@ -218,8 +215,10 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 	struct baikal_vdu_private *priv;
 	struct drm_device *drm;
 	struct resource *mem;
+	const char *data_mapping;
 	int irq;
 	int ret;
+	u32 reg;
 
 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -254,12 +253,15 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 	}
 
 	spin_lock_init(&priv->lock);
+	init_waitqueue_head(&priv->queue);
 
 	ret = drm_irq_install(drm, irq);
 	if (ret != 0) {
 		dev_err(dev, "%s IRQ %d allocation failed\n", __func__, irq);
 		return ret;
 	}
+
+	priv->cr1_cfg = CR1_FDW_16_WORDS;
 
 	if (pdev->dev.of_node &&
 	    of_property_read_bool(pdev->dev.of_node, "lvds-out")) {
@@ -268,7 +270,36 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 					   &priv->num_lanes);
 		if (ret)
 			priv->num_lanes = 1;
+
+		priv->lvds_gpior = GPIOR_UHD_ENB;
+		if (priv->num_lanes == 4)
+			priv->lvds_gpior |= GPIOR_UHD_QUAD_PORT;
+		else if (priv->num_lanes == 2)
+			priv->lvds_gpior |= GPIOR_UHD_DUAL_PORT;
+
+		if (of_property_read_string(pdev->dev.of_node, "data-mapping",
+					    &data_mapping)) {
+			priv->cr1_cfg |= CR1_OPS_LCD18;
+		} else if (strncmp(data_mapping, "vesa-24", 7)) {
+			priv->cr1_cfg |= CR1_OPS_LCD24;
+		} else if (strncmp(data_mapping, "jeida-18", 8)) {
+			priv->cr1_cfg |= CR1_OPS_LCD18;
+			priv->lvds_gpior |= GPIOR_UHD_FMT_JEIDA;
+		} else {
+			dev_warn(&pdev->dev,
+				 "%s data mapping is not supported, vesa-24 is set\n",
+				 data_mapping);
+			priv->cr1_cfg |= CR1_OPS_LCD24;
+		}
+	} else {
+		priv->cr1_cfg |= CR1_OPS_LCD24;
 	}
+
+	writel(0x3ffff, priv->regs + ISR);
+	writel(INTR_LDD | INTR_FER, priv->regs + IMR);
+
+	reg = readl(priv->regs + CR1);
+	priv->state = !!(reg & CR1_LCE);
 
 	ret = vdu_modeset_init(drm);
 	if (ret != 0) {
@@ -279,6 +310,8 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 	return 0;
 
 dev_unref:
+	writel(0, priv->regs + IMR);
+	writel(0x3ffff, priv->regs + ISR);
 	drm_irq_uninstall(drm);
 	drm->dev_private = NULL;
 	drm_dev_put(drm);

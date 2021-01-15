@@ -48,9 +48,14 @@ struct baikal_vdu_private {
 #define VDU_TYPE_HDMI	0
 #define VDU_TYPE_LVDS	1
 	int num_lanes; /* connected lanes (1, 2 or 4) - used for vdu_lvds */
+	int state; /* 0 - disabled, 1 - running */
 
+	u32 cr1_cfg; /* persistent bits for CR1 */
+	u32 lvds_gpior;	/* GPIOR config */
 	u32 fb_addr;
 	u32 fb_end;
+
+	struct wait_queue_head queue;
 
 	struct delayed_work update_work;
 };
@@ -65,6 +70,13 @@ int baikal_vdu_crtc_create(struct drm_device *dev);
 irqreturn_t baikal_vdu_irq(int irq, void *data);
 
 int baikal_vdu_primary_plane_init(struct drm_device *dev);
+
+bool baikal_vdu_get_scanpos(struct drm_device *dev, unsigned int pipe,
+			   bool in_vblank, int *vpos, int *hpos,
+			   ktime_t *stime, ktime_t *etime,
+			   const struct drm_display_mode *mode);
+
+void baikal_vdu_wait_off(struct baikal_vdu_private *priv);
 
 /* Connector Functions */
 int baikal_vdu_connector_create(struct drm_device *dev);
