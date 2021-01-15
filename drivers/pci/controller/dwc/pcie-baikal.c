@@ -15,6 +15,7 @@
 #include <linux/pci.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
+#include <linux/ratelimit.h>
 
 #include "pcie-designware.h"
 
@@ -241,6 +242,8 @@ static const struct dw_pcie_ops baikal_pcie_ops = {
 	.link_up = baikal_pcie_link_up,
 };
 
+DEFINE_RATELIMIT_STATE(pcie_err_printk_ratelimit, 300 * HZ, 10);
+
 static irqreturn_t baikal_pcie_err_irq_handler(int irq, void *priv)
 {
 	struct baikal_pcie *rc = priv;
@@ -248,27 +251,28 @@ static irqreturn_t baikal_pcie_err_irq_handler(int irq, void *priv)
 	struct device *dev = pci->dev;
 	u32 ue_st, ce_st, r_st, dev_st;
 
-	dev_err(dev, "Error:\n");
 	ue_st = dw_pcie_readl_dbi(pci, PCI_UNCORR_ERR_STAT);
 	ce_st = dw_pcie_readl_dbi(pci, PCI_CORR_ERR_STAT);
 	r_st = dw_pcie_readl_dbi(pci, PCI_ROOT_ERR_STAT);
 	dev_st = dw_pcie_readl_dbi(pci, PCI_DEV_CTRL_STAT);
 
-	if (r_st & 0x7c) {
-		if (r_st & 0x58)
-			dev_err(dev, "%sFatal Error: %x\n",
-				(r_st & 0x8) ? "Multiple " : "", ue_st);
-		else
-			dev_err(dev, "%sNon-Fatal Error: %x\n",
-				(r_st & 8) ? "Multiple " : "", ue_st);
+	if (__ratelimit(&pcie_err_printk_ratelimit)) {
+		if (r_st & 0x7c) {
+			if (r_st & 0x58)
+				dev_err(dev, "%sFatal Error: %x\n",
+					(r_st & 0x8) ? "Multiple " : "", ue_st);
+			else
+				dev_err(dev, "%sNon-Fatal Error: %x\n",
+					(r_st & 8) ? "Multiple " : "", ue_st);
+		}
+
+		if (r_st & 3)
+			dev_err(dev, "%sCorrectable Error: %x\n",
+				(r_st & 2) ? "Multiple " : "", ce_st);
+
+		if (dev_st & 0xf0000)
+			dev_err(dev, "Device Status Errors: %x\n", dev_st >> 16);
 	}
-
-	if (r_st & 3)
-		dev_err(dev, "%sCorrectable Error: %x\n",
-			(r_st & 2) ? "Multiple " : "", ce_st);
-
-	if (dev_st & 0xf0000)
-		dev_err(dev, "Device Status Errors: %x\n", dev_st >> 16);
 
 	dw_pcie_writel_dbi(pci, PCI_UNCORR_ERR_STAT, ue_st);
 	dw_pcie_writel_dbi(pci, PCI_CORR_ERR_STAT, ce_st);
