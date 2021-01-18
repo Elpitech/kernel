@@ -369,6 +369,7 @@ static int bmc_pinctrl_register(struct device *dev)
 		dev_err(&pbdev->dev, "Can't register pinctrl (%ld)\n",
 			PTR_ERR(pctrl_dev));
 		return PTR_ERR(pctrl_dev);
+	}
 
 	dev_info(&pbdev->dev, "BMC pinctrl registered\n");
 	bmc_pinctrl_dev = pctrl_dev;
