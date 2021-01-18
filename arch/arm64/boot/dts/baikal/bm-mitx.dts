@@ -17,22 +17,6 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	cmu_cluster0 {
-		clock-frequency = <1500000000>;
-	};
-
-	cmu_cluster1 {
-		clock-frequency = <1500000000>;
-	};
-
-	cmu_cluster2 {
-		clock-frequency = <1500000000>;
-	};
-
-	cmu_cluster3 {
-		clock-frequency = <1500000000>;
-	};
-
 	chosen {
 		/*stdout-path = "serial0:115200n8";
 		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
@@ -80,6 +64,22 @@
 			sound-dai = <&nau8822 0>;
 		};
 	};
+};
+
+&cmu_cluster0 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster1 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster2 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster3 {
+	clock-frequency = <1500000000>;
 };
 
 &uart0 {
