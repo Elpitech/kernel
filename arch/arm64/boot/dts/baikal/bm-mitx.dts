@@ -304,7 +304,40 @@
 	status = "disabled";
 };
 
-&cpu_opp {
+&cluster0_opp {
+	opp@1400 {
+		opp-hz = /bits/ 64 <1400000000>;
+		clock-latency-ns = <100000>;
+	};
+	opp@1500 {
+		opp-hz = /bits/ 64 <1500000000>;
+		clock-latency-ns = <100000>;
+	};
+};
+
+&cluster1_opp {
+	opp@1400 {
+		opp-hz = /bits/ 64 <1400000000>;
+		clock-latency-ns = <100000>;
+	};
+	opp@1500 {
+		opp-hz = /bits/ 64 <1500000000>;
+		clock-latency-ns = <100000>;
+	};
+};
+
+&cluster2_opp {
+	opp@1400 {
+		opp-hz = /bits/ 64 <1400000000>;
+		clock-latency-ns = <100000>;
+	};
+	opp@1500 {
+		opp-hz = /bits/ 64 <1500000000>;
+		clock-latency-ns = <100000>;
+	};
+};
+
+&cluster3_opp {
 	opp@1400 {
 		opp-hz = /bits/ 64 <1400000000>;
 		clock-latency-ns = <100000>;
