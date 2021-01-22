@@ -763,7 +763,7 @@ static void remove_nexthop_from_groups(struct net *net, struct nexthop *nh,
 		remove_nh_grp_entry(net, nhge, nlinfo);
 
 	/* make sure all see the newly published array before releasing rtnl */
-	synchronize_rcu();
+	synchronize_net();
 }
 
 static void remove_nexthop_group(struct nexthop *nh, struct nl_info *nlinfo)
@@ -1157,8 +1157,10 @@ static struct nexthop *nexthop_create_group(struct net *net,
 	return nh;
 
 out_no_nh:
-	for (; i >= 0; --i)
+	for (i--; i >= 0; --i) {
+		list_del(&nhg->nh_entries[i].nh_list);
 		nexthop_put(nhg->nh_entries[i].nh);
+	}
 
 	kfree(nhg->spare);
 	kfree(nhg);
