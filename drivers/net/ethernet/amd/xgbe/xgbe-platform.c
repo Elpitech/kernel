@@ -370,6 +370,7 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 	if (netif_msg_probe(pdata))
 		dev_dbg(dev, "xpcs_regs  = %p\n", pdata->xpcs_regs);
 
+#ifndef BE_COMPATIBLE
 	pdata->rxtx_regs = devm_platform_ioremap_resource(phy_pdev,
 							  phy_memnum++);
 	if (IS_ERR(pdata->rxtx_regs)) {
@@ -399,6 +400,7 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 	}
 	if (netif_msg_probe(pdata))
 		dev_dbg(dev, "sir1_regs  = %p\n", pdata->sir1_regs);
+#endif
 
 	/* Retrieve the MAC address */
 	ret = device_property_read_u8_array(dev, XGBE_MAC_ADDR_PROPERTY,
@@ -425,7 +427,11 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 	/* Check for per channel interrupt support */
 	if (device_property_present(dev, XGBE_DMA_IRQS_PROPERTY)) {
 		pdata->per_channel_irq = 1;
+#ifdef BE_COMPATIBLE
+		pdata->channel_irq_mode = XGBE_IRQ_MODE_LEVEL;
+#else
 		pdata->channel_irq_mode = XGBE_IRQ_MODE_EDGE;
+#endif
 	}
 
 	/* Obtain device settings unique to ACPI/OF */
@@ -485,11 +491,15 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 		pdata->irq_count += max;
 	}
 
+#ifndef BE_COMPATIBLE
 	/* Get the auto-negotiation interrupt */
 	ret = platform_get_irq(phy_pdev, phy_irqnum++);
 	if (ret < 0)
 		goto err_io;
 	pdata->an_irq = ret;
+#else
+	pdata->an_irq = pdata->dev_irq;
+#endif
 
 	/* Configure the netdev resource */
 	ret = xgbe_config_netdev(pdata);

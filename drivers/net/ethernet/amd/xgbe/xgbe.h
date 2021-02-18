@@ -133,10 +133,16 @@
 #include <linux/dcache.h>
 #include <linux/ethtool.h>
 #include <linux/list.h>
+#include <linux/phylink.h>
 
 #define XGBE_DRV_NAME		"amd-xgbe"
 #define XGBE_DRV_VERSION	"1.0.3"
 #define XGBE_DRV_DESC		"AMD 10 Gigabit Ethernet Driver"
+
+#ifdef CONFIG_ARCH_BAIKAL
+/* Compatibility with Baikal-M XGBE */
+#define BE_COMPATIBLE
+#endif
 
 /* Descriptor related defines */
 #define XGBE_TX_DESC_CNT	512
@@ -174,7 +180,11 @@
 
 /* DMA cache settings - Outer sharable, write-back, write-allocate */
 #define XGBE_DMA_OS_ARCR	0x002b2b2b
+#ifdef BE_COMPATIBLE
+#define XGBE_DMA_OS_AWCR	0x27272727
+#else
 #define XGBE_DMA_OS_AWCR	0x2f2f2f2f
+#endif
 
 /* DMA cache settings - System, no caches used */
 #define XGBE_DMA_SYS_ARCR	0x00303030
@@ -503,8 +513,15 @@ struct xgbe_channel {
 	void __iomem *dma_regs;
 
 	/* Per channel interrupt irq number */
+#ifdef BE_COMPATIBLE
+	int dma_irq_tx;
+	int dma_irq_rx;
+	char dma_irq_name_tx[IFNAMSIZ + 32];
+	char dma_irq_name_rx[IFNAMSIZ + 32];
+#else
 	int dma_irq;
 	char dma_irq_name[IFNAMSIZ + 32];
+#endif
 
 	/* Netdev related settings */
 	struct napi_struct napi;
