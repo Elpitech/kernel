@@ -221,12 +221,16 @@ struct xgbe_phy_data {
 
 static void xgbe_phy_kr_training_pre(struct xgbe_prv_data *pdata)
 {
+#ifndef BE_COMPATIBLE
 		XSIR0_IOWRITE_BITS(pdata, SIR0_KR_RT_1, RESET, 1);
+#endif
 }
 
 static void xgbe_phy_kr_training_post(struct xgbe_prv_data *pdata)
 {
+#ifndef BE_COMPATIBLE
 		XSIR0_IOWRITE_BITS(pdata, SIR0_KR_RT_1, RESET, 0);
+#endif
 }
 
 static enum xgbe_mode xgbe_phy_an_outcome(struct xgbe_prv_data *pdata)
@@ -333,9 +337,12 @@ static void xgbe_phy_pcs_power_cycle(struct xgbe_prv_data *pdata)
 static void xgbe_phy_start_ratechange(struct xgbe_prv_data *pdata)
 {
 	/* Assert Rx and Tx ratechange */
+#ifndef BE_COMPATIBLE
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, RATECHANGE, 1);
+#endif
 }
 
+#ifndef BE_COMPATIBLE
 static void xgbe_phy_complete_ratechange(struct xgbe_prv_data *pdata)
 {
 	unsigned int wait;
@@ -363,10 +370,13 @@ rx_reset:
 	XRXTX_IOWRITE_BITS(pdata, RXTX_REG6, RESETB_RXD, 0);
 	XRXTX_IOWRITE_BITS(pdata, RXTX_REG6, RESETB_RXD, 1);
 }
+#endif
 
 static void xgbe_phy_kr_mode(struct xgbe_prv_data *pdata)
 {
+#ifndef BE_COMPATIBLE
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
+#endif
 	unsigned int reg;
 
 	/* Set PCS to KR/10G speed */
@@ -385,6 +395,7 @@ static void xgbe_phy_kr_mode(struct xgbe_prv_data *pdata)
 	/* Set SerDes to 10G speed */
 	xgbe_phy_start_ratechange(pdata);
 
+#ifndef BE_COMPATIBLE
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, DATARATE, XGBE_SPEED_10000_RATE);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, WORDMODE, XGBE_SPEED_10000_WORD);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, PLLSEL, XGBE_SPEED_10000_PLL);
@@ -403,13 +414,16 @@ static void xgbe_phy_kr_mode(struct xgbe_prv_data *pdata)
 		      phy_data->dfe_tap_ena[XGBE_SPEED_10000]);
 
 	xgbe_phy_complete_ratechange(pdata);
+#endif
 
 	netif_dbg(pdata, link, pdata->netdev, "10GbE KR mode set\n");
 }
 
 static void xgbe_phy_kx_2500_mode(struct xgbe_prv_data *pdata)
 {
+#ifndef BE_COMPATIBLE
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
+#endif
 	unsigned int reg;
 
 	/* Set PCS to KX/1G speed */
@@ -428,6 +442,7 @@ static void xgbe_phy_kx_2500_mode(struct xgbe_prv_data *pdata)
 	/* Set SerDes to 2.5G speed */
 	xgbe_phy_start_ratechange(pdata);
 
+#ifndef BE_COMPATIBLE
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, DATARATE, XGBE_SPEED_2500_RATE);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, WORDMODE, XGBE_SPEED_2500_WORD);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, PLLSEL, XGBE_SPEED_2500_PLL);
@@ -446,13 +461,16 @@ static void xgbe_phy_kx_2500_mode(struct xgbe_prv_data *pdata)
 		      phy_data->dfe_tap_ena[XGBE_SPEED_2500]);
 
 	xgbe_phy_complete_ratechange(pdata);
+#endif
 
 	netif_dbg(pdata, link, pdata->netdev, "2.5GbE KX mode set\n");
 }
 
 static void xgbe_phy_kx_1000_mode(struct xgbe_prv_data *pdata)
 {
+#ifndef BE_COMPATIBLE
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
+#endif
 	unsigned int reg;
 
 	/* Set PCS to KX/1G speed */
@@ -471,6 +489,7 @@ static void xgbe_phy_kx_1000_mode(struct xgbe_prv_data *pdata)
 	/* Set SerDes to 1G speed */
 	xgbe_phy_start_ratechange(pdata);
 
+#ifndef BE_COMPATIBLE
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, DATARATE, XGBE_SPEED_1000_RATE);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, WORDMODE, XGBE_SPEED_1000_WORD);
 	XSIR1_IOWRITE_BITS(pdata, SIR1_SPEED, PLLSEL, XGBE_SPEED_1000_PLL);
@@ -489,6 +508,7 @@ static void xgbe_phy_kx_1000_mode(struct xgbe_prv_data *pdata)
 		      phy_data->dfe_tap_ena[XGBE_SPEED_1000]);
 
 	xgbe_phy_complete_ratechange(pdata);
+#endif
 
 	netif_dbg(pdata, link, pdata->netdev, "1GbE KX mode set\n");
 }
