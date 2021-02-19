@@ -27,10 +27,12 @@
 	sfp0: sfp0 {
 		compatible = "sff,sfp";
 		i2c-bus = <&sfp_i2c0>;
+		mod-def0-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
 	};
 	sfp1: sfp1 {
 		compatible = "sff,sfp";
 		i2c-bus = <&sfp_i2c1>;
+		mod-def0-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
 	};
 	phy_sfp0: xphy0 {
 		compatible = "ethernet-phy-ieee802.3-c45";
@@ -132,7 +134,7 @@
 
 &pcie0 {
 	status = "okay";
-//	reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
 };
 
 &pcie1 {
@@ -185,16 +187,14 @@
 &i2c0 {
 	status = "okay";
 
-	i2c-arb@30 {
+	arb@30 {
 		compatible = "nxp,pca9641";
-		#address-cells = <1>;
-		#size-cells = <0>;
 		reg = <0x30>;
 
-		i2c@0 {
+		i2c-arb {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			reg = <0>;
+
 			bmc@8 {
 				compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
 				reg = <0x08>;
@@ -285,10 +285,6 @@
 	status = "okay";
 	system-clock-frequency = <12000000>;
 	#sound-dai-cells = <0>;
-};
-
-&mdio0 {
-	status = "disabled";
 };
 
 &gmac0_phy {
