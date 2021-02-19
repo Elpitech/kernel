@@ -182,8 +182,10 @@
 #define XGBE_DMA_OS_ARCR	0x002b2b2b
 #ifdef BE_COMPATIBLE
 #define XGBE_DMA_OS_AWCR	0x27272727
+#define XGBE_DMA_OS_AWARCR	0x00222b27
 #else
 #define XGBE_DMA_OS_AWCR	0x2f2f2f2f
+#define XGBE_DMA_OS_AWARCR	0x0
 #endif
 
 /* DMA cache settings - System, no caches used */
