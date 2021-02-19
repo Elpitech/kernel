@@ -324,6 +324,7 @@ static enum xgbe_an_mode xgbe_phy_an_mode(struct xgbe_prv_data *pdata)
 static void xgbe_phy_pcs_power_cycle(struct xgbe_prv_data *pdata)
 {
 	unsigned int reg;
+	int i;
 
 	reg = XMDIO_READ(pdata, MDIO_MMD_PCS, MDIO_CTRL1);
 
@@ -334,6 +335,14 @@ static void xgbe_phy_pcs_power_cycle(struct xgbe_prv_data *pdata)
 
 	reg &= ~MDIO_CTRL1_LPOWER;
 	XMDIO_WRITE(pdata, MDIO_MMD_PCS, MDIO_CTRL1, reg);
+
+	for (i = 0; i < 100; i++) {
+		reg = XMDIO_READ(pdata, MDIO_MMD_PCS, 0x8010);
+		reg = (reg >> 2) & 0x7; /* PSEQ_STATE */
+		if (reg == 3 || reg == 4)
+			break;
+		usleep_range(75, 100);
+	}
 }
 
 static void xgbe_phy_start_ratechange(struct xgbe_prv_data *pdata)
