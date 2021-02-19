@@ -453,6 +453,7 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 	if (pdata->coherent) {
 		pdata->arcr = XGBE_DMA_OS_ARCR;
 		pdata->awcr = XGBE_DMA_OS_AWCR;
+		pdata->awarcr = XGBE_DMA_OS_AWARCR;
 	} else {
 		pdata->arcr = XGBE_DMA_SYS_ARCR;
 		pdata->awcr = XGBE_DMA_SYS_AWCR;
