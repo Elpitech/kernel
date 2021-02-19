@@ -1254,6 +1254,8 @@ struct xgbe_prv_data {
 	phy_interface_t phy_mode;
 	int phy_link;
 	int phy_speed;
+	struct phylink *phylink;
+	struct phylink_config phylink_config;
 
 	/* MDIO/PHY related settings */
 	unsigned int phy_started;

@@ -316,6 +316,8 @@ static int xgbe_phy_an_config(struct xgbe_prv_data *pdata)
 
 static enum xgbe_an_mode xgbe_phy_an_mode(struct xgbe_prv_data *pdata)
 {
+	if (pdata->phy.autoneg == AUTONEG_DISABLE)
+		return XGBE_AN_MODE_NONE;
 	return XGBE_AN_MODE_CL73;
 }
 
@@ -661,11 +663,16 @@ static int xgbe_phy_link_status(struct xgbe_prv_data *pdata, int *an_restart)
 static void xgbe_phy_stop(struct xgbe_prv_data *pdata)
 {
 	/* Nothing uniquely required for stop */
+	if (pdata->phylink)
+		phylink_stop(pdata->phylink);
 }
 
 static int xgbe_phy_start(struct xgbe_prv_data *pdata)
 {
 	/* Nothing uniquely required for start */
+	if (pdata->phylink)
+		phylink_start(pdata->phylink);
+
 	return 0;
 }
 

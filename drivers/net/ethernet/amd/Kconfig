@@ -179,6 +179,7 @@ config AMD_XGBE
 	select BITREVERSE
 	select CRC32
 	select PHYLIB
+	select PHYLINK
 	select AMD_XGBE_HAVE_ECC if X86
 	imply PTP_1588_CLOCK
 	---help---
