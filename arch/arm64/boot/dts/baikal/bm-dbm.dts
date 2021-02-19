@@ -72,6 +72,33 @@
 
 		};
 
+	/* Baikal internal MDIO */
+	mdio0: be-mdio {
+		compatible = "be,mdio-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mdc-pin = <&porta 30 GPIO_ACTIVE_HIGH>;
+		mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
+		clocks = <&gpio_clk 0>;
+		clock-names = "gpioclk";
+
+		mv_ch0: ethernet-phy@0C {
+			compatible = "marvell,88x2222", "ethernet-phy-ieee802.3-c45";
+			reg = <0x0C>;
+			phy-mode = "xgmii";
+			mv,line-mode = "KR";
+			mv,host-mode = "KX4";
+		};
+
+		mv_ch2: ethernet-phy@0E {
+			compatible = "marvell,88x2222", "ethernet-phy-ieee802.3-c45";
+			reg = <0x0E>;
+			phy-mode = "xgmii";
+			mv,line-mode = "KR";
+			mv,host-mode = "KX4";
+		};
+	};
+
 };
 
 &uart0 {
@@ -100,10 +127,16 @@
 
 &xgmac0 {
 	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	phy-handle = <&mv_ch0>;
 };
 
 &xgmac1 {
 	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	phy-handle = <&mv_ch2>;
 };
 
 &hdmi {
