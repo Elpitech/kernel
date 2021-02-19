@@ -296,12 +296,102 @@ static struct xgbe_version_data *xgbe_get_vdata(struct xgbe_prv_data *pdata)
 			       : xgbe_of_vdata(pdata);
 }
 
+/* phylink support functions */
+static void xgbe_validate(struct phylink_config *config,
+			  unsigned long *supported,
+			  struct phylink_link_state *state)
+{
+	struct xgbe_prv_data *pdata = netdev_priv(to_net_dev(config->dev));
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(mac_supported) = { 0, };
+
+	dev_dbg(config->dev, "xgbe_validate\n");
+	if (pdata->phy_mode == PHY_INTERFACE_MODE_10GKR) {
+		phylink_set(mac_supported, 10000baseKR_Full);
+		phylink_set(mac_supported, 10000baseSR_Full);
+		phylink_set(mac_supported, 10000baseER_Full);
+		phylink_set(mac_supported, 10000baseLR_Full);
+	} else if (pdata->phy_mode == PHY_INTERFACE_MODE_XGMII) {
+		phylink_set(mac_supported, 10000baseKX4_Full);
+		phylink_set(mac_supported, 2500baseX_Full);
+	}
+	phylink_set(mac_supported, Autoneg);
+	phylink_set(mac_supported, Pause);
+	phylink_set_port_modes(mac_supported);
+	bitmap_and(state->advertising, state->advertising, mac_supported,
+		   __ETHTOOL_LINK_MODE_MASK_NBITS);
+}
+
+static int xgbe_mac_link_state(struct phylink_config *config,
+			       struct phylink_link_state *state)
+{
+	struct xgbe_prv_data *pdata = netdev_priv(to_net_dev(config->dev));
+
+	dev_dbg(config->dev, "xgbe_mac_link_state\n");
+	pdata->phy_if.phy_status(pdata);
+	state->speed = pdata->phy.speed;
+	state->duplex = pdata->phy.duplex;
+	state->link = pdata->phy.link;
+	return 0;
+}
+
+static void xgbe_mac_config(struct phylink_config *config, unsigned int mode,
+			    const struct phylink_link_state *state)
+{
+	struct xgbe_prv_data *pdata = netdev_priv(to_net_dev(config->dev));
+
+	dev_dbg(config->dev, "xgbe_mac_config: speed %d, Autoneg %d\n",
+		state->speed, state->an_enabled);
+	pdata->phy.speed = state->speed;
+	pdata->phy.duplex = state->duplex;
+	pdata->phy.link = state->link;
+	pdata->phy.tx_pause = !!(state->pause & MLO_PAUSE_TX);
+	pdata->phy.rx_pause = !!(state->pause & MLO_PAUSE_RX);
+	if (mode != MLO_AN_PHY && pdata->phy.autoneg) {
+		pdata->phy.autoneg = AUTONEG_DISABLE;
+		XGBE_CLR_ADV(&pdata->phy.lks, Autoneg);
+		pdata->phy.duplex = DUPLEX_FULL;
+		if (pdata->phy.speed == SPEED_UNKNOWN &&
+		    pdata->phy_mode == PHY_INTERFACE_MODE_10GKR)
+			pdata->phy.speed = SPEED_10000;
+		pdata->phy_if.phy_config_aneg(pdata);
+	}
+}
+
+static void xgbe_mac_an_restart(struct phylink_config *config)
+{
+	dev_dbg(config->dev, "xgbe_mac_an_restart\n");
+}
+
+static void xgbe_mac_link_down(struct phylink_config *config,
+			       unsigned int mode, phy_interface_t interface)
+{
+	dev_dbg(config->dev, "xgbe_mac_link_down\n");
+}
+
+static void xgbe_mac_link_up(struct phylink_config *config,
+			     unsigned int mode, phy_interface_t interface,
+			     struct phy_device *phy)
+{
+	dev_dbg(config->dev, "xgbe_mac_link_up: mode %d, interface %d\n",
+		mode, interface);
+}
+
+static const struct phylink_mac_ops xgbe_phylink_mac_ops = {
+	.validate = xgbe_validate,
+	.mac_link_state = xgbe_mac_link_state,
+	.mac_config = xgbe_mac_config,
+	.mac_an_restart = xgbe_mac_an_restart,
+	.mac_link_down = xgbe_mac_link_down,
+	.mac_link_up = xgbe_mac_link_up,
+};
+
 static int xgbe_platform_probe(struct platform_device *pdev)
 {
 	struct xgbe_prv_data *pdata;
 	struct device *dev = &pdev->dev;
 	struct platform_device *phy_pdev;
 	const char *phy_mode;
+	struct phylink *phylink;
 	unsigned int phy_memnum, phy_irqnum;
 	unsigned int dma_irqnum, dma_irqend;
 	enum dev_dma_attr attr;
@@ -414,15 +504,30 @@ static int xgbe_platform_probe(struct platform_device *pdev)
 	}
 
 	/* Retrieve the PHY mode - it must be "xgmii" */
+	pdata->phy_mode = PHY_INTERFACE_MODE_XGMII;
 	ret = device_property_read_string(dev, XGBE_PHY_MODE_PROPERTY,
 					  &phy_mode);
-	if (ret || strcmp(phy_mode, phy_modes(PHY_INTERFACE_MODE_XGMII))) {
-		dev_err(dev, "invalid %s property\n", XGBE_PHY_MODE_PROPERTY);
-		if (!ret)
-			ret = -EINVAL;
-		goto err_io;
+	if (!ret) {
+		int i;
+		for (i = 0; i < PHY_INTERFACE_MODE_MAX; i++) {
+			if (!strcasecmp(phy_mode, phy_modes(i))) {
+				pdata->phy_mode = i;
+				break;
+			}
+		}
+		if (i >= PHY_INTERFACE_MODE_MAX)
+			dev_err(dev, "invalid %s property\n", XGBE_PHY_MODE_PROPERTY);
 	}
-	pdata->phy_mode = PHY_INTERFACE_MODE_XGMII;
+
+	/* setup phylink */
+	pdata->phylink_config.dev = &pdata->netdev->dev;
+	pdata->phylink_config.type = PHYLINK_NETDEV;
+	phylink = phylink_create(&pdata->phylink_config, pdata->phy_dev->fwnode,
+				 pdata->phy_mode, &xgbe_phylink_mac_ops);
+	if (IS_ERR(phylink))
+		dev_err(dev, "phylink_create failed (%ld)\n", PTR_ERR(phylink));
+	else
+		pdata->phylink = phylink;
 
 	/* Check for per channel interrupt support */
 	if (device_property_present(dev, XGBE_DMA_IRQS_PROPERTY)) {
@@ -528,6 +633,9 @@ static int xgbe_platform_remove(struct platform_device *pdev)
 	struct xgbe_prv_data *pdata = platform_get_drvdata(pdev);
 
 	xgbe_deconfig_netdev(pdata);
+
+	if (pdata->phylink)
+		phylink_destroy(pdata->phylink);
 
 	platform_device_put(pdata->phy_platdev);
 
