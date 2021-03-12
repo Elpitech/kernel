@@ -236,9 +236,15 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 	}
 
 	ppl = mode->hdisplay / 16;
-	hsw = mode->hsync_end - mode->hsync_start - 1;
-	hfp = mode->hsync_start - mode->hdisplay - 1;
-	hbp = mode->htotal - mode->hsync_end - 1;
+	if (priv->type == VDU_TYPE_LVDS) {
+		hsw = mode->hsync_end - mode->hsync_start;
+		hfp = mode->hsync_start - mode->hdisplay - 1;
+		hbp = mode->htotal - mode->hsync_end;
+	} else {
+		hsw = mode->hsync_end - mode->hsync_start - 1;
+		hfp = mode->hsync_start - mode->hdisplay - 1;
+		hbp = mode->htotal - mode->hsync_end - 1;
+	}
 
 	lpp = mode->vdisplay;
 	vsw = mode->vsync_end - mode->vsync_start;
