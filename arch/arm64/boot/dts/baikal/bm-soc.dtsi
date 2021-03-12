@@ -924,8 +924,8 @@
 			clocks = <&soc_xgbeclk>, <&soc_xgbeclk>, <&soc_xgbeclk>;
 			clock-names = "dma_clk", "ptp_clk", "xgbe_clk";
 			phy-mode = "xgmii";
-			mac-address = [ 00 20 13 ba 1c a1 ];
-			local-mac-address = [ 00 20 13 ba 1c a1 ];
+			mac-address = [ 00 00 00 00 00 00 ];
+			local-mac-address = [ 00 00 00 00 00 00 ];
 			status = "disabled";
 
 			amd,per-channel-interrupt;
@@ -960,8 +960,8 @@
 			clocks = <&soc_xgbeclk>, <&soc_xgbeclk>, <&soc_xgbeclk>;
 			clock-names = "dma_clk", "ptp_clk", "xgbe_clk";
 			phy-mode = "xgmii";
-			mac-address = [ 00 20 13 ba 1c a2 ];
-			local-mac-address = [ 00 20 13 ba 1c a2 ];
+			mac-address = [ 00 00 00 00 00 00 ];
+			local-mac-address = [ 00 00 00 00 00 00 ];
 			status = "disabled";
 
 			amd,per-channel-interrupt;
