@@ -34,10 +34,16 @@ config ARCH_BAIKAL
 	select GPIOLIB
 	select OF_GPIO
 	select GENERIC_CLOCKEVENTS
+	select I2C_BAIKAL_SMBUS
+	select GPIO_SYSFS
+	select GPIO_DWAPB
+	select GPIO_GENERIC
+	select STMMAC_ETH
+	select SPI_DESIGNWARE
+	select SPI_DW_MMIO
 	select DW_APB_TIMER
 	select DW_APB_TIMER_OF
 	select SENSORS_PVT
-	select I2C_BAIKAL_SMBUS
 	help
 	  This enables support for Baikal Electronics Baikal-M SoC Family
 

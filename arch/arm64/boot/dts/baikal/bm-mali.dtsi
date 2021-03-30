@@ -53,19 +53,18 @@
 		};
 	};
 #endif
-};
 
-&soc0 {
-	gpu: gpu@2a200000 {
-		compatible = "arm,mali-midgard", "arm,mali-t628";
-		#cooling-cells = <2>; /* min followed by max */
-		reg = <0x0 0x2a200000 0x0 0x4000>;
-		interrupts = <0 175 4 0 176 4 0 174 4>,
-				<0 175 4 0 176 4 0 174 4>;
-		interrupt-names = "JOB", "MMU", "GPU",
-				"job", "mmu", "gpu";
-		clocks = <&gpu_clk>;
-		clock-names = "gpuclk";
+	soc {
+		gpu: gpu@2a200000 {
+			compatible = "arm,mali-midgard", "arm,mali-t628";
+			#cooling-cells = <2>; /* min followed by max */
+			reg = <0x0 0x2a200000 0x0 0x4000>;
+			interrupts = <0 175 4 0 176 4 0 174 4>,
+				     <0 175 4 0 176 4 0 174 4>;
+			interrupt-names = "JOB", "MMU", "GPU",
+					  "job", "mmu", "gpu";
+			clocks = <&gpu_clk>;
+			clock-names = "gpuclk";
 #if 0 //Secure and Power model not used in B-M1000
 //		secure-mode-switcher = <&gpu_secure_switch>;
 		secure-mode-switcher = <0>;
@@ -84,5 +83,6 @@
 			dynamic-coefficient = <4687>;
 		};
 #endif
+		};
 	};
 };

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M SOC device tree (test version)
- *
+ * Baikal-M SoC device tree
  */
 
 #include "bm-clocks.dtsi"
+#include "bm-cpufreq.dtsi"
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/gpio/gpio.h>
 
@@ -36,7 +36,6 @@
 		memory-controller1 = &ddr1;
 		memory-controller2 = &ddr2;
 		spi		= &spi0;
-		espi0		= &espi0;
 		i2c0		= &i2c0;
 		i2c1		= &i2c1;
 		gpio0		= &gpio;
@@ -118,82 +117,138 @@
 
 		CPU0: cpu@0 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster0>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster0_opp>;
 		};
 
 		CPU1: cpu@1 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x1>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster0>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster0_opp>;
 		};
 
 		CPU2: cpu@100 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x100>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster1>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster1_opp>;
 		};
 
 		CPU3: cpu@101 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x101>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster1>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster1_opp>;
 		};
 
 		CPU4: cpu@200 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x200>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster2>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster2_opp>;
 		};
 
 		CPU5: cpu@201 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x201>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster2>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster2_opp>;
 		};
 
 		CPU6: cpu@300 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x300>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster3>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster3_opp>;
 		};
 
 		CPU7: cpu@301 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57","arm,armv8";
+			compatible = "arm,cortex-a57";
 			reg = <0x0 0x301>;
 			enable-method = "psci";
+			i-cache-size = <0xc000>;
+			i-cache-line-size = <64>;
+			i-cache-sets = <256>;
+			d-cache-size = <0x8000>;
+			d-cache-line-size = <64>;
+			d-cache-sets = <256>;
 			clocks = <&cmu_cluster3>;
 			next-level-cache = <&A57_L2>;
 			clock-names = "baikal-ca57_cmu";
+			operating-points-v2 = <&cluster3_opp>;
 		};
 
 		A57_L2: l2-cache0 {
@@ -212,7 +267,7 @@
 					 <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	soc0: soc {
+	soc {
 		compatible = "simple-bus";
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -260,79 +315,75 @@
 			status = "disabled";
 		};
 
-		/* PCI Express #0 (x4) (02200000, 10000, ?) */
+		/* PCIe x4 #0 */
 		pcie0: pcie@2200000 {
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02200000 0x0 0x1000>,	/* RC config space and Port Logic Registers */
-				<0x0 0x40100000 0x00 0x100000>;	/* PCI config space */
+			reg = <0x0 0x02200000 0x0 0x1000>,   /* RC config space */
+			      <0x0 0x40100000 0x0 0x100000>; /* PCI config space */
 			reg-names = "dbi", "config";
-			interrupts = <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>; /* AERR */
+			interrupts = <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>, /* AER */
+				     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
+			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 0>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			device_type = "pci";
 			/*dma-coherent;*/
-			ranges =
-				 <0x81000000 0x00 0x00000000 0x00 0x40200000 0x00 0x00100000>,	/* 1MB I/O */
-				 <0x82000000 0x00 0x40000000 0x04 0x00000000 0x00 0x40000000>;	/* 32b non-prefetchable memory */
-			//interrupts = <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			msi-parent = <&its 0>;
-			msi-map = <0 &its 0x0000 0x10000>;
+			ranges = <0x81000000 0x0 0x00000000 0x0 0x40200000 0x0 0x00100000>, /* I/O */
+				 <0x82000000 0x0 0x40000000 0x4 0x00000000 0x0 0x40000000>; /* 32b non-prefetchable memory */
+			msi-parent = <&its 0x0>;
+			msi-map = <0x0 &its 0x0 0x10000>;
 			num-lanes = <4>;
 			num-viewport = <4>;
-			bus-range = <0x00 0xff>;
-			pci_debug = <1>;
+			bus-range = <0x0 0xff>;
 			status = "disabled";
 		};
 
-		/* PCI Express #1 (x4) (02210000, 10000, ?) */
+		/* PCIe x4 #1 */
 		pcie1: pcie@2210000 {
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02210000 0x0 0x1000>, /* PCI config space and Port Logic Registers*/
-				 <0x0 0x50100000 0x00 0x100000>;	/* PCI config space */
+			reg = <0x0 0x02210000 0x0 0x1000>,   /* RC config space */
+			      <0x0 0x50100000 0x0 0x100000>; /* PCI config space */
 			reg-names = "dbi", "config";
-			interrupts = <GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>; /* AERR */
+			interrupts = <GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>, /* AER */
+				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
+			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			device_type = "pci";
 			/*dma-coherent;*/
-			ranges =
-				 <0x81000000 0x00 0x00100000 0x00 0x50000000 0x00 0x00100000>,	/* 1MB I/O */
-				 <0x82000000 0x00 0x40000000 0x05 0x00000000 0x00 0x40000000>;	/* 32b non-prefetchable memory */
-			//interrupts = <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			msi-parent = <&its 1>;
-			msi-map = <0x0 &its 0x0000 0x10000>;
+			ranges = <0x81000000 0x0 0x00100000 0x0 0x50000000 0x0 0x00100000>, /* I/O */
+				 <0x82000000 0x0 0x40000000 0x5 0x00000000 0x0 0x40000000>; /* 32b non-prefetchable memory */
+			msi-parent = <&its 0x0>;
+			msi-map = <0x0 &its 0x0 0x10000>;
 			num-lanes = <4>;
 			num-viewport = <4>;
-			bus-range = <0x00 0xff>;
+			bus-range = <0x0 0xff>;
 			status = "disabled";
 		};
 
-		/* PCI Express #2 (x8) (02220000, 10000, ?) */
+		/* PCIe x8 */
 		pcie2: pcie@2220000 {
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02220000 0x0 0x1000>, /* PCI config space and Port Logic Registers */
-				 <0x0 0x60000000 0x00 0x100000>;	/* PCI config space */
+			reg = <0x0 0x02220000 0x0 0x1000>,   /* RC config space */
+			      <0x0 0x60000000 0x0 0x100000>; /* PCI config space */
 			reg-names = "dbi", "config";
-			interrupts = <GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>; /* AERR */
+			interrupts = <GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>, /* AER */
+				     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
+			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 2>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			device_type = "pci";
 			/*dma-coherent;*/
-			ranges =
-				 <0x81000000 0x00 0x00200000 0x00 0x60100000 0x00 0x00100000>,	/* I/O */
-				 <0x82000000 0x00 0x80000000 0x06 0x00000000 0x00 0x80000000>;	/* 32b non-prefetchable memory */
-			//interrupts = <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
+			ranges = <0x81000000 0x0 0x00200000 0x0 0x60100000 0x0 0x00100000>, /* I/O */
+				 <0x82000000 0x0 0x80000000 0x6 0x00000000 0x0 0x80000000>; /* 32b non-prefetchable memory */
 			msi-parent = <&its 2>;
-			msi-map = <0 &its 0x0000 0x10000>;
+			msi-map = <0x0 &its 0x0 0x10000>;
 			num-lanes = <8>;
 			num-viewport = <4>;
-			bus-range = <0x00 0xff>;
+			bus-range = <0x0 0xff>;
 			status = "disabled";
 		};
 
@@ -442,7 +493,7 @@
 
 			clocks = <&cmu0_avlsp 1>;
 			clock-names = "baudclk";
-			clock-frequency = <7373800>;
+			clock-frequency = <7361963>;
 			/*dcd-override;*/
 			/*dsr-override;*/
 			/*cts-override;*/
@@ -461,7 +512,7 @@
 
 			clocks = <&cmu0_avlsp 2>;
 			clock-names = "baudclk";
-			clock-frequency = <7373800>;
+			clock-frequency = <7361963>;
 
 			status = "disabled";
 		};
@@ -948,7 +999,6 @@
 			amd,speed-set = <0>;
 			#stream-id-cells = <16>;
 		 };
-
 
 		/* HDMI VDU (30260000, 10000, SPI_361-362_?) */
 		vdu1: vdu_hdmi@0x30260000 {

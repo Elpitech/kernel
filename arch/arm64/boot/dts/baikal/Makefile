@@ -3,7 +3,7 @@
 # Baikal-M device tree Makefile
 #
 
-dtb-$(CONFIG_ARCH_BAIKAL) += bm-bfkm.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm-dbm.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx-d.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-qemu.dtb

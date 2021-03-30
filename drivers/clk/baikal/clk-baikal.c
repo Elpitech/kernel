@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * clk-baikal.c - Baikal Electronics clock driver.
+ * clk-baikal.c - Baikal-M clock driver.
  *
- * Copyright (C) 2015,2016 Baikal Electronics JSC
- *
- * Author:
- *   Ekaterina Skachko <Ekaterina.Skachko@baikalelectronics.ru>
+ * Copyright (C) 2015,2016,2020,2021 Baikal Electronics JSC
+ * Author: Ekaterina Skachko <ekaterina.skachko@baikalelectronics.ru>
  */
 #include <linux/module.h>
 #include <linux/spinlock.h>
@@ -32,7 +30,6 @@
 #define CMU_CLK_CH_DISABLE		9
 #define CMU_CLK_CH_ROUND_RATE		10
 #define CMU_CLK_CH_IS_ENABLED		11
-
 
 struct baikal_clk_cmu {
 	struct clk_hw	hw;
@@ -63,23 +60,22 @@ static int baikal_clk_enable(struct clk_hw *hw)
 	else
 		cmd = CMU_PLL_ENABLE;
 
-	pr_debug("[%s, %x:%d:%s] %s\n",
-		pclk->name,
-		pclk->parent,
-		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"enable");
-
 	/* If clock valid */
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, 0,
 		pclk->parent, 0, 0, 0, &res);
+
+	pr_debug("%s(%s, %s@0x%x): %s\n",
+		__func__,
+		pclk->name,
+		pclk->is_clk_ch ? "clkch" : "pll",
+		pclk->cmu_id,
+		res.a0 ? "error" : "ok");
 
 	return res.a0;
 }
 
 static void baikal_clk_disable(struct clk_hw *hw)
 {
-
 	struct arm_smccc_res res;
 	struct baikal_clk_cmu *pclk = to_baikal_cmu(hw);
 	uint32_t cmd;
@@ -89,16 +85,16 @@ static void baikal_clk_disable(struct clk_hw *hw)
 	else
 		cmd = CMU_PLL_DISABLE;
 
-	pr_debug("[%s, %x:%d:%s] %s\n",
-		pclk->name,
-		pclk->parent,
-		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"disable");
-
 	/* If clock valid */
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, 0,
-	 pclk->parent, 0, 0, 0, &res);
+			pclk->parent, 0, 0, 0, &res);
+
+	pr_debug("%s(%s, %s@0x%x): %s\n",
+		__func__,
+		pclk->name,
+		pclk->is_clk_ch ? "clkch" : "pll",
+		pclk->cmu_id,
+		res.a0 ? "error" : "ok");
 }
 
 static int baikal_clk_is_enabled(struct clk_hw *hw)
@@ -114,15 +110,14 @@ static int baikal_clk_is_enabled(struct clk_hw *hw)
 
 	/* If clock valid */
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, 0,
-	 pclk->parent, 0, 0, 0, &res);
+			pclk->parent, 0, 0, 0, &res);
 
-	pr_debug("[%s, %x:%d:%s] %s, %ld\n",
+	pr_debug("%s(%s, %s@0x%x): %s\n",
+		__func__,
 		pclk->name,
-		pclk->parent,
+		pclk->is_clk_ch ? "clkch" : "pll",
 		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"is enable",
-		res.a0);
+		res.a0 ? "true" : "false");
 
 	return res.a0;
 }
@@ -147,17 +142,15 @@ static unsigned long baikal_clk_recalc_rate(struct clk_hw *hw,
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, 0,
 	parent, 0, 0, 0, &res);
 
-	pr_debug("[%s, %lx:%d:%s] %s, %ld\n",
+	pr_debug("%s(%s, %s@0x%x): %ld Hz\n",
+		__func__,
 		pclk->name,
-		parent,
+		pclk->is_clk_ch ? "clkch" : "pll",
 		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"get rate",
 		res.a0);
 
 	/* Return actual freq */
 	return res.a0;
-
 }
 
 static int baikal_clk_set_rate(struct clk_hw *hw, unsigned long rate,
@@ -176,16 +169,16 @@ static int baikal_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 		parent = parent_rate;
 	}
 
-	pr_debug("[%s, %x:%d:%s] %s, %ld\n",
-		pclk->name,
-		pclk->parent,
-		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"set rate",
-		rate);
-
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, rate,
 			parent, 0, 0, 0, &res);
+
+	pr_debug("%s(%s, %s@0x%x, %ld Hz): %s\n",
+		__func__,
+		pclk->name,
+		pclk->is_clk_ch ? "clkch" : "pll",
+		pclk->cmu_id,
+		rate,
+		res.a0 ? "error" : "ok");
 
 	return res.a0;
 }
@@ -206,17 +199,15 @@ static long baikal_clk_round_rate(struct clk_hw *hw, unsigned long rate,
 		parent = *prate;
 	}
 
-
 	/* If clock valid */
 	arm_smccc_smc(BAIKAL_SMC_LCRU_ID, pclk->cmu_id, cmd, rate,
 			parent, 0, 0, 0, &res);
 
-	pr_debug("[%s, %x:%d:%s] %s, %ld\n",
+	pr_debug("%s(%s, %s@0x%x): %ld Hz\n",
+		__func__,
 		pclk->name,
-		pclk->parent,
+		pclk->is_clk_ch ? "clkch" : "pll",
 		pclk->cmu_id,
-		pclk->is_clk_ch?"ch":"pll",
-		"round rate",
 		res.a0);
 
 	/* Return actual freq */
@@ -231,8 +222,6 @@ const struct clk_ops be_clk_pll_ops = {
 	.set_rate = baikal_clk_set_rate,
 	.round_rate = baikal_clk_round_rate,
 };
-
-
 
 static int  baikal_clk_probe(struct platform_device *pdev)
 {
@@ -254,13 +243,11 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 
 	cmu = kmalloc(sizeof(struct baikal_clk_cmu *), GFP_KERNEL);
 	if (!cmu) {
-		/* Error */
 		pr_err("%s: could not allocate CMU clk\n", __func__);
 		kfree(cmu);
 		return -ENOMEM;
 	}
 
-	/* property */
 	of_property_read_string(node, "clock-output-names", &cmu->name);
 	of_property_read_u32(node, "clock-frequency", &cmu->parent);
 	of_property_read_u32(node, "cmu-id", &cmu->cmu_id);
@@ -278,12 +265,11 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 	cmu->is_clk_ch = 0;
 
 	/* Register the clock */
-	pr_debug("Add %s (Parent %s)\n",
-		cmu->name, parent_name ? parent_name:"null");
+	pr_debug("%s: add %s, parent %s\n",
+		__func__, cmu->name, parent_name ? parent_name : "null");
 	clk = clk_register(NULL, &cmu->hw);
 
 	if (IS_ERR(clk)) {
-		/* Error */
 		pr_err("%s: could not register clk %s\n", __func__, cmu->name);
 		return -ENOMEM;
 	}
@@ -291,7 +277,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 	/* Register the clock for lookup */
 	rc = clk_register_clkdev(clk, cmu->name, NULL);
 	if (rc != 0) {
-		/* Error */
 		pr_err("%s: could not register lookup clk %s\n",
 			__func__, cmu->name);
 	}
@@ -304,14 +289,14 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 	if (number > 0) {
 		clk_ch = kmalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
 		if (!clk_ch) {
-			/* Error */
 			pr_err("%s: could not allocate CMU clk channel\n",
 				__func__);
 			return -ENOMEM;
 		}
+
 		/* Get the last index to find out max number of children*/
 		of_property_for_each_u32(node, "clock-indices",
-						prop, p, index) {
+					 prop, p, index) {
 			;
 		}
 		clk_ch->clks = kcalloc(index + 1, sizeof(struct clk *),
@@ -326,7 +311,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 		init_ch = kcalloc((number + 1), sizeof(struct clk_init_data),
 				GFP_KERNEL);
 		if (!init_ch) {
-			/* Error */
 			pr_err("%s: could not allocate CMU init structure\n",
 				__func__);
 			kfree(cmu_ch);
@@ -359,7 +343,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 							&cmu_ch[index]->hw);
 
 			if (IS_ERR(clk_ch->clks[index])) {
-				/* Error */
 				pr_err("%s: could not register clk %s\n",
 					__func__, clk_ch_name);
 			}
@@ -367,7 +350,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 			rc = clk_register_clkdev(clk_ch->clks[index],
 						clk_ch_name, NULL);
 			if (rc != 0) {
-				/* Error */
 				pr_err("%s: could not register lookup clk %s\n",
 				__func__, clk_ch_name);
 			}
@@ -392,21 +374,21 @@ static int baikal_clk_remove(struct platform_device *pdev)
 
 static const struct of_device_id baikal_clk_of_match[] =  {
 	{.compatible = "baikal,cmu"},
-	{ /* sentinel value */ }
+	{ /* sentinel */ }
 };
 
-static struct platform_driver clk_ca57_cmu_driver = {
+static struct platform_driver baikal_cmu_driver = {
 	.probe  = baikal_clk_probe,
 	.remove = baikal_clk_remove,
 	.driver = {
-		.name   = "baikal-ca57_cmu",
+		.name   = "baikal-cmu",
 		.of_match_table = baikal_clk_of_match,
 	},
 };
 
-module_platform_driver(clk_ca57_cmu_driver);
+module_platform_driver(baikal_cmu_driver);
 
-MODULE_DESCRIPTION("Clkout driver for the Baikal-M");
-MODULE_AUTHOR("Ekaterina Skachko <Ekaterina.Skachko@baikalelectronics.ru>");
-MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Baikal-M clock driver");
+MODULE_AUTHOR("Ekaterina Skachko <ekaterina.skachko@baikalelectronics.ru>");
+MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:baikal-cmu");
