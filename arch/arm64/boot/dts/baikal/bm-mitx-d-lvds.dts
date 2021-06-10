@@ -120,7 +120,7 @@
 };
 
 &vdu0 {
-//	status = "okay";
+	status = "okay";
 	num-lanes = <2>;
 	port {
 		vdu_lvds0_pads: endpoint@0 {
