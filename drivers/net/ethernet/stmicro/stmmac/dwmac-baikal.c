@@ -84,6 +84,7 @@ static int dwmac_baikal_probe(struct platform_device *pdev)
 	struct plat_stmmacenet_data *plat_dat;
 	struct stmmac_resources stmmac_res;
 	struct baikal_dwmac *dwmac;
+	u32 value;
 	int ret;
 
 	ret = stmmac_get_platform_resources(pdev, &stmmac_res);
@@ -139,6 +140,11 @@ static int dwmac_baikal_probe(struct platform_device *pdev)
 	plat_dat->clk_csr = 3;
 
 	dev_info(&pdev->dev, "Baikal Electronics DWMAC glue driver\n");
+
+	/* Clear PHY reset now */
+	value = readl(stmmac_res.addr + MAC_GPIO);
+	value |= MAC_GPIO_GPO0;
+	writel(value, stmmac_res.addr + MAC_GPIO);
 
 	ret = stmmac_dvr_probe(&pdev->dev, plat_dat, &stmmac_res);
 	if (ret)
