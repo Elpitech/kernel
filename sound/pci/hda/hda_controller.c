@@ -1264,32 +1264,59 @@ int azx_probe_codecs(struct azx *chip, unsigned int max_slots)
 	struct hdac_bus *bus = azx_bus(chip);
 	int c, codecs, err;
 
+#ifdef CONFIG_SND_HDA_BAIKAL_M
+	int probe_retry;
+#endif
+
 	codecs = 0;
 	if (!max_slots)
 		max_slots = AZX_DEFAULT_CODECS;
 
+#ifdef CONFIG_SND_HDA_BAIKAL_M
+	/* First try to probe all given codec slots */
+	for (c = 0; c < max_slots; c++) {
+		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
+			for (probe_retry = 0; probe_retry < 100; probe_retry++) {
+				if (probe_codec(chip, c) < 0) {
+					azx_stop_chip(chip);
+					azx_init_chip(chip, true);
+					continue;
+				}
+				else {
+					dev_warn(chip->card->dev,
+						"Codec #%d probe success; retry count = %d\n", c, probe_retry);
+					break;
+				}
+				bus->codec_mask &= ~(1 << c);
+				dev_warn(chip->card->dev,
+					"Codec #%d probe error; disabling it...\n", c);
+			}
+		}
+	}
+#else
 	/* First try to probe all given codec slots */
 	for (c = 0; c < max_slots; c++) {
 		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
 			if (probe_codec(chip, c) < 0) {
-				/* Some BIOSen give you wrong codec addresses
-				 * that don't exist
-				 */
-				dev_warn(chip->card->dev,
-					 "Codec #%d probe error; disabling it...\n", c);
-				bus->codec_mask &= ~(1 << c);
-				/* More badly, accessing to a non-existing
-				 * codec often screws up the controller chip,
-				 * and disturbs the further communications.
-				 * Thus if an error occurs during probing,
-				 * better to reset the controller chip to
-				 * get back to the sanity state.
-				 */
-				azx_stop_chip(chip);
-				azx_init_chip(chip, true);
+					/* Some BIOSen give you wrong codec addresses
+					 * that don't exist
+					 */
+					dev_warn(chip->card->dev,
+						"Codec #%d probe error; disabling it...\n", c);
+					bus->codec_mask &= ~(1 << c);
+					/* More badly, accessing to a non-existing
+					 * codec often screws up the controller chip,
+					 * and disturbs the further communications.
+					 * Thus if an error occurs during probing,
+					 * better to reset the controller chip to
+					 * get back to the sanity state.
+					 */
+					azx_stop_chip(chip);
+					azx_init_chip(chip, true);
 			}
 		}
 	}
+#endif
 
 	/* Then create codec instances */
 	for (c = 0; c < max_slots; c++) {
