@@ -1,41 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M evaluation board device tree (test version)
- *
+ * Device tree source for Baikal Electronics DBM board
+ * Copyright (C) 2019-2021 Baikal Electronics, JSC
  */
 
 /dts-v1/;
 
-#include <dt-bindings/interrupt-controller/arm-gic.h>
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/sound/tlv320aic31xx-micbias.h>
-
-#include "bm-soc.dtsi"
-#include "bm-mali.dtsi"
+#include <dt-bindings/input/input.h>
+#include "bm1000.dtsi"
 
 / {
-
-	model = "Baikal Electronics Baikal-M evaluation board";
+	model = "Baikal Electronics DBM";
 	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen {
-		/*stdout-path = "serial0:115200n8";
-		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
-		linux,initrd-start = <0x0 0x80490000>;
-		linux,initrd-end = <0x0 0x81490000>;*/
-	};
-
-	/*
-	reserved-memory {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges;
-		display_reserved: framebuffer@90200000 {
-			reg = <0x90200000 0xfe00000>;
-		};
-	};*/
+	chosen { };
 
 	panel {
 		compatible = "panel-lvds";
@@ -43,7 +23,7 @@
 		height-mm = <125>;
 		data-mapping = "vesa-24";
 		panel-timing {
-		// 1920x1080 @60Hz
+			/* 1920x1080 @ 60 Hz */
 			clock-frequency = <148500000>;
 			hactive = <1920>;
 			vactive = <1080>;
@@ -64,13 +44,34 @@
 		};
 	};
 
-	sound {
-			compatible = "baikal,snd_soc_be";
-
-			baikal,cpu-dai = <&i2s>;
-			baikal,audio-codec = <&tlv320aic3x>;
-
+	buttons-backlight {
+		compatible = "gpio-keys";
+		autorepeat;
+		button-brightness-down {
+			label = "Brightness Down Button";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
 		};
+		button-brightness-up {
+			label = "Brightness Up Button";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-toggle {
+			label = "Brightness Toggle Button";
+			linux,code = <KEY_BRIGHTNESS_TOGGLE>;
+			gpios = <&porta 31 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+	};
+
+	sound {
+		compatible = "baikal,snd_soc_be";
+		baikal,cpu-dai = <&i2s>;
+		baikal,audio-codec = <&tlv320aic3x>;
+	};
 
 	/* Baikal internal MDIO */
 	mdio0: be-mdio {
@@ -98,83 +99,38 @@
 			mv,host-mode = "KX4";
 		};
 	};
-
 };
 
-&uart0 {
+&ddr2 {
 	status = "okay";
 };
 
-&uart1 {
+&espi0 {
+	cs-gpios = <&porta 28 1>; /* todo: get real gpio */
 	status = "okay";
-};
 
-&sata0 {
-	status = "okay";
-};
-
-&sata1 {
-	status = "okay";
+	/* test device #0 */
+	espi_test0 {
+		compatible = "rohm,dh2228fv"; /* same as spidev */
+		reg = <0>;
+		spi-max-frequency = <12000000>;
+		status = "okay";
+	};
 };
 
 &gmac0 {
 	status = "okay";
+	snps,reset-gp-out;
+	snps,reset-active-low;
 };
 
 &gmac1 {
 	status = "okay";
-};
-
-&xgmac0 {
-	status = "okay";
-	phy-mode = "xgmii";
-	be,pcs-mode = "KX4";
-	phy-handle = <&mv_ch0>;
-};
-
-&xgmac1 {
-	status = "okay";
-	phy-mode = "xgmii";
-	be,pcs-mode = "KX4";
-	phy-handle = <&mv_ch2>;
-};
-
-&hdmi {
-	status = "okay";
-};
-
-&vdu0 {
-	status = "okay";
-	port {
-		vdu_lvds0_pads: endpoint@0 {
-			remote-endpoint = <&panel0_lvds0>;
-		};
-		vdu_lvds1_pads: endpoint@1 {
-			remote-endpoint = <&panel0_lvds1>;
-		};
-		/*vdu_lvds2_pads: endpoint@2 {
-			remote-endpoint = <&panel0_lvds2>;
-		};
-		vdu_lvds3_pads: endpoint@3 {
-			remote-endpoint = <&panel0_lvds3>;
-		};*/
-	};
-};
-
-
-&vdu1 {
-	status = "okay";
-};
-
-&vdec {
-	status = "okay";
+	snps,reset-gp-out;
+	snps,reset-active-low;
 };
 
 &gpio {
-	status = "okay";
-};
-
-&ddr2 {
 	status = "okay";
 };
 
@@ -182,20 +138,56 @@
 	system-coherency = <0>;
 };
 
-&usb2 {
+&hda {
 	status = "okay";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	tlv320aic3x: tlv320aic3x@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3x";
+		reg = <0x18>;
+		reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		ai3x-micbias-vg = <1>;
+		ai3x-ocmv = <1>;
+	};
+
+	rtc@56 {
+		compatible = "abracon,abeoz9";
+		reg = <0x56>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+&i2s {
+	status = "okay";
+	sound-dai = <&tlv320aic3x>;
+	system-clock-frequency = <12000000>;
 };
 
 &mmc0 {
 	status = "okay";
-};
-
-&usb3 {
-	status = "okay";
-};
-
-&pcie_lcru {
-	status = "okay";
+#if 0
+	/* emmc */
+	non-removable;
+	bus-width = <8>;
+	max-clock = <200000000>;
+#else
+	/* sd */
+	disable-wp;
+	bus-width = <4>;
+	max-clock = <25000000>;
+#endif
 };
 
 &pcie0 {
@@ -210,19 +202,7 @@
 	status = "okay";
 };
 
-&timer1 {
-	status = "okay";
-};
-
-&timer2 {
-	status = "okay";
-};
-
-&timer3 {
-	status = "okay";
-};
-
-&timer4 {
+&pcie_lcru {
 	status = "okay";
 };
 
@@ -246,26 +226,11 @@
 	status = "okay";
 };
 
-&i2c0 {
+&sata0 {
 	status = "okay";
-
-	tlv320aic3x: tlv320aic3x@18 {
-		#sound-dai-cells = <0>;
-		compatible = "ti,tlv320aic3x";
-		reg = <0x18>;
-		gpio-reset = <&porta 4 GPIO_ACTIVE_LOW>;
-		status = "okay";
-
-		ai31xx-micbias-vg = <MICBIAS_2_0V>;
-	};
-
-	rtc@56 {
-		compatible = "abracon,abeoz9";
-		reg = <0x56>;
-	};
 };
 
-&i2c1 {
+&sata1 {
 	status = "okay";
 };
 
@@ -277,20 +242,13 @@
 	status = "okay";
 };
 
-&i2s {
-	status = "okay";
-	sound-dai = <&tlv320aic3x>;
-	system-clock-frequency = <12000000>;
-};
-
 &spi0 {
 	num-cs = <4>;
-
 	cs-gpios =
-		<&porta 24 1>,   /* ss0 xp8  - DD53 normal flash */
-		<&porta 25 1>,   /* ss1 xp9  */
-		<&porta 26 1>,   /* ss2 xp10 */
-		<&porta 27 1>;   /* ss3 xp11 */
+		<&porta 24 1>, /* ss0 xp8 - DD53 normal flash */
+		<&porta 25 1>, /* ss1 xp9 */
+		<&porta 26 1>, /* ss2 xp10 */
+		<&porta 27 1>; /* ss3 xp11 */
 	status = "okay";
 
 	/* SPI flash chip #1 */
@@ -303,18 +261,18 @@
 		status = "okay";
 
 		/* Flash chip0 partitions */
-		mtd0@00000000 {
+		mtd0@0 {
 			label = "bl1";
 			reg = <0x00000000 0x00040000>;
 			read-only;
 		};
 
-		mtd1@00040000 {
+		mtd1@40000 {
 			label = "fip";
 			reg = <0x00040000 0x007c0000>;
 		};
 
-		mtd2@00800000 {
+		mtd2@800000 {
 			label = "rescue";
 			reg = <0x00800000 0x01800000>;
 		};
@@ -326,10 +284,10 @@
 &spi1 {
 	num-cs = <4>;
 	cs-gpios =
-		<&porta 20 1>,   /* ss0 xp15  - DD57 boot flash */
-		<&porta 21 1>,   /* ss1 xp16 */
-		<&porta 22 1>,   /* ss2 xp17 */
-		<&porta 23 1>;   /* ss3 xp18 */
+		<&porta 20 1>, /* ss0 xp15 - DD57 boot flash */
+		<&porta 21 1>, /* ss1 xp16 */
+		<&porta 22 1>, /* ss2 xp17 */
+		<&porta 23 1>; /* ss3 xp18 */
 	status = "okay";
 
 	/* SPI flash chip #2 */
@@ -342,19 +300,19 @@
 		status = "okay";
 
 		/* Flash chip1 partitions */
-		mtd0@00000000 {
+		mtd0@0 {
 			label = "fip_backup";
 			reg = <0x00000000 0x00400000>;
 			read-only;
 		};
 
-		mtd1@00400000 {
+		mtd1@400000 {
 			label = "env_backup";
 			reg = <0x00400000 0x00100000>;
 			read-only;
 		};
 
-		mtd2@00500000 {
+		mtd2@500000 {
 			label = "data1";
 			reg = <0x00500000 0x01b00000>;
 		};
@@ -362,15 +320,81 @@
 };
 #endif
 
-&espi0 {
-	cs-gpios = <&porta 28 1>;   /* todo: get real gpio */
+&timer1 {
 	status = "okay";
+};
 
-	/* test device #0 */
-	espi_test0 {
-		compatible = "rohm,dh2228fv"; /* same as spidev */
-		reg = <0>;
-		spi-max-frequency = <12000000>;
-		status = "okay";
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdu0 {
+	status = "okay";
+	enable-gpios = <&porta 16 GPIO_ACTIVE_LOW>;
+	backlight {
+		min-brightness-level = <10>;
+		default-brightness-level = <60>;
+		brightness-level-step = <2>;
+		pwm-frequency = <20000>;
 	};
+	port {
+		vdu_lvds0_pads: endpoint@0 {
+			remote-endpoint = <&panel0_lvds0>;
+		};
+		vdu_lvds1_pads: endpoint@1 {
+			remote-endpoint = <&panel0_lvds1>;
+		};
+		/*vdu_lvds2_pads: endpoint@2 {
+			remote-endpoint = <&panel0_lvds2>;
+		};
+		vdu_lvds3_pads: endpoint@3 {
+			remote-endpoint = <&panel0_lvds3>;
+		};*/
+	};
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&xgmac0 {
+	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	ext-phy-handle = <&mv_ch0>;
+};
+
+&xgmac1 {
+	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	ext-phy-handle = <&mv_ch0>;
 };

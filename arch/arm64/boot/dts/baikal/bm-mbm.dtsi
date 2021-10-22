@@ -1,0 +1,236 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree include file for MBM-compatible boards
+ * Copyright (C) 2021 Baikal Electronics, JSC
+ */
+
+#include "bm1000.dtsi"
+
+/ {
+	model = "Baikal Electronics MBM";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen { };
+
+	leds {
+		compatible = "gpio-leds";
+		led0 {
+			gpios = <&porta 8 GPIO_ACTIVE_HIGH>;
+			default-state = "keep";
+		};
+	};
+
+	sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "MITX-Sound-Card";
+		simple-audio-card,bitclock-master = <&codec0>;
+		simple-audio-card,frame-master = <&codec0>;
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Headphone", "Headphones",
+			"Speaker", "AUX Out",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphones", "RHP",
+			"Headphones", "LHP",
+			"AUX Out", "AUXOUT1",
+			"AUX Out", "AUXOUT2",
+			"L2", "Mic Jack",
+			"R2", "Mic Jack",
+			"LAUX", "Line In",
+			"RAUX", "Line In";
+		simple-audio-card,mic-det-gpio = <&porta 26 GPIO_ACTIVE_LOW>;
+		simple-audio-card,format = "i2s";
+		simple-audio-card,cpu {
+			sound-dai = <&i2s>;
+		};
+		codec0: simple-audio-card,codec {
+			sound-dai = <&nau8822 0>;
+		};
+	};
+};
+
+&ddr2 {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&gpu {
+	system-coherency = <0>;
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	bmc@8 {
+		compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
+		reg = <0x08>;
+	};
+
+	nau8822: nau8822@1a {
+		compatible = "nuvoton,nau8822";
+		#sound-dai-cells = <1>;
+		reg = <0x1a>;
+	};
+
+	gpio@50 {
+		compatible = "nxp,pca9670";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x50>;
+	};
+
+	rtc@51 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x51>;
+	};
+
+	hwmon@52 {
+		compatible = "tp,bm_mitx_hwmon";
+		reg = <0x52>;
+	};
+
+	eeprom@53 {
+		compatible = "atmel,24c32";
+		pagesize = <32>;
+		reg = <0x53>;
+	};
+
+	ps2port@54 {
+		compatible = "tp,tp_serio";
+		reg = <0x54>;
+		interrupt-parent = <&porta>;
+		interrupts = <14 8>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+&i2s {
+	status = "okay";
+	system-clock-frequency = <12000000>;
+	#sound-dai-cells = <0>;
+};
+
+&mmc0 {
+	status = "okay";
+	disable-wp;
+	bus-width = <4>;
+	max-clock = <25000000>;
+};
+
+&pcie0 {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&pcie2 {
+	status = "okay";
+	reset-gpios = <&porta 3 GPIO_ACTIVE_LOW>;
+};
+
+&pcie_lcru {
+	status = "okay";
+};
+
+&porta {
+	pcieclk {
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_LOW>;
+		output-high;
+		line-name = "pcie-x8-clock";
+	};
+};
+
+&pvt0 {
+	status = "okay";
+};
+
+&pvt1 {
+	status = "okay";
+};
+
+&pvt2 {
+	status = "okay";
+};
+
+&pvt3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+	cs-gpios = <0>;
+	status = "okay";
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};

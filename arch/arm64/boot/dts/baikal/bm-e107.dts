@@ -6,23 +6,16 @@
 
 /dts-v1/;
 
-#include "bm-soc.dtsi"
-#include "bm-cpufreq.dtsi"
-#include "bm-mali.dtsi"
+#include "bm1000.dtsi"
 
 / {
 
-	model = "Baikal Electronics Baikal-M E107 board";
+	model = "Edelweiss Baikal-M E107 board";
 	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen {
-		/*stdout-path = "serial0:115200n8";
-		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
-		linux,initrd-start = <0x0 0x80490000>;
-		linux,initrd-end = <0x0 0x81490000>;*/
-	};
+	chosen { };
 
 	sfp0: sfp0 {
 		compatible = "sff,sfp";
@@ -252,7 +245,6 @@
 			#size-cells = <0>;
 			reg = <2>;
 		};
-
 	};
 };
 
@@ -293,48 +285,4 @@
 
 &gmac1_phy {
 	reg = <2>;
-};
-
-&cluster0_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster1_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster2_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster3_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
 };

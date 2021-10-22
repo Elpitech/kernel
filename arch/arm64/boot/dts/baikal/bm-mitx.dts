@@ -6,8 +6,7 @@
 
 /dts-v1/;
 
-#include "bm-soc.dtsi"
-#include "bm-mali.dtsi"
+#include "bm1000.dtsi"
 
 / {
 
@@ -16,22 +15,8 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen {
-		/*stdout-path = "serial0:115200n8";
-		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
-		linux,initrd-start = <0x0 0x80490000>;
-		linux,initrd-end = <0x0 0x81490000>;*/
-	};
+	chosen { };
 
-	/*
-	reserved-memory {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges;
-		display_reserved: framebuffer@90200000 {
-			reg = <0x90200000 0xfe00000>;
-		};
-	};*/
 	sound {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "MITX-Sound-Card";
@@ -283,46 +268,3 @@
 	#sound-dai-cells = <0>;
 };
 
-&cluster0_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster1_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster2_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};
-
-&cluster3_opp {
-	opp@1400 {
-		opp-hz = /bits/ 64 <1400000000>;
-		clock-latency-ns = <100000>;
-	};
-	opp@1500 {
-		opp-hz = /bits/ 64 <1500000000>;
-		clock-latency-ns = <100000>;
-	};
-};

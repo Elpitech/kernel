@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M software emulator (QEMU) platform device tree
- *
+ * Device tree source for Baikal-M software emulator (QEMU) platform
+ * Copyright (C) 2018-2021 Baikal Electronics, JSC
  */
 
 /dts-v1/;
 
-#include <dt-bindings/interrupt-controller/arm-gic.h>
-
-#include "bm-soc.dtsi"
+#include "bm1000.dtsi"
 
 /*
- * ! ACHTUNG !
- * Device "flash@0" was added to allow UEFI to boot
- * on emulator.
- * TODO:
- *   later it needs to be replaced by actual Baikal-M components
+ * Device "flash@0" was added to allow UEFI to boot on emulator.
+ * TODO: the tree should be replaced by actual Baikal-M component tree
  */
 
 / {
-
 	model = "Baikal Electronics Baikal-M virtual platform";
 	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
@@ -28,14 +22,10 @@
 	chosen {
 		stdout-path = "serial0:115200n8";
 		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
-		/*linux,initrd-start = <0x0 0x80490000>;
-		linux,initrd-end = <0x0 0x81490000>;*/
 	};
 
 	memory@80000000 {
 		device_type = "memory";
-		/* 2GB */
-		/*reg = <0x00000000 0x80000000 0x0 0x80000000>;*/
 		/* 16GB */
 		reg = <0x00000000 0x80000000 0x0 0x80000000
 		       0x00000008 0x80000000 0x1 0x80000000>;
@@ -50,11 +40,11 @@
 	};
 
 	panel: panel {
-		compatible = "auo,b133htn01";           /* 1920x1080 */
-		/*compatible = "auo,b133xtn01;          /* 1366x768 */
-		/*compatible = "auo,b101aw03";          /* 1024x600 */
-		/*compatible = "innolux,g121x1-l03";    /* 1024x768 */
-		/*compatible = "auo,b101ean01";         /* 1280x800 */
+		compatible = "auo,b133htn01";		/* 1920x1080 */
+		/*compatible = "auo,b133xtn01;		/* 1366x768 */
+		/*compatible = "auo,b101aw03";		/* 1024x600 */
+		/*compatible = "innolux,g121x1-l03";	/* 1024x768 */
+		/*compatible = "auo,b101ean01";		/* 1280x800 */
 
 		port {
 			lcd_panel: endpoint {
@@ -72,18 +62,13 @@
 			};
 		};
 	};*/
-
 };
 
-&vdu0 {
-	port {
-		vdu_pads: endpoint {
-			remote-endpoint = <&lcd_panel>;
-		};
-	};
+&gmac0 {
+	status = "okay";
 };
 
-&uart0 {
+&gmac1 {
 	status = "okay";
 };
 
@@ -95,75 +80,8 @@
 	status = "okay";
 };
 
-&gmac0 {
-	status = "okay";
-};
-
-&gmac1 {
-	status = "okay";
-};
-
-
-/*&i2c0 {
-	status = "okay";
-
-	eeprom@50 {
-		compatible = "atmel,24c02";
-		pagesize = <8>;
-		reg = <0x50>;
-	};
-
-	eeprom@51 {
-		compatible = "atmel,24c02";
-		pagesize = <8>;
-		reg = <0x51>;
-	};
-
-	eeprom@68 {
-		compatible = "dallas,ds1307";
-		reg = <0x68>;
-	};
-
-	gpioexp0: gpioexp@20 {
-		compatible = "nxp,pca9500";
-		#gpio-cells = <2>;
-		reg = <0x20>;
-		gpio-controller;
-	};
-};
-
-&i2c1 {
-	status = "okay";
-
-	eeprom@50 {
-		compatible = "atmel,24c02";
-		pagesize = <8>;
-		reg = <0x50>;
-	};
-
-	eeprom@51 {
-		compatible = "atmel,24c02";
-		pagesize = <8>;
-		reg = <0x51>;
-	};
-
-	eeprom@54 {
-		compatible = "atmel,24c02";
-		pagesize = <8>;
-		reg = <0x54>;
-	};
-
-	gpioexp1: gpioexp@18 {
-		compatible = "nxp,pca9500";
-		#gpio-cells = <2>;
-		reg = <0x18>;
-		gpio-controller;
-	};
-};*/
-
 &spi0 {
 	num-cs = <6>;
-
 	status = "okay";
 
 	/* SPI flash chip #1 */
@@ -176,28 +94,28 @@
 		status = "okay";
 
 		/* Flash chip0 partitions */
-		mtd0@00000000 {
+		mtd0@0 {
 			label = "fip";
 			reg = <0x00000000 0x00400000>;
 			read-only;
 		};
 
-		mtd1@00400000 {
+		mtd1@400000 {
 			label = "env";
 			reg = <0x00400000 0x00100000>;
 		};
 
-		mtd2@00500000 {
+		mtd2@500000 {
 			label = "kernel";
 			reg = <0x00500000 0x00400000>;
 		};
 
-		mtd3@00900000 {
+		mtd3@900000 {
 			label = "rootfs";
 			reg = <0x00900000 0x00800000>;
 		};
 
-		mtd4@01100000 {
+		mtd4@1100000 {
 			label = "data0";
 			reg = <0x01100000 0x00f00000>;
 		};
@@ -213,21 +131,33 @@
 		status = "okay";
 
 		/* Flash chip1 partitions */
-		mtd0@00000000 {
+		mtd0@0 {
 			label = "fip_backup";
 			reg = <0x00000000 0x00400000>;
 			read-only;
 		};
 
-		mtd1@00400000 {
+		mtd1@400000 {
 			label = "env_backup";
 			reg = <0x00400000 0x00100000>;
 			read-only;
 		};
 
-		mtd2@00500000 {
+		mtd2@500000 {
 			label = "data1";
 			reg = <0x00500000 0x01b00000>;
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&vdu0 {
+	port {
+		vdu_pads: endpoint {
+			remote-endpoint = <&lcd_panel>;
 		};
 	};
 };

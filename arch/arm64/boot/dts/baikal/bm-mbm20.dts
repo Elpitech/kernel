@@ -1,0 +1,102 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for MBM 2.0 compatible boards:
+ *   - TF307-MB-S-D Rev.4.0 (BM1BM1-D)
+ *
+ * Copyright (C) 2021 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+#include "bm-mbm.dtsi"
+
+/ {
+	panel {
+		/* In order to utilize LVDS LCD panel, make sure that
+		   status is "okay" along with &vdu0 status (see below). */
+		status = "disabled";
+		compatible = "panel-lvds";
+		width-mm = <223>;
+		height-mm = <125>;
+		data-mapping = "vesa-24";
+		panel-timing {
+			/* 1920x1080 @ 60 Hz */
+			clock-frequency = <148500000>;
+			hactive = <1920>;
+			vactive = <1080>;
+			hsync-len = <44>;
+			hfront-porch = <88>;
+			hback-porch = <148>;
+			vsync-len = <5>;
+			vfront-porch = <4>;
+			vback-porch = <36>;
+		};
+		port {
+			panel0_lvds0: endpoint@0 {
+				remote-endpoint = <&vdu_lvds0_pads>;
+			};
+			panel0_lvds1: endpoint@1 {
+				remote-endpoint = <&vdu_lvds1_pads>;
+			};
+		};
+	};
+
+	buttons-backlight {
+		compatible = "gpio-keys";
+		autorepeat;
+		button-brightness-down {
+			label = "Brightness Down Button";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-up {
+			label = "Brightness Up Button";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-toggle {
+			label = "Brightness Toggle Button";
+			linux,code = <KEY_BRIGHTNESS_TOGGLE>;
+			gpios = <&porta 31 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+	};
+
+	sound {
+		simple-audio-card,hp-det-gpio = <&porta 29 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&gmac0 {
+	status = "okay";
+	snps,reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
+};
+
+&gmac1 {
+	status = "okay";
+	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+};
+
+&vdu0 {
+	/* In order to utilize LVDS LCD panel, make sure that
+	   status is "okay" along with panel status (see above). */
+	status = "disabled";
+	enable-gpios = <&porta 16 GPIO_ACTIVE_LOW>;
+	backlight {
+		min-brightness-level = <10>;
+		default-brightness-level = <60>;
+		brightness-level-step = <2>;
+		pwm-frequency = <20000>;
+	};
+	port {
+		vdu_lvds0_pads: endpoint@0 {
+			remote-endpoint = <&panel0_lvds0>;
+		};
+		vdu_lvds1_pads: endpoint@1 {
+			remote-endpoint = <&panel0_lvds1>;
+		};
+	};
+};

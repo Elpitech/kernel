@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for MBM 1.0 compatible boards:
+ *   - TP-TF307-MB-A0 Rev.1.0 (BM1BM1-A)
+ *   - TF307-MB-S-C Rev.3.0
+ *
+ * Copyright (C) 2021 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bm-mbm.dtsi"
+
+/ {
+	sound {
+		simple-audio-card,hp-det-gpio = <&porta 27 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&gmac0 {
+	status = "okay";
+	snps,reset-gp-out;
+	snps,reset-active-low;
+};
+
+&gmac1 {
+	status = "okay";
+	snps,reset-gp-out;
+	snps,reset-active-low;
+};
