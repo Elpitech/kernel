@@ -31,9 +31,11 @@ static void azx_clear_corbrp(struct hdac_bus *bus)
 			break;
 		udelay(1);
 	}
+#ifndef CONFIG_SND_HDA_BAIKAL_M
 	if (timeout <= 0)
 		dev_err(bus->dev, "CORB reset timeout#2, CORBRP = %d\n",
 			snd_hdac_chip_readw(bus, CORBRP));
+#endif
 }
 
 /**
@@ -78,8 +80,15 @@ void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 	snd_hdac_chip_writew(bus, RIRBWP, AZX_RIRBWP_RST);
 	/* set N=1, get RIRB response interrupt for new entry */
 	snd_hdac_chip_writew(bus, RINTCNT, 1);
+
+#ifdef CONFIG_SND_HDA_BAIKAL_M
+	/* response irq not working in Baikal-M HDA controller */ 
+	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN);
+#else
 	/* enable rirb dma and response irq */
 	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN);
+#endif
+
 	/* Accept unsolicited responses */
 	snd_hdac_chip_updatel(bus, GCTL, AZX_GCTL_UNSOL, AZX_GCTL_UNSOL);
 	spin_unlock_irq(&bus->reg_lock);
@@ -146,6 +155,11 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 
 	spin_lock_irq(&bus->reg_lock);
 
+#ifdef CONFIG_SND_HDA_BAIKAL_M
+	/* force first codec address, because wrong codec init */
+	val |= 0x10000000;
+#endif
+
 	bus->last_cmd[azx_command_addr(val)] = val;
 
 	/* add command to corb */
@@ -155,6 +169,7 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 		spin_unlock_irq(&bus->reg_lock);
 		return -EIO;
 	}
+
 	wp++;
 	wp %= AZX_MAX_CORB_ENTRIES;
 
