@@ -1,0 +1,257 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Baikal-M Mini-ITX board device tree (test version)
+ *
+ */
+
+/dts-v1/;
+
+#include "bm1000.dtsi"
+
+/ {
+
+	model = "Elpitech Baikal-M mitx board";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen { };
+
+	panel {
+		compatible = "panel-lvds";
+		width-mm = <223>;
+		height-mm = <125>;
+		data-mapping = "vesa-24";
+		enable-gpios = <&porta 16 GPIO_ACTIVE_HIGH>;
+		panel-timing {
+		// 1920x1080 @60Hz
+			clock-frequency = <148500000>;
+			hactive = <1920>;
+			vactive = <1080>;
+			hsync-len = <44>;
+			hfront-porch = <88>;
+			hback-porch = <148>;
+			vsync-len = <5>;
+			vfront-porch = <4>;
+			vback-porch = <36>;
+		};
+		port {
+			panel0_lvds0: endpoint@0 {
+				remote-endpoint = <&vdu_lvds0_pads>;
+			};
+			panel0_lvds1: endpoint@1 {
+				remote-endpoint = <&vdu_lvds1_pads>;
+			};
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+	snps,reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
+};
+
+&gmac1 {
+	status = "okay";
+	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+};
+
+&vdu0 {
+	status = "okay";
+	num-lanes = <2>;
+	port {
+		vdu_lvds0_pads: endpoint@0 {
+			remote-endpoint = <&panel0_lvds0>;
+		};
+		vdu_lvds1_pads: endpoint@1 {
+			remote-endpoint = <&panel0_lvds1>;
+		};
+	};
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&gpu {
+	system-coherency = <0>;
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&pcie_lcru {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&pcie2 {
+	status = "okay";
+	reset-gpios = <&porta 3 GPIO_ACTIVE_LOW>;
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&pvt0 {
+	status = "okay";
+};
+
+&pvt1 {
+	status = "okay";
+};
+
+&pvt2 {
+	status = "okay";
+};
+
+&pvt3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	bmc@8 {
+		compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
+		reg = <0x08>;
+	};
+
+	gpio@50 {
+		compatible = "nxp,pca9670";
+		#gpio-cells = <2>;
+		gpio-controller;
+		reg = <0x50>;
+	};
+
+	rtc@51 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x51>;
+	};
+
+	hwmon@52 {
+		compatible = "tp,bm_mitx_hwmon";
+		reg = <0x52>;
+	};
+
+	eeprom@53 {
+		compatible = "atmel,24c32";
+		pagesize = <32>;
+		reg = <0x53>;
+	};
+
+	ps2port@54 {
+		compatible = "tp,tp_serio";
+		reg = <0x54>;
+		interrupt-parent = <&porta>;
+		interrupts = <14 8>;
+	};
+};
+
+&i2c1 {
+	status = "disabled";
+
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+
+	cs-gpios = <&porta 15 GPIO_ACTIVE_LOW>, <0>;
+	status = "okay";
+	flash0: flash@0 {
+		compatible = "micron,n25q256a", "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		status = "okay";
+
+		/* Flash chip0 partitions */
+		mtd0@00000000 {
+			label = "bl1";
+			reg = <0x00000000 0x00040000>;
+			read-only;
+		};
+
+		mtd1@00040000 {
+			label = "fip";
+			reg = <0x00040000 0x007c0000>;
+		};
+
+		mtd2@00800000 {
+			label = "rescue";
+			reg = <0x00800000 0x01800000>;
+		};
+	};
+};
+
+&porta {
+	pcieclk {
+		line_name = "pcie-x8-clock";
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_LOW>;
+		output-high;
+	};
+};
+
+&hda {
+	status = "okay";
+};

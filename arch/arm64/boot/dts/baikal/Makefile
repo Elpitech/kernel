@@ -7,6 +7,7 @@ dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx-d.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx-d-lvds.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-e107.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101.dtb
 
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
