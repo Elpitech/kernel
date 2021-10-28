@@ -1,0 +1,27 @@
+image: "xxor/bookworm-builder:1.0"
+
+stages:
+  - build
+
+variables:
+  GIT_DEPTH: 200
+
+.build_kernel_template: &build_kernel_dfn
+  stage: build
+  script:
+    - rm -f ../linux-*
+    - ARCH=arm64 make ${DEFCONFIG}
+    - ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- make bindeb-pkg -j $(nproc)
+    - tar cf linux-${BOARD}.tar --exclude='*-dbg_*' ../linux-*arm64.deb
+    - rm -f ../linux-*
+  artifacts:
+    name: ${BOARD}
+    paths:
+      - ./linux-${BOARD}.tar
+    expire_in: 1 month
+
+tf307-mb-s-d:
+  variables:
+    DEFCONFIG: mitx_defconfig
+    BOARD: "tf307-mb-s-d"
+  <<: *build_kernel_dfn
