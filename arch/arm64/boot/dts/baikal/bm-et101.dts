@@ -67,7 +67,7 @@
 	snps,reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
 };
 
-gmac1 {
+&gmac1 {
 	status = "okay";
 	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
 };
