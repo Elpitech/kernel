@@ -25,3 +25,9 @@ tf307-mb-s-d:
     DEFCONFIG: mitx_defconfig
     BOARD: "tf307-mb-s-d"
   <<: *build_kernel_dfn
+
+et101-mb-11:
+  variables:
+    DEFCONFIG: et101_defconfig
+    BOARD: "et101-mb-11"
+  <<: *build_kernel_dfn
