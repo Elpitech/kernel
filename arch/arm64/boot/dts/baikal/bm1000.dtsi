@@ -31,7 +31,7 @@
 		ethernet3       = &xgmac0;
 		ethernet4       = &xgmac1;
 		gic		= &gic;
-		gpio		= &gpio;
+		gpio0		= &gpio;
 		hda		= &hda;
 		i2c0		= &i2c0;
 		i2c1		= &i2c1;
@@ -43,7 +43,7 @@
 		pvt1		= &pvt1;
 		pvt2		= &pvt2;
 		pvt3		= &pvt3;
-		pvt_mali	= &pvt_mali;
+		pvt-mali	= &pvt_mali;
 		sata0		= &sata0;
 		sata1		= &sata1;
 		serial0		= &uart0;
@@ -59,7 +59,7 @@
 		usb2		= &usb2;
 		usb3		= &usb3;
 		vdec		= &vdec;
-		vdu_lvds	= &vdu0;
+		vdu-lvds	= &vdu0;
 	};
 
 	psci {
@@ -285,8 +285,6 @@
 				     <GIC_SPI 132 IRQ_TYPE_LEVEL_HIGH>, /* ddr sbr done */
 				     <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err fault */
 				     <GIC_SPI 134 IRQ_TYPE_LEVEL_HIGH>; /* ddr ecc uncorrected err fault */
-			clocks = <&soc_smc50mhz>;
-			clock-names = "apb_pclk";
 			status = "disabled";
 		};
 
@@ -300,8 +298,6 @@
 				     <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>, /* ddr sbr done */
 				     <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>, /* ddr ecc corrected err fault */
 				     <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>; /* ddr ecc uncorrected err fault */
-			clocks = <&soc_smc50mhz>;
-			clock-names = "apb_pclk";
 			status = "disabled";
 		};
 
@@ -571,7 +567,7 @@
 			interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_HIGH>;
 			clock-frequency  = <50000000>;
 			clocks = <&timer_clk>;
-			clock-names = "soc_timerclk";
+			clock-names = "timer";
 			status = "disabled";
 		};
 
@@ -582,7 +578,7 @@
 			interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_HIGH>;
 			clock-frequency  = <50000000>;
 			clocks = <&timer_clk>;
-			clock-names = "soc_timerclk";
+			clock-names = "timer";
 			status = "disabled";
 		};
 
@@ -593,7 +589,7 @@
 			interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_HIGH>;
 			clock-frequency  = <50000000>;
 			clocks = <&timer_clk>;
-			clock-names = "soc_timerclk";
+			clock-names = "timer";
 			status = "disabled";
 		};
 
@@ -604,7 +600,7 @@
 			interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH>;
 			clock-frequency  = <50000000>;
 			clocks = <&timer_clk>;
-			clock-names = "soc_timerclk";
+			clock-names = "timer";
 			status = "disabled";
 		};
 
@@ -644,8 +640,6 @@
 			chan_priority = <1>;
 			block_size = <0xfff>;
 			data_width = <3 3 0 0>;
-			clocks = <&soc_tmp_clk>;
-			clock-names = "tmpclk";
 			status = "disabled";
 		};
 
@@ -744,7 +738,7 @@
 			interrupts = <GIC_SPI 233 IRQ_TYPE_LEVEL_HIGH>;
 			ports-implemented = <1>;
 			dma-coherent;
-			clocks = <&soc_faxiclk>;
+			clocks = <&sata_refclk>;
 			clock-names = "sataclk";
 			status = "disabled";
 		};
@@ -757,7 +751,7 @@
 			interrupts = <GIC_SPI 234 IRQ_TYPE_LEVEL_HIGH>;
 			ports-implemented = <1>;
 			dma-coherent;
-			clocks = <&soc_faxiclk>;
+			clocks = <&sata_refclk>;
 			clock-names = "sataclk";
 			status = "disabled";
 		};
@@ -779,8 +773,6 @@
 				     <GIC_SPI 229 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 230 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 231 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&soc_faxiclk>;
-			clock-names = "apb_pclk";
 			status = "disabled";
 		};
 
@@ -816,8 +808,8 @@
 			interrupts = <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			max-speed = <1000>;
-			clocks = <&soc_ethclk>, <&cmu0_xgbe 10>;
-			clock-names = "stmmaceth", "tx2_clk";
+			clocks = <&soc_ethclk>, <&cmu0_xgbe 10>, <&cmu0_xgbe 0>;
+			clock-names = "ptp_ref", "tx2_clk", "stmmaceth";
 			mac-address = [ 00 00 00 00 00 00 ];
 			local-mac-address = [ 00 00 00 00 00 00 ];
 			phy-mode = "rgmii-id";
@@ -852,8 +844,8 @@
 			interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			max-speed = <1000>;
-			clocks = <&soc_ethclk>, <&cmu0_xgbe 13>;
-			clock-names = "stmmaceth", "tx2_clk";
+			clocks = <&soc_ethclk>, <&cmu0_xgbe 10>, <&cmu0_xgbe 0>;
+			clock-names = "ptp_ref", "tx2_clk", "stmmaceth";
 			mac-address = [ 00 00 00 00 00 00 ];
 			local-mac-address = [ 00 00 00 00 00 00 ];
 			phy-mode = "rgmii-id";

@@ -6,7 +6,7 @@
 / {
 
 	clocks {
-		compatible = "simple-bus";
+		compatible = "simple-mfd";
 
 		/* external oscillator */
 		osc25: oscillator25 {
@@ -165,20 +165,12 @@
 		   driver requires a clock to exist but does not need
 		   to change frequency. */
 
-		/* APB clock 200MHz */
-		apb_clk: apb_clk {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <200000000>;
-			clock-output-names = "apb_pclk";
-		};
-
 		/* UART clock 7.35MHz */
 		uart_clk: uart_clk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency = <7273800>;
-			clock-output-names = "soc_uartclk";
+			clock-frequency = <7361963>;
+			clock-output-names = "uartclk";
 		};
 
 		/* I2C clock 100MHz */
@@ -186,7 +178,7 @@
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <100000000>;
-			clock-output-names = "soc_i2cclk";
+			clock-output-names = "i2c_clk";
 		};
 
 		/* SMBus clock 50MHz */
@@ -194,7 +186,7 @@
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <50000000>;
-			clock-output-names = "soc_smbusclk";
+			clock-output-names = "smbus_clk";
 		};
 
 		/* Timer 1-4 clock 50MHz */
@@ -202,7 +194,7 @@
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <50000000>;
-			clock-output-names = "soc_timerclk";
+			clock-output-names = "timerclk";
 		};
 
 		/* GPIO clock 8MHz */
@@ -210,22 +202,14 @@
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <8000000>;
-			clock-output-names = "soc_gpioclk";
-		};
-
-		/* SPI clock 50MHz */
-		spi_clk: spi_clk {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <50000000>;
-			clock-output-names = "soc_spiclk";
+			clock-output-names = "gpioclk";
 		};
 
 		soc_ethclk: ethclk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency = <50000000>;
-			clock-output-names = "eth_clk";
+			clock-frequency = <125000000>;
+			clock-output-names = "eth_ptp_clk";
 		};
 
 		soc_xgbeclk: xgbeclk {
@@ -235,25 +219,11 @@
 			clock-output-names = "xgbe_clk";
 		};
 
-		soc_smc50mhz: clk50mhz {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <50000000>;
-			clock-output-names = "smc_clk";
-		};
-
-		soc_faxiclk: refclk400mhz {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <400000000>;
-			clock-output-names = "faxi_clk";
-		};
-
-		soc_tmp_clk: refclkXXXmhz {
+		sata_refclk: sata_refclk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
 			clock-frequency = <100000000>;
-			clock-output-names = "tmpclk";
+			clock-output-names = "sata_clk";
 		};
 
 		usb_clk: usb_clk {

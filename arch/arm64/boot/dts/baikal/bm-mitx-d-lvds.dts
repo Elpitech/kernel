@@ -36,10 +36,14 @@
 			vback-porch = <36>;
 		};
 		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			panel0_lvds0: endpoint@0 {
+				reg = <0>;
 				remote-endpoint = <&vdu_lvds0_pads>;
 			};
 			panel0_lvds1: endpoint@1 {
+				reg = <1>;
 				remote-endpoint = <&vdu_lvds1_pads>;
 			};
 		};
@@ -108,10 +112,14 @@
 	status = "okay";
 	num-lanes = <2>;
 	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
 		vdu_lvds0_pads: endpoint@0 {
+			reg = <0>;
 			remote-endpoint = <&panel0_lvds0>;
 		};
 		vdu_lvds1_pads: endpoint@1 {
+			reg = <1>;
 			remote-endpoint = <&panel0_lvds1>;
 		};
 	};
@@ -294,18 +302,18 @@
 		status = "okay";
 
 		/* Flash chip0 partitions */
-		mtd0@00000000 {
+		mtd0@0 {
 			label = "bl1";
 			reg = <0x00000000 0x00040000>;
 			read-only;
 		};
 
-		mtd1@00040000 {
+		mtd1@40000 {
 			label = "fip";
 			reg = <0x00040000 0x007c0000>;
 		};
 
-		mtd2@00800000 {
+		mtd2@800000 {
 			label = "rescue";
 			reg = <0x00800000 0x01800000>;
 		};

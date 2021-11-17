@@ -80,7 +80,7 @@
 		#size-cells = <0>;
 		mdc-pin = <&porta 30 GPIO_ACTIVE_HIGH>;
 		mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
-		clocks = <&gpio_clk 0>;
+		clocks = <&gpio_clk>;
 		clock-names = "gpioclk";
 
 		mv_ch0: ethernet-phy@0C {
