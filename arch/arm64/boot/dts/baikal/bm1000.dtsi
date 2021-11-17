@@ -312,7 +312,7 @@
 		pcie0: pcie@2200000 { /* PCIe x4 #0 */
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
 			reg = <0x0 0x02200000 0x0 0x1000>,   /* RC config space */
-			      <0x0 0x40100000 0x0 0x100000>; /* PCI config space */
+			      <0x0 0x40100000 0x0 0xfe00000>; /* PCI config space */
 			reg-names = "dbi", "config";
 			interrupts = <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>, /* AER */
 				     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
@@ -322,7 +322,7 @@
 			#size-cells = <2>;
 			device_type = "pci";
 			dma-coherent;
-			ranges = <0x81000000 0x0 0x00000000 0x0 0x40200000 0x0 0x100000>, /* I/O */
+			ranges = <0x81000000 0x0 0x00000000 0x0 0x4ff00000 0x0 0x100000>, /* I/O */
 				 <0x82000000 0x0 0x40000000 0x4 0x00000000 0x0 0x40000000>; /* 32b non-prefetchable memory */
 			msi-parent = <&its 0x0>;
 			msi-map = <0x0 &its 0x0 0x10000>;
@@ -335,7 +335,7 @@
 		pcie1: pcie@2210000 { /* PCIe x4 #1 */
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
 			reg = <0x0 0x02210000 0x0 0x1000>,   /* RC config space */
-			      <0x0 0x50100000 0x0 0x100000>; /* PCI config space */
+			      <0x0 0x50100000 0x0 0xff00000>; /* PCI config space */
 			reg-names = "dbi", "config";
 			interrupts = <GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>, /* AER */
 				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
@@ -358,7 +358,7 @@
 		pcie2: pcie@2220000 { /* PCIe x8 */
 			compatible = "baikal,pcie-m", "snps,dw-pcie";
 			reg = <0x0 0x02220000 0x0 0x1000>,   /* RC config space */
-			      <0x0 0x60000000 0x0 0x100000>; /* PCI config space */
+			      <0x0 0x60100000 0x0 0xff00000>; /* PCI config space */
 			reg-names = "dbi", "config";
 			interrupts = <GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>, /* AER */
 				     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>; /* MSI */
@@ -368,7 +368,7 @@
 			#size-cells = <2>;
 			device_type = "pci";
 			dma-coherent;
-			ranges = <0x81000000 0x0 0x00200000 0x0 0x60100000 0x0 0x100000>, /* I/O */
+			ranges = <0x81000000 0x0 0x00200000 0x0 0x60000000 0x0 0x100000>, /* I/O */
 				 <0x82000000 0x0 0x80000000 0x6 0x00000000 0x0 0x80000000>; /* 32b non-prefetchable memory */
 			msi-parent = <&its 2>;
 			msi-map = <0x0 &its 0x0 0x10000>;
