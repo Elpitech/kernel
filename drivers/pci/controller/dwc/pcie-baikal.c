@@ -133,6 +133,9 @@ static int baikal_pcie_link_up(struct dw_pcie *pci)
 	if (reg == (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP |
 		    BAIKAL_PCIE_LTSSM_STATE_L0))
 		return 1; /* Link is up */
+	if (reg == (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP |
+		    BAIKAL_PCIE_LTSSM_STATE_L0S))
+		return 1; /* Link is also up */
 
 	return 0;
 }
