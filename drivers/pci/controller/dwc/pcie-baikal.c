@@ -196,9 +196,8 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 
 	dw_pcie_dbi_ro_wr_dis(pci);
 
-	baikal_pcie_establish_link(pci);
-
 	dw_pcie_setup_rc(pp);
+	baikal_pcie_establish_link(pci); // This call waits for training completion
 
 	dw_pcie_writel_dbi(pci, PCI_ROOT_ERR_CMD, 7); // enable AER
 	reg = dw_pcie_readl_dbi(pci, PCI_DEV_CTRL_STAT);
