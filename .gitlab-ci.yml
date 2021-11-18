@@ -15,7 +15,7 @@ variables:
     - tar cf linux-${BOARD}.tar --exclude='*-dbg_*' ../linux-*arm64.deb
     - rm -f ../linux-*
   artifacts:
-    name: ${BOARD}
+    name: "linux-${BOARD}"
     paths:
       - ./linux-${BOARD}.tar
     expire_in: 1 month
