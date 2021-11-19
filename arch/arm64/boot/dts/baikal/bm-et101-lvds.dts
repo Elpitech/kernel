@@ -69,11 +69,23 @@
 &gmac0 {
 	status = "okay";
 	snps,reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gmac0_phy {
+	/delete-property/ compatible;
 };
 
 &gmac1 {
 	status = "okay";
 	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gmac1_phy {
+	/delete-property/ compatible;
 };
 
 &vdu0 {
