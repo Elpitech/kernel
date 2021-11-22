@@ -196,35 +196,49 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX1,
 			PCIE_ATU_TYPE_IO, pp->io_base,
 			pp->io_bus_addr, pp->io_size);
-	dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX2,
-			PCIE_ATU_TYPE_CFG0, pp->cfg0_base,
-			PCIE_ATU_BUS(1), PCIE_ATU_MIN_SIZE);
 
 	/* Check, if we can set up ECAM */
 	cfg_base = pp->cfg0_base;
 	cfg_size = pp->cfg0_size << 1;
 	cfg_end = cfg_base + cfg_size;
-	cfg_base = (cfg_base & ~PCIE_ECAM_MASK) + (0x2 << PCIE_ECAM_BUS_SHIFT);
-	if (cfg_base < pp->cfg0_base + PCIE_ATU_MIN_SIZE)
+	cfg_base = (cfg_base & ~PCIE_ECAM_MASK) + (0x1 << PCIE_ECAM_BUS_SHIFT);
+	if (cfg_base < pp->cfg0_base)
 		cfg_base += PCIE_ECAM_SIZE;
 	if (cfg_base + (4 << PCIE_ECAM_BUS_SHIFT) > cfg_end) {
 		dev_info(pci->dev, "Not enough space for ECAM\n");
 		baikal_pcie->max_bus = 255;
+		dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX2,
+			PCIE_ATU_TYPE_CFG0, pp->cfg0_base,
+			PCIE_ATU_BUS(1), PCIE_ATU_MIN_SIZE);
 	} else {
-		if (pp->va_cfg0_base)
-			iounmap(pp->va_cfg0_base);
-		pp->va_cfg0_base = ioremap_nocache(pp->cfg0_base, PCIE_ATU_MIN_SIZE);
-		if (pp->va_cfg1_base)
-			iounmap(pp->va_cfg1_base);
-		if (cfg_end >= cfg_base + 0x0fe00000)
-			cfg_size = 0x0fe00000;
+		if (cfg_end >= cfg_base + 0x0ff00000)
+			cfg_size = 0x0ff00000;
 		else
 			cfg_size = (cfg_end - cfg_base) & PCIE_ECAM_BUS_MASK;
-		pp->va_cfg1_base = ioremap_nocache(cfg_base, cfg_size);
+		if (pp->va_cfg0_base)
+			iounmap(pp->va_cfg0_base);
+		pp->va_cfg0_base = ioremap_nocache(cfg_base, cfg_size);
+		if (pp->va_cfg1_base)
+			iounmap(pp->va_cfg1_base);
+		/* set up region 2 for bus 1 */
+		dw_pcie_writel_dbi(pci, PCIE_ATU_VIEWPORT,
+				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX2);
+		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_BASE,
+				lower_32_bits(cfg_base));
+		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_BASE,
+				upper_32_bits(cfg_base));
+		dw_pcie_writel_dbi(pci, PCIE_ATU_LIMIT,
+				lower_32_bits(cfg_base) + PCIE_ATU_MIN_SIZE - 1);
+		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_TARGET, 0);
+		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_TARGET, 0);
+		dw_pcie_writel_dbi(pci, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG0);
+		dw_pcie_writel_dbi(pci, PCIE_ATU_CR2,
+				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
+		/* set up region 3 for higher busses */
 		dw_pcie_writel_dbi(pci, PCIE_ATU_VIEWPORT,
 				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX3);
 		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_BASE,
-				lower_32_bits(cfg_base));
+				lower_32_bits(cfg_base + (1 << PCIE_ECAM_BUS_SHIFT)));
 		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_BASE,
 				upper_32_bits(cfg_base));
 		dw_pcie_writel_dbi(pci, PCIE_ATU_LIMIT,
@@ -307,25 +321,21 @@ static int baikal_pcie_access_other_conf(struct pcie_port *pp, struct pci_bus *b
 		return PCIBIOS_DEVICE_NOT_FOUND;
 	}
 	
-	if (bus->number > 1) {
-		if (rc->ecam) {
-			va_cfg_base = pp->va_cfg1_base +
-				((bus->number - 2) << PCIE_ECAM_BUS_SHIFT) +
-				(devfn << PCIE_ECAM_DEVFN_SHIFT);
-		} else {
-			busdev = PCIE_ATU_BUS(bus->number) |
-				 PCIE_ATU_DEV(PCI_SLOT(devfn)) |
-				 PCIE_ATU_FUNC(PCI_FUNC(devfn));
-			if (busdev != rc->cfg_busdev) {
-				dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX3,
-							  PCIE_ATU_TYPE_CFG1, pp->cfg1_base,
-							  busdev, PCIE_ATU_MIN_SIZE);
-				rc->cfg_busdev = busdev;
-			}
-			va_cfg_base = pp->va_cfg1_base;
-		}
+	if (rc->ecam) {
+		va_cfg_base = pp->va_cfg0_base +
+			((bus->number - 1) << PCIE_ECAM_BUS_SHIFT) +
+			(devfn << PCIE_ECAM_DEVFN_SHIFT);
 	} else {
-		va_cfg_base = pp->va_cfg0_base;
+		busdev = PCIE_ATU_BUS(bus->number) |
+			 PCIE_ATU_DEV(PCI_SLOT(devfn)) |
+			 PCIE_ATU_FUNC(PCI_FUNC(devfn));
+		if (busdev != rc->cfg_busdev) {
+			dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX3,
+						  PCIE_ATU_TYPE_CFG1, pp->cfg1_base,
+						  busdev, PCIE_ATU_MIN_SIZE);
+			rc->cfg_busdev = busdev;
+		}
+		va_cfg_base = pp->va_cfg1_base;
 	}
 
 	if (write)
