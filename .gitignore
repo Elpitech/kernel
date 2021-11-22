@@ -22,7 +22,7 @@
 *.elf
 *.gcno
 *.gz
-*.gitlab-ci.yml
+.gitlab-ci.yml
 *.i
 *.ko
 *.lex.c
