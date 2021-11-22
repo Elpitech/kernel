@@ -11,6 +11,8 @@
 #include <linux/bitops.h>
 #include <linux/phy.h>
 #include <linux/module.h>
+#include <linux/of.h>
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 #define RTL821x_PHYSR				0x11
 #define RTL821x_PHYSR_DUPLEX			BIT(13)
@@ -35,6 +37,7 @@
 
 #define RTL8201F_ISR				0x1e
 #define RTL8201F_IER				0x13
+#define RTL8211F_LCR_MASK			0xef7b
 
 #define RTL8366RB_POWER_SAVE			0x15
 #define RTL8366RB_POWER_SAVE_ON			BIT(12)
@@ -46,6 +49,8 @@
 #define RTL_LPADV_10000FULL			BIT(11)
 #define RTL_LPADV_5000FULL			BIT(6)
 #define RTL_LPADV_2500FULL			BIT(5)
+
+#define RTLGEN_SPEED_MASK			0x0630
 
 #define RTL_GENERIC_PHYID			0x001cc800
 
@@ -93,24 +98,45 @@ static int rtl8211f_ack_interrupt(struct phy_device *phydev)
 static int rtl8201_config_intr(struct phy_device *phydev)
 {
 	u16 val;
+	int err;
 
-	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED) {
+		err = rtl8201_ack_interrupt(phydev);
+		if (err)
+			return err;
+
 		val = BIT(13) | BIT(12) | BIT(11);
-	else
+		err = phy_write_paged(phydev, 0x7, RTL8201F_IER, val);
+	} else {
 		val = 0;
+		err = phy_write_paged(phydev, 0x7, RTL8201F_IER, val);
+		if (err)
+			return err;
 
-	return phy_write_paged(phydev, 0x7, RTL8201F_IER, val);
+		err = rtl8201_ack_interrupt(phydev);
+	}
+
+	return err;
 }
 
 static int rtl8211b_config_intr(struct phy_device *phydev)
 {
 	int err;
 
-	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED) {
+		err = rtl821x_ack_interrupt(phydev);
+		if (err)
+			return err;
+
 		err = phy_write(phydev, RTL821x_INER,
 				RTL8211B_INER_INIT);
-	else
+	} else {
 		err = phy_write(phydev, RTL821x_INER, 0);
+		if (err)
+			return err;
+
+		err = rtl821x_ack_interrupt(phydev);
+	}
 
 	return err;
 }
@@ -119,11 +145,20 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
 {
 	int err;
 
-	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED) {
+		err = rtl821x_ack_interrupt(phydev);
+		if (err)
+			return err;
+
 		err = phy_write(phydev, RTL821x_INER,
 				RTL8211E_INER_LINK_STATUS);
-	else
+	} else {
 		err = phy_write(phydev, RTL821x_INER, 0);
+		if (err)
+			return err;
+
+		err = rtl821x_ack_interrupt(phydev);
+	}
 
 	return err;
 }
@@ -131,13 +166,25 @@ static int rtl8211e_config_intr(struct phy_device *phydev)
 static int rtl8211f_config_intr(struct phy_device *phydev)
 {
 	u16 val;
+	int err;
 
-	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED) {
+		err = rtl8211f_ack_interrupt(phydev);
+		if (err)
+			return err;
+
 		val = RTL8211F_INER_LINK_STATUS;
-	else
+		err = phy_write_paged(phydev, 0xa42, RTL821x_INER, val);
+	} else {
 		val = 0;
+		err = phy_write_paged(phydev, 0xa42, RTL821x_INER, val);
+		if (err)
+			return err;
 
-	return phy_write_paged(phydev, 0xa42, RTL821x_INER, val);
+		err = rtl8211f_ack_interrupt(phydev);
+	}
+
+	return err;
 }
 
 static int rtl8211_config_aneg(struct phy_device *phydev)
@@ -172,8 +219,49 @@ static int rtl8211c_config_init(struct phy_device *phydev)
 static int rtl8211f_config_init(struct phy_device *phydev)
 {
 	struct device *dev = &phydev->mdio.dev;
+
+	const struct device_node *of_node = dev->of_node;
 	u16 val;
 	int ret;
+
+	/* Default LED configuration values from RTL8211F datasheet */
+	u32 led_mode = RTL8211F_LED_MODE_A;
+	u32 led0_ctrl = RTL8211F_LINK10_ACT;
+	u32 led1_ctrl = RTL8211F_LINK100_ACT;
+	u32 led2_ctrl = RTL8211F_LINK1000_ACT;
+	static const uint8_t lcr_values[] = {
+		0x1b, 0x0b, 0x13, 0x03, 0x19, 0x09, 0x11,
+		0x01, 0x1a, 0x0a, 0x12, 0x02, 0x18, 0x08
+	};
+
+	of_property_read_u32(of_node, "realtek,led-mode", &led_mode);
+	of_property_read_u32(of_node, "realtek,led0-control", &led0_ctrl);
+	of_property_read_u32(of_node, "realtek,led1-control", &led1_ctrl);
+	of_property_read_u32(of_node, "realtek,led2-control", &led2_ctrl);
+
+	if (led_mode == RTL8211F_LED_MODE_B)
+		val |= (1<<15);
+
+	if (led0_ctrl <= RTL8211F_LINK1000)
+		val |= lcr_values[led0_ctrl];
+
+	if (led1_ctrl <= RTL8211F_LINK1000)
+		val |= (lcr_values[led1_ctrl]<<5);
+
+	if (led2_ctrl <= RTL8211F_LINK1000)
+		val |= (lcr_values[led2_ctrl]<<10);
+
+	ret = phy_modify_paged_changed(phydev, 0xd04, 0x10,
+	                               RTL8211F_LCR_MASK, val);
+	if (ret < 0) {
+		dev_err(dev, "Failed to update the LED control register\n");
+		return ret;
+	} else if (ret) {
+		dev_dbg(dev, "Updating LED control register to %x\n", val);
+	} else {
+		dev_dbg(dev, "LED control was already set to %x by pin-strappings\n",
+		        val);
+	}
 
 	/* enable TX-delay for rgmii-{id,txid}, and disable it for rgmii and
 	 * rgmii-rxid. The RX-delay can be enabled by the external RXDLY pin.
@@ -281,6 +369,55 @@ static int rtl8366rb_config_init(struct phy_device *phydev)
 	}
 
 	return ret;
+}
+
+/* get actual speed to cover the downshift case */
+static int rtlgen_get_speed(struct phy_device *phydev)
+{
+	int val;
+
+	if (!phydev->link)
+		return 0;
+
+	val = phy_read_paged(phydev, 0xa43, 0x12);
+	if (val < 0)
+		return val;
+
+	switch (val & RTLGEN_SPEED_MASK) {
+	case 0x0000:
+		phydev->speed = SPEED_10;
+		break;
+	case 0x0010:
+		phydev->speed = SPEED_100;
+		break;
+	case 0x0020:
+		phydev->speed = SPEED_1000;
+		break;
+	case 0x0200:
+		phydev->speed = SPEED_10000;
+		break;
+	case 0x0210:
+		phydev->speed = SPEED_2500;
+		break;
+	case 0x0220:
+		phydev->speed = SPEED_5000;
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int rtlgen_read_status(struct phy_device *phydev)
+{
+	int ret;
+
+	ret = genphy_read_status(phydev);
+	if (ret < 0)
+		return ret;
+
+	return rtlgen_get_speed(phydev);
 }
 
 static int rtlgen_read_mmd(struct phy_device *phydev, int devnum, u16 regnum)
@@ -403,6 +540,8 @@ static int rtl8125_config_aneg(struct phy_device *phydev)
 
 static int rtl8125_read_status(struct phy_device *phydev)
 {
+	int ret;
+
 	if (phydev->autoneg == AUTONEG_ENABLE) {
 		int lpadv = phy_read_paged(phydev, 0xa5d, 0x13);
 
@@ -417,7 +556,11 @@ static int rtl8125_read_status(struct phy_device *phydev)
 			phydev->lp_advertising, lpadv & RTL_LPADV_2500FULL);
 	}
 
-	return genphy_read_status(phydev);
+	ret = genphy_read_status(phydev);
+	if (ret < 0)
+		return ret;
+
+	return rtlgen_get_speed(phydev);
 }
 
 static bool rtlgen_supports_2_5gbps(struct phy_device *phydev)
@@ -450,7 +593,6 @@ static struct phy_driver realtek_drvs[] = {
 	}, {
 		PHY_ID_MATCH_EXACT(0x001cc816),
 		.name		= "RTL8201F Fast Ethernet",
-		.ack_interrupt	= &rtl8201_ack_interrupt,
 		.config_intr	= &rtl8201_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
@@ -476,7 +618,6 @@ static struct phy_driver realtek_drvs[] = {
 	}, {
 		PHY_ID_MATCH_EXACT(0x001cc912),
 		.name		= "RTL8211B Gigabit Ethernet",
-		.ack_interrupt	= &rtl821x_ack_interrupt,
 		.config_intr	= &rtl8211b_config_intr,
 		.read_mmd	= &genphy_read_mmd_unsupported,
 		.write_mmd	= &genphy_write_mmd_unsupported,
@@ -495,7 +636,6 @@ static struct phy_driver realtek_drvs[] = {
 	}, {
 		PHY_ID_MATCH_EXACT(0x001cc914),
 		.name		= "RTL8211DN Gigabit Ethernet",
-		.ack_interrupt	= rtl821x_ack_interrupt,
 		.config_intr	= rtl8211e_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
@@ -505,7 +645,6 @@ static struct phy_driver realtek_drvs[] = {
 		PHY_ID_MATCH_EXACT(0x001cc915),
 		.name		= "RTL8211E Gigabit Ethernet",
 		.config_init	= &rtl8211e_config_init,
-		.ack_interrupt	= &rtl821x_ack_interrupt,
 		.config_intr	= &rtl8211e_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
@@ -515,7 +654,7 @@ static struct phy_driver realtek_drvs[] = {
 		PHY_ID_MATCH_EXACT(0x001cc916),
 		.name		= "RTL8211F Gigabit Ethernet",
 		.config_init	= &rtl8211f_config_init,
-		.ack_interrupt	= &rtl8211f_ack_interrupt,
+		.read_status	= rtlgen_read_status,
 		.config_intr	= &rtl8211f_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
@@ -524,6 +663,7 @@ static struct phy_driver realtek_drvs[] = {
 	}, {
 		.name		= "Generic FE-GE Realtek PHY",
 		.match_phy_device = rtlgen_match_phy_device,
+		.read_status	= rtlgen_read_status,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
 		.read_page	= rtl821x_read_page,
@@ -551,7 +691,6 @@ static struct phy_driver realtek_drvs[] = {
 		 * irq is requested and ACKed by reading the status register,
 		 * which is done by the irqchip code.
 		 */
-		.ack_interrupt	= genphy_no_ack_interrupt,
 		.config_intr	= genphy_no_config_intr,
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
