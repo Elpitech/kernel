@@ -7,6 +7,7 @@
 /dts-v1/;
 
 #include "bm1000.dtsi"
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 / {
 
@@ -74,7 +75,10 @@
 };
 
 &gmac0_phy {
-	/delete-property/ compatible;
+	compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
+	realtek,led-mode = <RTL8211F_LED_MODE_B>;
+	realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+	realtek,led1-control = <RTL8211F_LINK10_ACT>;
 };
 
 &gmac1 {
@@ -85,7 +89,10 @@
 };
 
 &gmac1_phy {
-	/delete-property/ compatible;
+	compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
+	realtek,led-mode = <RTL8211F_LED_MODE_B>;
+	realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+	realtek,led1-control = <RTL8211F_LINK10_ACT>;
 };
 
 &vdu0 {
