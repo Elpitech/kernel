@@ -171,8 +171,18 @@ static int baikal_pcie_establish_link(struct dw_pcie *pci)
 		reg = dw_pcie_readl_dbi(pci, PCIE_LINK_CONTROL_LINK_STATUS_REG);
 		speed = (reg & PCIE_CAP_LINK_SPEED_MASK) >>
 				PCIE_CAP_LINK_SPEED_SHIFT;
-		if (speed < target_speed)
+		if (speed < target_speed) {
+			if (speed < target_speed - 1) {
+				dev_info(pci->dev,
+					"Retrain resulted in link downgrade...\n");
+				baikal_pcie_link_retrain(pci, target_speed - 1);
+				reg = dw_pcie_readl_dbi(pci,
+					PCIE_LINK_CONTROL_LINK_STATUS_REG);
+				speed = (reg & PCIE_CAP_LINK_SPEED_MASK) >>
+					PCIE_CAP_LINK_SPEED_SHIFT;
+			}
 			break; /* give up */
+		}
 	}
 	dev_info(pci->dev, "Link Status is Gen%d, x%d\n", speed,
 		 (reg & PCIE_STA_LINK_WIDTH_MASK) >>
