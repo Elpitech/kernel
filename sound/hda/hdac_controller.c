@@ -30,7 +30,7 @@ static void azx_clear_corbrp(struct hdac_bus *bus)
 			break;
 		udelay(1);
 	}
-#ifndef CONFIG_SND_HDA_BAIKAL_M
+#if !IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	if (timeout <= 0)
 		dev_err(bus->dev, "CORB reset timeout#2, CORBRP = %d\n",
 			snd_hdac_chip_readw(bus, CORBRP));
@@ -80,7 +80,7 @@ void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 	/* set N=1, get RIRB response interrupt for new entry */
 	snd_hdac_chip_writew(bus, RINTCNT, 1);
 
-#ifdef CONFIG_SND_HDA_BAIKAL_M
+#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	/* response irq not working in Baikal-M HDA controller */ 
 	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN);
 #else
@@ -154,7 +154,7 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 
 	spin_lock_irq(&bus->reg_lock);
 
-#ifdef CONFIG_SND_HDA_BAIKAL_M
+#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	/* force first codec address, because wrong codec init */
 	val |= 0x10000000;
 #endif

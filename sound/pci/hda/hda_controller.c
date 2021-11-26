@@ -1264,7 +1264,7 @@ int azx_probe_codecs(struct azx *chip, unsigned int max_slots)
 	struct hdac_bus *bus = azx_bus(chip);
 	int c, codecs, err;
 
-#ifdef CONFIG_SND_HDA_BAIKAL_M
+#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	int probe_retry;
 #endif
 
@@ -1272,7 +1272,7 @@ int azx_probe_codecs(struct azx *chip, unsigned int max_slots)
 	if (!max_slots)
 		max_slots = AZX_DEFAULT_CODECS;
 
-#ifdef CONFIG_SND_HDA_BAIKAL_M
+#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	/* First try to probe all given codec slots */
 	for (c = 0; c < max_slots; c++) {
 		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
