@@ -277,8 +277,10 @@ static int hda_baikal_first_init(struct azx *chip, struct platform_device *pdev)
 	if (err)
 		return err;
 
+#if 0 /* Don't setup irq handler - leave irq disabled */
 	err = devm_request_irq(chip->card->dev, irq_id, azx_interrupt,
 			     IRQF_SHARED, KBUILD_MODNAME, chip);
+#endif
 	if (err) {
 		dev_err(chip->card->dev,
 			"unable to request IRQ %d, disabling device\n",
@@ -449,7 +451,7 @@ static void hda_baikal_probe_work(struct work_struct *work)
 	struct hda_baikal *hda = container_of(work, struct hda_baikal, probe_work);
 	struct azx *chip = &hda->chip;
 	struct platform_device *pdev = to_platform_device(hda->dev);
-	int err;
+	int err, retry;
 
 	pm_runtime_get_sync(hda->dev);
 	err = hda_baikal_first_init(chip, pdev);
@@ -457,7 +459,17 @@ static void hda_baikal_probe_work(struct work_struct *work)
 		goto out_free;
 
 	/* create codec instances */
-	err = azx_probe_codecs(chip, 1);
+	for (retry = 0; retry < 10; retry++) {
+		mdelay(10);
+		err = azx_probe_codecs(chip, 1);
+		if (err < 0) {
+			azx_stop_chip(chip);
+			azx_init_chip(chip, false);
+		} else {
+			dev_info(&pdev->dev, "Codec probe OK (retry %d)\n", retry);
+			break;
+		}
+	}
 	if (err < 0)
 		goto out_free;
 

@@ -79,15 +79,8 @@ void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 	snd_hdac_chip_writew(bus, RIRBWP, AZX_RIRBWP_RST);
 	/* set N=1, get RIRB response interrupt for new entry */
 	snd_hdac_chip_writew(bus, RINTCNT, 1);
-
-#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
-	/* response irq not working in Baikal-M HDA controller */ 
-	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN);
-#else
 	/* enable rirb dma and response irq */
 	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN);
-#endif
-
 	/* Accept unsolicited responses */
 	snd_hdac_chip_updatel(bus, GCTL, AZX_GCTL_UNSOL, AZX_GCTL_UNSOL);
 	spin_unlock_irq(&bus->reg_lock);
@@ -168,7 +161,6 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 		spin_unlock_irq(&bus->reg_lock);
 		return -EIO;
 	}
-
 	wp++;
 	wp %= AZX_MAX_CORB_ENTRIES;
 
