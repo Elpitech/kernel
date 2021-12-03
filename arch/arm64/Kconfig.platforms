@@ -29,6 +29,23 @@ config ARCH_ALPINE
 	  This enables support for the Annapurna Labs Alpine
 	  Soc family.
 
+config ARCH_BAIKAL
+	bool "Baikal Electronics Baikal-M SoC Family"
+	select GPIOLIB
+	select OF_GPIO
+	select GPIO_SYSFS
+	select GPIO_DWAPB
+	select GPIO_GENERIC
+	select STMMAC_ETH
+	select SPI_DESIGNWARE
+	select SPI_DW_MMIO
+	select DW_APB_TIMER
+	select DW_APB_TIMER_OF
+	select ARM64_VA_BITS_48
+	select PCI
+	help
+	  This enables support for Baikal Electronics Baikal-M SoC Family
+
 config ARCH_BCM2835
 	bool "Broadcom BCM2835 family"
 	select TIMER_OF

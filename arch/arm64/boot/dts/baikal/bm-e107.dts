@@ -1,0 +1,288 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Baikal-M Mini-ITX board device tree (test version)
+ *
+ */
+
+/dts-v1/;
+
+#include "bm1000.dtsi"
+
+/ {
+
+	model = "Edelweiss Baikal-M E107 board";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen { };
+
+	sfp0: sfp0 {
+		compatible = "sff,sfp";
+		i2c-bus = <&sfp_i2c0>;
+		mod-def0-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
+	};
+	sfp1: sfp1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&sfp_i2c1>;
+		mod-def0-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+	};
+	phy_sfp0: xphy0 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		amd,speed-set = <0>;
+		sfp = <&sfp0>;
+	};
+	phy_sfp1: xphy1 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		amd,speed-set = <0>;
+		sfp = <&sfp1>;
+	};
+};
+
+&cmu_cluster0 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster1 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster2 {
+	clock-frequency = <1500000000>;
+};
+
+&cmu_cluster3 {
+	clock-frequency = <1500000000>;
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+&gmac1 {
+	status = "okay";
+};
+
+&xgmac0 {
+	status = "okay";
+	phy-handle = <&phy_sfp0>;
+	phy-mode = "10gbase-kr";
+	dma-coherent;
+};
+
+&xgmac1 {
+	status = "okay";
+	phy-handle = <&phy_sfp1>;
+	phy-mode = "10gbase-kr";
+	dma-coherent;
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&ddr2 {
+	status = "okay";
+};
+
+&gpu {
+	system-coherency = <0>;
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&pcie_lcru {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+	reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
+};
+
+&pcie1 {
+	status = "okay";
+	reset-gpios = <&porta 5 GPIO_ACTIVE_LOW>;
+	num-lanes = <2>;
+};
+
+&pcie2 {
+	status = "okay";
+	reset-gpios = <&porta 2 GPIO_ACTIVE_LOW>;
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&pvt0 {
+	status = "okay";
+};
+
+&pvt1 {
+	status = "okay";
+};
+
+&pvt2 {
+	status = "okay";
+};
+
+&pvt3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+
+	arb@30 {
+		compatible = "nxp,pca9641";
+		reg = <0x30>;
+
+		i2c-arb {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			bmc@8 {
+				compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
+				reg = <0x08>;
+			};
+
+			gpio@50 {
+				compatible = "nxp,pca9670";
+				#gpio-cells = <2>;
+				gpio-controller;
+				reg = <0x50>;
+			};
+
+			rtc@51 {
+				compatible = "nxp,pcf2129", "nxp,pcf2127";
+				reg = <0x51>;
+			};
+
+			hwmon@52 {
+				compatible = "tp,bm_mitx_hwmon";
+				reg = <0x52>;
+			};
+
+			eeprom@53 {
+				compatible = "atmel,24c32";
+				pagesize = <32>;
+				reg = <0x53>;
+			};
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+
+	i2c-mux@70 {
+		compatible = "nxp,pca9545";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x70>;
+
+		i2c@0 { /* M2_I2C */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0>;
+		};
+
+		sfp_i2c0: i2c@1 { /* XGBE0 SFP */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <1>;
+		};
+
+		sfp_i2c1: i2c@2 { /* XGBE1 SFP */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <2>;
+		};
+	};
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+
+	cs-gpios = <0>;
+	status = "okay";
+
+};
+
+&porta {
+	pcieclk {
+		line_name = "pcie-x8-clock";
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_LOW>;
+		output-high;
+	};
+};
+
+&i2s {
+	status = "okay";
+	system-clock-frequency = <12000000>;
+	#sound-dai-cells = <0>;
+};
+
+&gmac0_phy {
+	reg = <2>;
+};
+
+&gmac1_phy {
+	reg = <2>;
+};

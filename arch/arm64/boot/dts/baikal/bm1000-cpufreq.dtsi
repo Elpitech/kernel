@@ -1,0 +1,242 @@
+// SPDX-License-Identifier: GPL-2.0
+
+/ {
+	cpufreq {
+		cluster0_opp: opp_table0 {
+			compatible = "operating-points-v2";
+			opp-shared;
+
+			opp_1500 {
+				opp-hz = /bits/ 64 <1500000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1400 {
+				opp-hz = /bits/ 64 <1400000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1300 {
+				opp-hz = /bits/ 64 <1300000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1200 {
+				opp-hz = /bits/ 64 <1200000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1100 {
+				opp-hz = /bits/ 64 <1100000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1000 {
+				opp-hz = /bits/ 64 <1000000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_900 {
+				opp-hz = /bits/ 64 <900000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_800 {
+				opp-hz = /bits/ 64 <800000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <10000000>;
+			};
+		};
+
+		cluster1_opp: opp_table1 {
+			compatible = "operating-points-v2";
+			opp-shared;
+
+			opp_1500 {
+				opp-hz = /bits/ 64 <1500000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1400 {
+				opp-hz = /bits/ 64 <1400000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1300 {
+				opp-hz = /bits/ 64 <1300000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1200 {
+				opp-hz = /bits/ 64 <1200000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1100 {
+				opp-hz = /bits/ 64 <1100000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1000 {
+				opp-hz = /bits/ 64 <1000000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_900 {
+				opp-hz = /bits/ 64 <900000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_800 {
+				opp-hz = /bits/ 64 <800000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <10000000>;
+			};
+		};
+
+		cluster2_opp: opp_table2 {
+			compatible = "operating-points-v2";
+			opp-shared;
+
+			opp_1500 {
+				opp-hz = /bits/ 64 <1500000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1400 {
+				opp-hz = /bits/ 64 <1400000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1300 {
+				opp-hz = /bits/ 64 <1300000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1200 {
+				opp-hz = /bits/ 64 <1200000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1100 {
+				opp-hz = /bits/ 64 <1100000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1000 {
+				opp-hz = /bits/ 64 <1000000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_900 {
+				opp-hz = /bits/ 64 <900000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_800 {
+				opp-hz = /bits/ 64 <800000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <10000000>;
+			};
+		};
+
+		cluster3_opp: opp_table3 {
+			compatible = "operating-points-v2";
+			opp-shared;
+
+			opp_1500 {
+				opp-hz = /bits/ 64 <1500000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1400 {
+				opp-hz = /bits/ 64 <1400000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1300 {
+				opp-hz = /bits/ 64 <1300000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1200 {
+				opp-hz = /bits/ 64 <1200000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1100 {
+				opp-hz = /bits/ 64 <1100000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_1000 {
+				opp-hz = /bits/ 64 <1000000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_900 {
+				opp-hz = /bits/ 64 <900000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_800 {
+				opp-hz = /bits/ 64 <800000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <10000000>;
+			};
+		};
+
+		gpu_opp_table: opp_table_gpu {
+			compatible = "operating-points-v2", "operating-points-v2-mali";
+
+			opp_400 {
+				opp-hz = /bits/ 64 <400000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_450 {
+				opp-hz = /bits/ 64 <450000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_500 {
+				opp-hz = /bits/ 64 <500000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_550 {
+				opp-hz = /bits/ 64 <550000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_600 {
+				opp-hz = /bits/ 64 <600000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_650 {
+				opp-hz = /bits/ 64 <650000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_700 {
+				opp-hz = /bits/ 64 <700000000>;
+				clock-latency-ns = <10000000>;
+			};
+			opp_750 {
+				opp-hz = /bits/ 64 <750000000>;
+				clock-latency-ns = <10000000>;
+			};
+		};
+	};
+};
