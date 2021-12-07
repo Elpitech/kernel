@@ -1,0 +1,20 @@
+config DRM_BAIKAL_VDU
+	tristate "DRM Support for Baikal-M VDU"
+	depends on DRM
+	depends on ARM || ARM64 || COMPILE_TEST
+	depends on COMMON_CLK
+	select DRM_KMS_HELPER
+	select DRM_KMS_CMA_HELPER
+	select DRM_GEM_CMA_HELPER
+	select DRM_PANEL
+	select DRM_BAIKAL_HDMI
+	select VT_HW_CONSOLE_BINDING if FRAMEBUFFER_CONSOLE
+	help
+	  Choose this option for DRM support for the Baikal-M Video Display Unit (VDU).
+	  If M is selected the module will be called baikal_vdu_drm.
+
+config DRM_BAIKAL_HDMI
+	tristate "Baikal-M HDMI transmitter"
+	select DRM_DW_HDMI
+	help
+	  Choose this if you want to use HDMI on Baikal-M.
