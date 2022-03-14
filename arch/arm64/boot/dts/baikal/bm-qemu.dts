@@ -14,25 +14,27 @@
  */
 
 / {
-	model = "Baikal Electronics Baikal-M virtual platform";
-	compatible = "baikal,baikal-m";
+	model = "Baikal Electronics QEMU-M";
+	compatible = "baikal,qemu-m", "baikal,bm1000";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	chosen {
-		stdout-path = "serial0:115200n8";
-		bootargs = "root=/dev/ram rw rootwait console=ttyS0,115200n8 earlyprintk=uart8250,mmio32,0x20230000,115200";
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
 	};
+
+	chosen { };
 
 	memory@80000000 {
 		device_type = "memory";
-		/* 16GB */
-		reg = <0x00000000 0x80000000 0x0 0x80000000
-		       0x00000008 0x80000000 0x1 0x80000000>;
+		reg = <0x00000000 0x80000000 0x0 0x80000000>; /* 2 GiB */
 	};
 
-	/* XXX: Temporary fix for qemu to work */
-	/* Device is necessary for UEFI to boot on QEMU, need to replace it with something later */
+	/*
+	 * Device is necessary for UEFI to boot on QEMU,
+	 * need to replace it with something later.
+	 */
 	flash@0 {
 		compatible = "cfi-flash";
 		reg = <0x0 0x4000000 0x0 0x4000000>;
@@ -66,10 +68,28 @@
 
 &gmac0 {
 	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
 };
 
 &gmac1 {
 	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
 };
 
 &sata0 {
@@ -80,20 +100,18 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <6>;
 	status = "okay";
 
-	/* SPI flash chip #1 */
-	flash0: m25p80@0 {
-		compatible = "micron,n25q256a", "jedec,spi-nor";
+	flash@0 {
+		compatible = "jedec,spi-nor";
 		reg = <0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-		spi-max-frequency = <50000000>;
+		spi-max-frequency = <12500000>;
 		status = "okay";
 
-		/* Flash chip0 partitions */
 		mtd0@0 {
 			label = "fip";
 			reg = <0x00000000 0x00400000>;
@@ -118,34 +136,6 @@
 		mtd4@1100000 {
 			label = "data0";
 			reg = <0x01100000 0x00f00000>;
-		};
-	};
-
-	/* SPI flash chip #2 */
-	flash1: m25p80@1 {
-		compatible = "micron,n25q256a", "jedec,spi-nor";
-		reg = <1>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-		spi-max-frequency = <50000000>;
-		status = "okay";
-
-		/* Flash chip1 partitions */
-		mtd0@0 {
-			label = "fip_backup";
-			reg = <0x00000000 0x00400000>;
-			read-only;
-		};
-
-		mtd1@400000 {
-			label = "env_backup";
-			reg = <0x00400000 0x00100000>;
-			read-only;
-		};
-
-		mtd2@500000 {
-			label = "data1";
-			reg = <0x00500000 0x01b00000>;
 		};
 	};
 };

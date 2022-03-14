@@ -16,6 +16,11 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
 	chosen { };
 
 	panel {
@@ -49,6 +54,15 @@
 			};
 		};
 	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pwr {
+			label = "PWR Button";
+			linux,code = <116>;
+			gpios = <&porta 10 GPIO_ACTIVE_LOW>;
+		};
+	};
 };
 
 &uart0 {
@@ -71,28 +85,48 @@
 	status = "okay";
 	snps,reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
 	snps,reset-delays-us = <10>, <10000>, <50000>;
+	clk_csr = <0x3>;
 	phy-mode = "rgmii-rxid";
+	phy-handle = <&gmac0_phy>;
 };
 
-&gmac0_phy {
-	compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
-	realtek,led-mode = <RTL8211F_LED_MODE_B>;
-	realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-	realtek,led1-control = <RTL8211F_LINK10_ACT>;
+&mdio0 {
+	gmac0_phy: ethernet-phy@3 {
+		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps  = <0xff>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+	};
 };
 
 &gmac1 {
 	status = "okay";
 	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
 	snps,reset-delays-us = <10>, <10000>, <50000>;
+	clk_csr = <0x3>;
 	phy-mode = "rgmii-rxid";
+	phy-handle = <&gmac1_phy>;
 };
 
-&gmac1_phy {
-	compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
-	realtek,led-mode = <RTL8211F_LED_MODE_B>;
-	realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-	realtek,led1-control = <RTL8211F_LINK10_ACT>;
+&mdio1 {
+	gmac1_phy: ethernet-phy@3 {
+		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps  = <0xff>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+	};
 };
 
 &vdu0 {
@@ -120,12 +154,8 @@
 	status = "okay";
 };
 
-&gpio {
+&gpio32 {
 	status = "okay";
-};
-
-&gpu {
-	system-coherency = <0>;
 };
 
 &usb2 {
@@ -166,19 +196,19 @@
 	status = "okay";
 };
 
-&pvt0 {
+&pvt_ca57_0 {
 	status = "okay";
 };
 
-&pvt1 {
+&pvt_ca57_1 {
 	status = "okay";
 };
 
-&pvt2 {
+&pvt_ca57_2 {
 	status = "okay";
 };
 
-&pvt3 {
+&pvt_ca57_3 {
 	status = "okay";
 };
 
@@ -227,7 +257,6 @@
 
 &i2c1 {
 	status = "disabled";
-
 };
 
 &smbus0 {
@@ -238,7 +267,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 
 	cs-gpios = <&porta 15 GPIO_ACTIVE_LOW>, <0>;
