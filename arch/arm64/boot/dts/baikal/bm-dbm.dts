@@ -11,11 +11,40 @@
 
 / {
 	model = "Baikal Electronics DBM";
-	compatible = "baikal,baikal-m";
+	compatible = "baikal,dbm", "baikal,bm1000", "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	aliases {
+		ethernet0       = &gmac0;
+		ethernet1       = &gmac1;
+		mdio-gpio0      = &mdio_gpio;
+	};
+
 	chosen { };
+
+	buttons-backlight {
+		compatible = "gpio-keys";
+		autorepeat;
+		button-brightness-down {
+			label = "Brightness Down Button";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-up {
+			label = "Brightness Up Button";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-toggle {
+			label = "Brightness Toggle Button";
+			linux,code = <KEY_BRIGHTNESS_TOGGLE>;
+			gpios = <&porta 31 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+	};
 
 	panel {
 		compatible = "panel-lvds";
@@ -44,29 +73,6 @@
 		};
 	};
 
-	buttons-backlight {
-		compatible = "gpio-keys";
-		autorepeat;
-		button-brightness-down {
-			label = "Brightness Down Button";
-			linux,code = <KEY_BRIGHTNESSDOWN>;
-			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
-			debounce-interval = <50>;
-		};
-		button-brightness-up {
-			label = "Brightness Up Button";
-			linux,code = <KEY_BRIGHTNESSUP>;
-			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
-			debounce-interval = <50>;
-		};
-		button-brightness-toggle {
-			label = "Brightness Toggle Button";
-			linux,code = <KEY_BRIGHTNESS_TOGGLE>;
-			gpios = <&porta 31 GPIO_ACTIVE_LOW>;
-			debounce-interval = <50>;
-		};
-	};
-
 	sound {
 		compatible = "baikal,snd_soc_be";
 		baikal,cpu-dai = <&i2s>;
@@ -74,7 +80,7 @@
 	};
 
 	/* Baikal internal MDIO */
-	mdio0: be-mdio {
+	mdio_gpio: be-mdio {
 		compatible = "be,mdio-gpio";
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -83,17 +89,17 @@
 		clocks = <&gpio_clk>;
 		clock-names = "gpioclk";
 
-		mv_ch0: ethernet-phy@0C {
-			compatible = "marvell,88x2222", "ethernet-phy-ieee802.3-c45";
-			reg = <0x0C>;
+		ethphy2: ethernet-phy@c {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <0xc>;
 			phy-mode = "xgmii";
 			mv,line-mode = "KR";
 			mv,host-mode = "KX4";
 		};
 
-		mv_ch2: ethernet-phy@0E {
-			compatible = "marvell,88x2222", "ethernet-phy-ieee802.3-c45";
-			reg = <0x0E>;
+		ethphy3: ethernet-phy@e {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <0xe>;
 			phy-mode = "xgmii";
 			mv,line-mode = "KR";
 			mv,host-mode = "KX4";
@@ -101,16 +107,11 @@
 	};
 };
 
-&ddr2 {
-	status = "okay";
-};
-
-&espi0 {
-	cs-gpios = <&porta 28 1>; /* todo: get real gpio */
+&espi {
+	cs-gpios = <&porta 28 GPIO_ACTIVE_LOW>; /* TODO: get real gpio */
 	status = "okay";
 
-	/* test device #0 */
-	espi_test0 {
+	espi_test0@0 { /* test device #0 */
 		compatible = "rohm,dh2228fv"; /* same as spidev */
 		reg = <0>;
 		spi-max-frequency = <12000000>;
@@ -122,20 +123,22 @@
 	status = "okay";
 	snps,reset-gp-out;
 	snps,reset-active-low;
+	clk_csr = <0x3>;
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
 };
 
 &gmac1 {
 	status = "okay";
 	snps,reset-gp-out;
 	snps,reset-active-low;
+	clk_csr = <0x3>;
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
 };
 
-&gpio {
+&gpio32 {
 	status = "okay";
-};
-
-&gpu {
-	system-coherency = <0>;
 };
 
 &hda {
@@ -175,7 +178,31 @@
 	system-clock-frequency = <12000000>;
 };
 
-&mmc0 {
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&mmc {
 	status = "okay";
 #if 0
 	/* emmc */
@@ -206,19 +233,19 @@
 	status = "okay";
 };
 
-&pvt0 {
+&pvt_ca57_0 {
 	status = "okay";
 };
 
-&pvt1 {
+&pvt_ca57_1 {
 	status = "okay";
 };
 
-&pvt2 {
+&pvt_ca57_2 {
 	status = "okay";
 };
 
-&pvt3 {
+&pvt_ca57_3 {
 	status = "okay";
 };
 
@@ -242,13 +269,13 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 	cs-gpios =
-		<&porta 24 1>, /* ss0 xp8 - DD53 normal flash */
-		<&porta 25 1>, /* ss1 xp9 */
-		<&porta 26 1>, /* ss2 xp10 */
-		<&porta 27 1>; /* ss3 xp11 */
+		<&porta 24 GPIO_ACTIVE_LOW>, /* ss0 xp8 - DD53 normal flash */
+		<&porta 25 GPIO_ACTIVE_LOW>, /* ss1 xp9 */
+		<&porta 26 GPIO_ACTIVE_LOW>, /* ss2 xp10 */
+		<&porta 27 GPIO_ACTIVE_LOW>; /* ss3 xp11 */
 	status = "okay";
 
 	/* SPI flash chip #1 */
@@ -278,47 +305,6 @@
 		};
 	};
 };
-
-#if 0
-/* undefined */
-&spi1 {
-	num-cs = <4>;
-	cs-gpios =
-		<&porta 20 1>, /* ss0 xp15 - DD57 boot flash */
-		<&porta 21 1>, /* ss1 xp16 */
-		<&porta 22 1>, /* ss2 xp17 */
-		<&porta 23 1>; /* ss3 xp18 */
-	status = "okay";
-
-	/* SPI flash chip #2 */
-	flash0: m25p80@0 {
-		compatible = "micron,n25q256a", "jedec,spi-nor";
-		reg = <0>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-		spi-max-frequency = <12500000>;
-		status = "okay";
-
-		/* Flash chip1 partitions */
-		mtd0@0 {
-			label = "fip_backup";
-			reg = <0x00000000 0x00400000>;
-			read-only;
-		};
-
-		mtd1@400000 {
-			label = "env_backup";
-			reg = <0x00400000 0x00100000>;
-			read-only;
-		};
-
-		mtd2@500000 {
-			label = "data1";
-			reg = <0x00500000 0x01b00000>;
-		};
-	};
-};
-#endif
 
 &timer1 {
 	status = "okay";
@@ -389,12 +375,12 @@
 	status = "okay";
 	phy-mode = "xgmii";
 	be,pcs-mode = "KX4";
-	ext-phy-handle = <&mv_ch0>;
+	ext-phy-handle = <&ethphy2>;
 };
 
 &xgmac1 {
 	status = "okay";
 	phy-mode = "xgmii";
 	be,pcs-mode = "KX4";
-	ext-phy-handle = <&mv_ch0>;
+	ext-phy-handle = <&ethphy3>;
 };

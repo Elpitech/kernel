@@ -52,16 +52,8 @@
 	};
 };
 
-&ddr2 {
+&gpio32 {
 	status = "okay";
-};
-
-&gpio {
-	status = "okay";
-};
-
-&gpu {
-	system-coherency = <0>;
 };
 
 &hdmi {
@@ -123,7 +115,7 @@
 	#sound-dai-cells = <0>;
 };
 
-&mmc0 {
+&mmc {
 	status = "okay";
 	disable-wp;
 	bus-width = <4>;
@@ -153,19 +145,19 @@
 	};
 };
 
-&pvt0 {
+&pvt_ca57_0 {
 	status = "okay";
 };
 
-&pvt1 {
+&pvt_ca57_1 {
 	status = "okay";
 };
 
-&pvt2 {
+&pvt_ca57_2 {
 	status = "okay";
 };
 
-&pvt3 {
+&pvt_ca57_3 {
 	status = "okay";
 };
 
@@ -189,7 +181,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 	cs-gpios = <0>;
 	status = "okay";

@@ -15,6 +15,11 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
 	chosen { };
 
 	sfp0: sfp0 {
@@ -73,10 +78,38 @@
 
 &gmac0 {
 	status = "okay";
+	phy-mode = "rgmii-id";
+	phy-handle = <&gmac0_phy>;
+};
+
+&mdio0 {
+	gmac0_phy: ethernet-phy@2 {
+		compatible = "micrel,ksz9031", "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
+		reg = <0x2>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps  = <0xff>;
+	};
 };
 
 &gmac1 {
 	status = "okay";
+	phy-mode = "rgmii-id";
+	phy-handle = <&gmac1_phy>;
+};
+
+&mdio1 {
+	gmac1_phy: ethernet-phy@2 {
+		compatible = "micrel,ksz9031", "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
+		reg = <0x2>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps  = <0xff>;
+	};
 };
 
 &xgmac0 {
@@ -101,16 +134,8 @@
 	status = "okay";
 };
 
-&gpio {
+&gpio32 {
 	status = "okay";
-};
-
-&ddr2 {
-	status = "okay";
-};
-
-&gpu {
-	system-coherency = <0>;
 };
 
 &usb2 {
@@ -157,19 +182,19 @@
 	status = "okay";
 };
 
-&pvt0 {
+&pvt_ca57_0 {
 	status = "okay";
 };
 
-&pvt1 {
+&pvt_ca57_1 {
 	status = "okay";
 };
 
-&pvt2 {
+&pvt_ca57_2 {
 	status = "okay";
 };
 
-&pvt3 {
+&pvt_ca57_3 {
 	status = "okay";
 };
 
@@ -256,7 +281,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 
 	cs-gpios = <0>;
@@ -277,12 +302,4 @@
 	status = "okay";
 	system-clock-frequency = <12000000>;
 	#sound-dai-cells = <0>;
-};
-
-&gmac0_phy {
-	reg = <2>;
-};
-
-&gmac1_phy {
-	reg = <2>;
 };
