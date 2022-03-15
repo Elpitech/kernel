@@ -42,6 +42,7 @@ ifeq ($(CONFIG_I2C_AT91_SLAVE_EXPERIMENTAL),y)
 endif
 obj-$(CONFIG_I2C_AU1550)	+= i2c-au1550.o
 obj-$(CONFIG_I2C_AXXIA)		+= i2c-axxia.o
+obj-$(CONFIG_I2C_BAIKAL_SMBUS)	+= i2c-baikal-smbus.o
 obj-$(CONFIG_I2C_BCM2835)	+= i2c-bcm2835.o
 obj-$(CONFIG_I2C_BCM_IPROC)	+= i2c-bcm-iproc.o
 obj-$(CONFIG_I2C_CADENCE)	+= i2c-cadence.o
@@ -148,6 +149,5 @@ obj-$(CONFIG_I2C_SIBYTE)	+= i2c-sibyte.o
 obj-$(CONFIG_I2C_XGENE_SLIMPRO) += i2c-xgene-slimpro.o
 obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
 obj-$(CONFIG_I2C_FSI)		+= i2c-fsi.o
-obj-$(CONFIG_I2C_BAIKAL_SMBUS)	+= i2c-baikal-smbus.o
 
 ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
