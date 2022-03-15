@@ -1,8 +1,17 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
- *
- * Implementation of primary ALSA driver code base for Baikal-M HDA controller.
- */
+* Implementation of primary ALSA driver code base for Baikal-M HDA controller.
+*
+* /sound/pci/hda/hda_baikal.c
+*
+* Copyright (C) 2021 Baikal Electronics, JSC
+*        Danila Sharikov <Danila.Sharikov@baikalelectronics.com>
+*
+* Based on:
+*	 hda_intel.c, Copyright(c) 2004 Intel Corporation. All rights reserved.
+*        hda_tegra.c
+*
+*/
 
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
@@ -22,11 +31,10 @@
 #include <linux/time.h>
 #include <linux/string.h>
 #include <linux/pm_runtime.h>
-
 #include <sound/core.h>
 #include <sound/initval.h>
-
 #include <sound/hda_codec.h>
+
 #include "hda_controller.h"
 
 #ifdef CONFIG_PM
@@ -39,8 +47,8 @@ MODULE_PARM_DESC(power_save,
 #endif
 
 /* max number of SDs */
-#define NUM_CAPTURE_SD 4
-#define NUM_PLAYBACK_SD 4
+#define NUM_CAPTURE_SD	4
+#define NUM_PLAYBACK_SD	4
 
 struct hda_baikal {
 	struct azx chip;
@@ -50,6 +58,8 @@ struct hda_baikal {
 	struct work_struct irq_pending_work;
 	unsigned int irq_pending_warned:1;
 };
+
+static void hda_baikal_probe_work(struct work_struct *work);
 
 static int azx_position_ok(struct azx *chip, struct azx_dev *azx_dev);
 static const struct hda_controller_ops hda_baikal_ops;
@@ -280,22 +290,19 @@ static int hda_baikal_first_init(struct azx *chip, struct platform_device *pdev)
 #if 0 /* Don't setup irq handler - leave irq disabled */
 	err = devm_request_irq(chip->card->dev, irq_id, azx_interrupt,
 			     IRQF_SHARED, KBUILD_MODNAME, chip);
-#endif
 	if (err) {
 		dev_err(chip->card->dev,
 			"unable to request IRQ %d, disabling device\n",
 			irq_id);
 		return err;
 	}
+#endif
 	bus->irq = irq_id;
 
 	synchronize_irq(bus->irq);
 
 	gcap = azx_readw(chip, GCAP);
 	dev_dbg(card->dev, "chipset global capabilities = 0x%x\n", gcap);
-
-	/* force polling mode, because RIRB interrupts don't working */
-	bus->polling_mode = 1;
 
 	/* read number of streams from GCAP register instead of using
 	 * hardcoded value
@@ -352,8 +359,6 @@ static int hda_baikal_first_init(struct azx *chip, struct platform_device *pdev)
 	return 0;
 }
 
-static void hda_baikal_probe_work(struct work_struct *work);
-
 static int hda_baikal_create(struct snd_card *card,
 			    unsigned int driver_caps,
 			    struct hda_baikal *hda)
@@ -376,7 +381,7 @@ static int hda_baikal_create(struct snd_card *card,
 	INIT_LIST_HEAD(&chip->pcm_list);
 	INIT_WORK(&hda->irq_pending_work, azx_irq_pending_work);
 
-	chip->codec_probe_mask = 3; /* two codecs: first and second bits */
+	chip->codec_probe_mask = 0x3; /* two codecs */
 
 	chip->single_cmd = false;
 	chip->snoop = true;
@@ -392,6 +397,12 @@ static int hda_baikal_create(struct snd_card *card,
 
 	chip->bus.needs_damn_long_delay = 1;
 	chip->bus.core.aligned_mmio = 1;
+
+	/* force polling mode, because RIRB interrupts don't working */
+	if (of_property_read_bool(hda->dev->of_node, "cyclic-codec-probe"))
+		chip->bus.core.polling_mode = 1;
+	else
+		chip->bus.core.polling_mode = 0;
 
 	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
 	if (err < 0) {
@@ -446,30 +457,113 @@ out_free:
 	return err;
 }
 
+/*
+ * Probe the given codec address
+ */
+static int baikal_probe_codec(struct azx *chip, int addr)
+{
+	unsigned int cmd = (addr << 28) | (AC_NODE_ROOT << 20) |
+		(AC_VERB_PARAMETERS << 8) | AC_PAR_VENDOR_ID;
+	struct hdac_bus *bus = azx_bus(chip);
+	int err;
+	unsigned int res = -1;
+
+	mutex_lock(&bus->cmd_mutex);
+	chip->probing = 1;
+	bus->ops->command(bus, cmd);
+	err = bus->ops->get_response(bus, addr, &res);
+	chip->probing = 0;
+	mutex_unlock(&bus->cmd_mutex);
+	if (err < 0 || res == -1)
+		return -EIO;
+	dev_dbg(chip->card->dev, "codec #%d probed OK\n", addr);
+	return 0;
+}
+
+/* Probe codecs */
+static int azx_baikal_probe_codecs(struct azx *chip, unsigned int max_slots)
+{
+	struct hdac_bus *bus = azx_bus(chip);
+	int c, codecs, err;
+
+	int probe_retry;
+
+	codecs = 0;
+	if (!max_slots)
+		max_slots = AZX_DEFAULT_CODECS;
+
+	for (c = 0; c < max_slots; c++) {
+		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
+			for (probe_retry = 0; probe_retry < 100; probe_retry++) {
+				if (baikal_probe_codec(chip, c) < 0) {
+					azx_stop_chip(chip);
+					azx_init_chip(chip, true);
+					continue;
+				} else {
+					dev_warn(chip->card->dev,
+						"Codec #%d probe success; retry count = %d\n",
+						c, probe_retry);
+					break;
+				}
+				bus->codec_mask &= ~(1 << c);
+				dev_warn(chip->card->dev,
+					"Codec #%d probe error; disabling it...\n", c);
+			}
+		}
+	}
+
+	/* Then create codec instances */
+	for (c = 0; c < max_slots; c++) {
+		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
+			struct hda_codec *codec;
+			err = snd_hda_codec_new(&chip->bus, chip->card, c, &codec);
+			if (err < 0)
+				continue;
+			codec->jackpoll_interval = chip->jackpoll_interval;
+			codec->beep_mode = chip->beep_mode;
+			codecs++;
+		}
+	}
+	if (!codecs) {
+		dev_err(chip->card->dev, "no codecs initialized\n");
+		return -ENXIO;
+	}
+	return 0;
+}
+
 static void hda_baikal_probe_work(struct work_struct *work)
 {
-	struct hda_baikal *hda = container_of(work, struct hda_baikal, probe_work);
+	struct hda_baikal *hda = container_of(work, struct hda_baikal, 
+					probe_work);
 	struct azx *chip = &hda->chip;
+	struct hdac_bus *bus = azx_bus(chip);
 	struct platform_device *pdev = to_platform_device(hda->dev);
-	int err, retry;
+	int max_slots;
+	int err;
 
 	pm_runtime_get_sync(hda->dev);
 	err = hda_baikal_first_init(chip, pdev);
 	if (err < 0)
 		goto out_free;
 
-	/* create codec instances */
-	for (retry = 0; retry < 10; retry++) {
-		mdelay(10);
-		err = azx_probe_codecs(chip, 1);
-		if (err < 0) {
-			azx_stop_chip(chip);
-			azx_init_chip(chip, false);
-		} else {
-			dev_info(&pdev->dev, "Codec probe OK (retry %d)\n", retry);
-			break;
-		}
+	switch (bus->codec_mask) {
+	case 0x1:
+		max_slots = 1;
+		break;
+	case 0x2:
+		max_slots = 2;
+		break;
+	case 0x3:
+		max_slots = 2;
+		break;
 	}
+
+	/* create codec instances */
+	if (of_property_read_bool(bus->dev->of_node, "cyclic-codec-probe"))
+		err = azx_baikal_probe_codecs(chip, max_slots);
+	else
+		err = azx_probe_codecs(chip, max_slots);
+
 	if (err < 0)
 		goto out_free;
 

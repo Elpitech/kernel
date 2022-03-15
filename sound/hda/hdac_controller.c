@@ -10,6 +10,10 @@
 #include <sound/hdaudio.h>
 #include <sound/hda_register.h>
 
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#endif
+
 /* clear CORB read pointer properly */
 static void azx_clear_corbrp(struct hdac_bus *bus)
 {
@@ -30,11 +34,9 @@ static void azx_clear_corbrp(struct hdac_bus *bus)
 			break;
 		udelay(1);
 	}
-#if !IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
 	if (timeout <= 0)
 		dev_err(bus->dev, "CORB reset timeout#2, CORBRP = %d\n",
 			snd_hdac_chip_readw(bus, CORBRP));
-#endif
 }
 
 /**
@@ -147,11 +149,11 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 
 	spin_lock_irq(&bus->reg_lock);
 
-#if IS_ENABLED(CONFIG_SND_HDA_BAIKAL_M)
-	/* force first codec address, because wrong codec init */
-	val |= 0x10000000;
+#ifdef CONFIG_OF
+	if (of_property_read_bool(bus->dev->of_node, 
+			"increment-codec-address"))
+		val = val + 0x10000000;
 #endif
-
 	bus->last_cmd[azx_command_addr(val)] = val;
 
 	/* add command to corb */
