@@ -53,6 +53,14 @@ static struct mcfg_fixup mcfg_quirks[] = {
 	AL_ECAM("GRAVITON", 0, 6, &al_pcie_ops),
 	AL_ECAM("GRAVITON", 0, 7, &al_pcie_ops),
 
+#define BAIKAL_ECAM(table_id, rev, seg, ops) \
+	{ "BAIKAL", table_id, rev, seg, MCFG_BUS_ANY, ops }
+
+	/* Baikal Synopsys DesignWare PCIe */
+	BAIKAL_ECAM("BKLEMCFG", 0, 0, &baikal_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 0, 1, &baikal_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 0, 2, &baikal_pcie_ecam_ops),
+
 #define QCOM_ECAM32(seg) \
 	{ "QCOM  ", "QDF2432 ", 1, seg, MCFG_BUS_ANY, &pci_32b_ops }
 
