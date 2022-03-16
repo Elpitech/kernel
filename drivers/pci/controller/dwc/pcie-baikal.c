@@ -1,26 +1,30 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * pcie-baikal - PCIe controller driver for Baikal SoCs
+ * PCIe RC driver for Baikal SoC
  *
- * Copyright (C) 2019 Baikal Electronics JSC
- * Author: Pavel Parkhomenko <Pavel.Parkhomenko@baikalelectronics.ru>
+ * Copyright (C) 2019-2021 Baikal Electronics, JSC
+ * Authors: Pavel Parkhomenko <pavel.parkhomenko@baikalelectronics.ru>
+ *          Mikhail Ivanov <michail.ivanov@baikalelectronics.ru>
+ *          Aleksandr Efimov <alexander.efimov@baikalelectronics.ru>
  */
 
+#include <linux/acpi.h>
 #include <linux/interrupt.h>
 #include <linux/irqchip/arm-gic-v3.h>
 #include <linux/mfd/syscon.h>
-#include <linux/mfd/baikal/lcru-pcie.h>
 #include <linux/of_address.h>
 #include <linux/of_gpio.h>
 #include <linux/pci.h>
+#include <linux/pci-ecam.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
 #include <linux/ratelimit.h>
+#include <linux/regmap.h>
 
 #include "pcie-designware.h"
 
-struct baikal_pcie {
-	struct dw_pcie *pci;
+struct baikal_pcie_rc {
+	struct dw_pcie *pcie;
 	unsigned bus_nr;
 	struct regmap *lcru;
 	struct gpio_desc *reset_gpio;
@@ -73,6 +77,41 @@ struct baikal_pcie {
 #define PCIE_ECAM_BUS_SHIFT	20
 #define PCIE_ECAM_BUS_MASK	GENMASK(27,20)
 #define PCIE_ECAM_DEVFN_SHIFT	12
+
+#define BAIKAL_LCRU_PCIE_RESET_BASE		0x50000
+#define BAIKAL_LCRU_PCIE_RESET(x)		((x * 0x20) + BAIKAL_LCRU_PCIE_RESET_BASE)
+#define BAIKAL_PCIE_PHY_RESET			BIT(0)
+#define BAIKAL_PCIE_PIPE0_RESET			BIT(4) /* x8 & x4 controllers */
+#define BAIKAL_PCIE_PIPE1_RESET			BIT(5) /* x8 controller only */
+#define BAIKAL_PCIE_STICKY_RST			BIT(10)
+#define BAIKAL_PCIE_CORE_RST			BIT(8)
+#define BAIKAL_PCIE_PWR_RST			BIT(9)
+#define BAIKAL_PCIE_NONSTICKY_RST		BIT(11)
+#define BAIKAL_PCIE_HOT_RESET			BIT(12)
+#define BAIKAL_PCIE_ADB_PWRDWN			BIT(13)
+
+#define BAIKAL_LCRU_PCIE_STATUS_BASE		0x50004
+#define BAIKAL_LCRU_PCIE_STATUS(x)		((x * 0x20) + BAIKAL_LCRU_PCIE_STATUS_BASE)
+#define BAIKAL_PCIE_RDLH_LINKUP			BIT(7)
+#define BAIKAL_PCIE_SMLH_LINKUP			BIT(6)
+#define BAIKAL_PCIE_LTSSM_MASK			0x3F
+#define BAIKAL_PCIE_LTSSM_STATE_L0		0x11
+#define BAIKAL_PCIE_LTSSM_STATE_L0S		0x12
+
+#define BAIKAL_LCRU_PCIE_GEN_CTL_BASE		0x50008
+#define BAIKAL_LCRU_PCIE_GEN_CTL(x)		((x * 0x20) + BAIKAL_LCRU_PCIE_GEN_CTL_BASE)
+#define BAIKAL_PCIE_LTSSM_ENABLE		BIT(1)
+#define BAIKAL_PCIE_DBI2_MODE			BIT(2)
+#define BAIKAL_PCIE_PHY_MGMT_ENABLE		BIT(3)
+
+#define BAIKAL_LCRU_PCIE_MSI_TRANS_CTL0		0x500E8
+#define BAIKAL_PCIE_MSI_AWUSER_SHIFT		0
+#define BAIKAL_PCIE_MSI_AWUSER_MASK		0xF
+
+#define BAIKAL_LCRU_PCIE_MSI_TRANS_CTL2		0x500F8
+#define BAIKAL_PCIE_MSI_TRANS_EN(x)		BIT((9 + (x)))
+#define BAIKAL_PCIE_MSI_RCNUM(x)		((x) << (2 * (x)))
+#define BAIKAL_PCIE_MSI_RCNUM_MASK(x)		(0x3 << (2 * (x)))
 
 static int baikal_pcie_link_up(struct dw_pcie *pci);
 
@@ -130,18 +169,18 @@ static inline void baikal_pcie_link_retrain(struct dw_pcie *pci, int target_spee
 	}
 }
 
-static int baikal_pcie_link_up(struct dw_pcie *pci)
+static int baikal_pcie_link_up(struct dw_pcie *pcie)
 {
-	struct baikal_pcie *rc = to_baikal_pcie(pci);
+	struct baikal_pcie_rc *rc = to_baikal_pcie(pcie);
 	u32 reg;
 
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), &reg);
 	if (!(reg & BAIKAL_PCIE_LTSSM_ENABLE))
 		return 0;
 
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_STATUS(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_STATUS(rc->bus_nr), &reg);
 	reg &= BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP |
-	       BAIKAL_PCIE_LTSSM_STATE_MASK;
+	       BAIKAL_PCIE_LTSSM_MASK;
 	if (reg == (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP |
 		    BAIKAL_PCIE_LTSSM_STATE_L0))
 		return 1; /* Link is up */
@@ -152,31 +191,31 @@ static int baikal_pcie_link_up(struct dw_pcie *pci)
 	return 0;
 }
 
-static int baikal_pcie_establish_link(struct dw_pcie *pci)
+static int baikal_pcie_establish_link(struct dw_pcie *pcie)
 {
 	u32 reg;
 	int speed, target_speed;
 	int ret;
 
-	ret = dw_pcie_wait_for_link(pci);
+	ret = dw_pcie_wait_for_link(pcie);
 	if (ret != 0)
 		return ret;
 
-	reg = dw_pcie_readl_dbi(pci, PCIE_LINK_CONTROL_LINK_STATUS_REG);
+	reg = dw_pcie_readl_dbi(pcie, PCIE_LINK_CONTROL_LINK_STATUS_REG);
 	speed = (reg & PCIE_CAP_LINK_SPEED_MASK) >> PCIE_CAP_LINK_SPEED_SHIFT;
 	while (speed < PCIE_CAP_LINK_SPEED_GEN3) {
 		target_speed = speed + 1;
-		dev_info(pci->dev, "Retrain link to Gen%d...\n", target_speed);
-		baikal_pcie_link_retrain(pci, target_speed);
-		reg = dw_pcie_readl_dbi(pci, PCIE_LINK_CONTROL_LINK_STATUS_REG);
+		dev_info(pcie->dev, "Retrain link to Gen%d...\n", target_speed);
+		baikal_pcie_link_retrain(pcie, target_speed);
+		reg = dw_pcie_readl_dbi(pcie, PCIE_LINK_CONTROL_LINK_STATUS_REG);
 		speed = (reg & PCIE_CAP_LINK_SPEED_MASK) >>
 				PCIE_CAP_LINK_SPEED_SHIFT;
 		if (speed < target_speed) {
 			if (speed < target_speed - 1) {
-				dev_info(pci->dev,
+				dev_info(pcie->dev,
 					"Retrain resulted in link downgrade...\n");
-				baikal_pcie_link_retrain(pci, target_speed - 1);
-				reg = dw_pcie_readl_dbi(pci,
+				baikal_pcie_link_retrain(pcie, target_speed - 1);
+				reg = dw_pcie_readl_dbi(pcie,
 					PCIE_LINK_CONTROL_LINK_STATUS_REG);
 				speed = (reg & PCIE_CAP_LINK_SPEED_MASK) >>
 					PCIE_CAP_LINK_SPEED_SHIFT;
@@ -184,7 +223,7 @@ static int baikal_pcie_establish_link(struct dw_pcie *pci)
 			break; /* give up */
 		}
 	}
-	dev_info(pci->dev, "Link Status is Gen%d, x%d\n", speed,
+	dev_info(pcie->dev, "Link Status is Gen%d, x%d\n", speed,
 		 (reg & PCIE_STA_LINK_WIDTH_MASK) >>
 			PCIE_STA_LINK_WIDTH_SHIFT);
 
@@ -193,17 +232,17 @@ static int baikal_pcie_establish_link(struct dw_pcie *pci)
 
 static int baikal_pcie_host_init(struct pcie_port *pp)
 {
-	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie *baikal_pcie = to_baikal_pcie(pci);
+	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
+	struct baikal_pcie_rc *rc = to_baikal_pcie(pcie);
 	u32 lcru_reg, class_reg, reg;
 	phys_addr_t cfg_base, cfg_end;
 	u32 cfg_size;
 
 	/* Configure MEM and I/O ATU regions */
-	dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX0,
+	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX0,
 			PCIE_ATU_TYPE_MEM, pp->mem_base,
 			pp->mem_bus_addr, pp->mem_size);
-	dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX1,
+	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX1,
 			PCIE_ATU_TYPE_IO, pp->io_base,
 			pp->io_bus_addr, pp->io_size);
 
@@ -215,9 +254,9 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	if (cfg_base < pp->cfg0_base)
 		cfg_base += PCIE_ECAM_SIZE;
 	if (cfg_base + (4 << PCIE_ECAM_BUS_SHIFT) > cfg_end) {
-		dev_info(pci->dev, "Not enough space for ECAM\n");
-		baikal_pcie->max_bus = 255;
-		dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX2,
+		dev_info(pcie->dev, "Not enough space for ECAM\n");
+		rc->max_bus = 255;
+		dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX2,
 			PCIE_ATU_TYPE_CFG0, pp->cfg0_base,
 			PCIE_ATU_BUS(1), PCIE_ATU_MIN_SIZE);
 	} else {
@@ -231,73 +270,73 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 		if (pp->va_cfg1_base)
 			iounmap(pp->va_cfg1_base);
 		/* set up region 2 for bus 1 */
-		dw_pcie_writel_dbi(pci, PCIE_ATU_VIEWPORT,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
 				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX2);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_BASE,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_BASE,
 				lower_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_BASE,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_BASE,
 				upper_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LIMIT,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LIMIT,
 				lower_32_bits(cfg_base) + PCIE_ATU_MIN_SIZE - 1);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_TARGET, 0);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_TARGET, 0);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG0);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_CR2,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_TARGET, 0);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_TARGET, 0);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG0);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2,
 				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
 		/* set up region 3 for higher busses */
-		dw_pcie_writel_dbi(pci, PCIE_ATU_VIEWPORT,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
 				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX3);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_BASE,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_BASE,
 				lower_32_bits(cfg_base + (1 << PCIE_ECAM_BUS_SHIFT)));
-		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_BASE,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_BASE,
 				upper_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LIMIT,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LIMIT,
 				lower_32_bits(cfg_base) + cfg_size - 1);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_LOWER_TARGET, 0);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_UPPER_TARGET, 0);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG1);
-		dw_pcie_writel_dbi(pci, PCIE_ATU_CR2,
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_TARGET, 0);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_TARGET, 0);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG1);
+		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2,
 				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
-		baikal_pcie->ecam = true;
-		baikal_pcie->max_bus = (cfg_size >> PCIE_ECAM_BUS_SHIFT) + 1;
-		dev_info(pci->dev, "ECAM configured. Max bus %u\n",
-			 baikal_pcie->max_bus);
+		rc->ecam = true;
+		rc->max_bus = (cfg_size >> PCIE_ECAM_BUS_SHIFT) + 1;
+		dev_info(pcie->dev, "ECAM configured. Max bus %u\n",
+			 rc->max_bus);
 	}
 
 	// Set class
-	lcru_reg = baikal_pcie_lcru_readl(baikal_pcie->lcru,
-				BAIKAL_LCRU_PCIE_GEN_CTL(baikal_pcie->bus_nr));
-	baikal_pcie_lcru_writel(baikal_pcie->lcru,
-				BAIKAL_LCRU_PCIE_GEN_CTL(baikal_pcie->bus_nr),
-				lcru_reg & (~BAIKAL_PCIE_DBI2_MODE));
+	regmap_read(rc->lcru,
+		    BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), &lcru_reg);
+	regmap_write(rc->lcru,
+		     BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr),
+		     lcru_reg & (~BAIKAL_PCIE_DBI2_MODE));
 
-	dw_pcie_dbi_ro_wr_en(pci);
-	class_reg = dw_pcie_readl_dbi(pci, PCI_CLASS_REVISION);
+	dw_pcie_dbi_ro_wr_en(pcie);
+	class_reg = dw_pcie_readl_dbi(pcie, PCI_CLASS_REVISION);
 
 	class_reg = (PCI_CLASS_BRIDGE_PCI << 16) | (1 << 8) | (class_reg & 0xff);
 	// class PCI_PCI_BRIDGE=0x604, prog-if=1
-	dw_pcie_writel_dbi(pci, PCI_CLASS_REVISION, class_reg);
+	dw_pcie_writel_dbi(pcie, PCI_CLASS_REVISION, class_reg);
 
-	dw_pcie_dbi_ro_wr_dis(pci);
+	dw_pcie_dbi_ro_wr_dis(pcie);
 
 	dw_pcie_setup_rc(pp);
-	baikal_pcie_establish_link(pci); // This call waits for training completion
+	baikal_pcie_establish_link(pcie); // This call waits for training completion
 
-	dw_pcie_writel_dbi(pci, PCI_ROOT_ERR_CMD, 7); // enable AER
-	reg = dw_pcie_readl_dbi(pci, PCI_DEV_CTRL_STAT);
+	dw_pcie_writel_dbi(pcie, PCI_ROOT_ERR_CMD, 7); // enable AER
+	reg = dw_pcie_readl_dbi(pcie, PCI_DEV_CTRL_STAT);
 	reg |= 0xf; // enable error reporting
-	dw_pcie_writel_dbi(pci, PCI_DEV_CTRL_STAT, reg);
-	reg = dw_pcie_readl_dbi(pci, PCI_ROOT_CTRL_CAP);
+	dw_pcie_writel_dbi(pcie, PCI_DEV_CTRL_STAT, reg);
+	reg = dw_pcie_readl_dbi(pcie, PCI_ROOT_CTRL_CAP);
 	reg |= 0xf; // enable error reporting
-	dw_pcie_writel_dbi(pci, PCI_ROOT_CTRL_CAP, reg);
+	dw_pcie_writel_dbi(pcie, PCI_ROOT_CTRL_CAP, reg);
 
 	return 0;
 }
 
 static int baikal_pcie_msi_host_init(struct pcie_port *pp)
 {
-	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	struct device *dev = pci->dev;
+	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
+	struct device *dev = pcie->dev;
 	struct device_node *np = dev->of_node;
 	struct device_node *msi_node;
 
@@ -322,8 +361,8 @@ static int baikal_pcie_access_other_conf(struct pcie_port *pp, struct pci_bus *b
 	int ret;
 	u32 busdev;
 	void __iomem *va_cfg_base;
-	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie *rc = to_baikal_pcie(pci);
+	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
+	struct baikal_pcie_rc *rc = to_baikal_pcie(pcie);
 
 	if (bus->number > rc->max_bus) {
 		if (!write)
@@ -340,7 +379,7 @@ static int baikal_pcie_access_other_conf(struct pcie_port *pp, struct pci_bus *b
 			 PCIE_ATU_DEV(PCI_SLOT(devfn)) |
 			 PCIE_ATU_FUNC(PCI_FUNC(devfn));
 		if (busdev != rc->cfg_busdev) {
-			dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX3,
+			dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX3,
 						  PCIE_ATU_TYPE_CFG1, pp->cfg1_base,
 						  busdev, PCIE_ATU_MIN_SIZE);
 			rc->cfg_busdev = busdev;
@@ -385,15 +424,15 @@ DEFINE_RATELIMIT_STATE(pcie_err_printk_ratelimit, 300 * HZ, 10);
 
 static irqreturn_t baikal_pcie_err_irq_handler(int irq, void *priv)
 {
-	struct baikal_pcie *rc = priv;
-	struct dw_pcie *pci = rc->pci;
-	struct device *dev = pci->dev;
+	struct baikal_pcie_rc *rc = priv;
+	struct dw_pcie *pcie = rc->pcie;
+	struct device *dev = pcie->dev;
 	u32 ue_st, ce_st, r_st, dev_st;
 
-	ue_st = dw_pcie_readl_dbi(pci, PCI_UNCORR_ERR_STAT);
-	ce_st = dw_pcie_readl_dbi(pci, PCI_CORR_ERR_STAT);
-	r_st = dw_pcie_readl_dbi(pci, PCI_ROOT_ERR_STAT);
-	dev_st = dw_pcie_readl_dbi(pci, PCI_DEV_CTRL_STAT);
+	ue_st = dw_pcie_readl_dbi(pcie, PCI_UNCORR_ERR_STAT);
+	ce_st = dw_pcie_readl_dbi(pcie, PCI_CORR_ERR_STAT);
+	r_st = dw_pcie_readl_dbi(pcie, PCI_ROOT_ERR_STAT);
+	dev_st = dw_pcie_readl_dbi(pcie, PCI_DEV_CTRL_STAT);
 
 	if (__ratelimit(&pcie_err_printk_ratelimit)) {
 		if (r_st & 0x7c) {
@@ -413,46 +452,46 @@ static irqreturn_t baikal_pcie_err_irq_handler(int irq, void *priv)
 			dev_err(dev, "Device Status Errors: %x\n", dev_st >> 16);
 	}
 
-	dw_pcie_writel_dbi(pci, PCI_UNCORR_ERR_STAT, ue_st);
-	dw_pcie_writel_dbi(pci, PCI_CORR_ERR_STAT, ce_st);
-	dw_pcie_writel_dbi(pci, PCI_ROOT_ERR_STAT, r_st);
-	dw_pcie_writel_dbi(pci, PCI_DEV_CTRL_STAT, dev_st);
+	dw_pcie_writel_dbi(pcie, PCI_UNCORR_ERR_STAT, ue_st);
+	dw_pcie_writel_dbi(pcie, PCI_CORR_ERR_STAT, ce_st);
+	dw_pcie_writel_dbi(pcie, PCI_ROOT_ERR_STAT, r_st);
+	dw_pcie_writel_dbi(pcie, PCI_DEV_CTRL_STAT, dev_st);
 
 	return IRQ_HANDLED;
 }
 
-static int baikal_add_pcie_port(struct baikal_pcie *rc,
-				       struct platform_device *pdev)
+static int baikal_add_pcie_port(struct baikal_pcie_rc *rc,
+				struct platform_device *pdev)
 {
-	struct dw_pcie *pci = rc->pci;
-	struct pcie_port *pp = &pci->pp;
+	struct dw_pcie *pcie = rc->pcie;
+	struct pcie_port *pp = &pcie->pp;
 	struct resource *res;
 	int irq;
 	int ret;
 
-	pci->dev = &pdev->dev;
+	pcie->dev = &pdev->dev;
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dbi");
 	if (res) {
-		pci->dbi_base = devm_ioremap_resource(pci->dev, res);
-		if (IS_ERR(pci->dbi_base)) {
-			dev_err(pci->dev, "error with ioremap\n");
-			return PTR_ERR(pci->dbi_base);
+		pcie->dbi_base = devm_ioremap_resource(pcie->dev, res);
+		if (IS_ERR(pcie->dbi_base)) {
+			dev_err(pcie->dev, "error with ioremap\n");
+			return PTR_ERR(pcie->dbi_base);
 		}
 	} else {
-		dev_err(pci->dev, "missing *dbi* reg space\n");
+		dev_err(pcie->dev, "missing *dbi* reg space\n");
 		return -EINVAL;
 	}
 
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
-		dev_err(pci->dev, "missing IRQ resource: %d\n", irq);
+		dev_err(pcie->dev, "missing IRQ resource: %d\n", irq);
 		return irq;
 	}
 
-	ret = devm_request_irq(pci->dev, irq, baikal_pcie_err_irq_handler, IRQF_SHARED,
+	ret = devm_request_irq(pcie->dev, irq, baikal_pcie_err_irq_handler, IRQF_SHARED,
 			"baikal-pcie-error-irq", rc);
 	if (ret < 0) {
-		dev_err(pci->dev, "failed to request error IRQ %d\n",
+		dev_err(pcie->dev, "failed to request error IRQ %d\n",
 			irq);
 		return ret;
 	}
@@ -462,66 +501,72 @@ static int baikal_add_pcie_port(struct baikal_pcie *rc,
 
 	ret = dw_pcie_host_init(pp);
 	if (ret) {
-		dev_err(pci->dev, "failed to initialize host\n");
+		dev_err(pcie->dev, "failed to initialize host\n");
 		return ret;
 	}
 
 	return 0;
 }
 
-static int baikal_pcie_hw_init_m(struct baikal_pcie *rc)
+static int baikal_pcie_hw_init_m(struct baikal_pcie_rc *rc)
 {
 	u32 reg;
 
 	/* Cease link */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), &reg);
 	reg &= ~BAIKAL_PCIE_LTSSM_ENABLE;
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
 
 	/* Force controller reset */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), &reg);
 	reg |= BAIKAL_PCIE_PWR_RST | BAIKAL_PCIE_CORE_RST |
-	       BAIKAL_PCIE_PIPE_RESET | BAIKAL_PCIE_PHY_RESET;
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
+	       BAIKAL_PCIE_PIPE0_RESET | BAIKAL_PCIE_PHY_RESET;
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
 
 	/* Wait */
 	usleep_range(80000, 100000);
 
 	/* Deassert PHY reset */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), &reg);
 	reg &= ~BAIKAL_PCIE_PHY_RESET;
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
 
 	/* Enable access to the PHY registers */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), &reg);
 	reg |= BAIKAL_PCIE_PHY_MGMT_ENABLE;
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
 
 	/* Clear all software controlled resets of the controller */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), &reg);
 	reg &= ~(BAIKAL_PCIE_ADB_PWRDWN | BAIKAL_PCIE_HOT_RESET |
 		 BAIKAL_PCIE_NONSTICKY_RST | BAIKAL_PCIE_STICKY_RST |
 		 BAIKAL_PCIE_PWR_RST | BAIKAL_PCIE_CORE_RST |
-		 BAIKAL_PCIE_PIPE_RESET | BAIKAL_PCIE_PIPE1_RESET);
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
+		 BAIKAL_PCIE_PIPE0_RESET | BAIKAL_PCIE_PIPE1_RESET);
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), reg);
 
 	/* Start LTSSM */
-	reg = baikal_pcie_lcru_readl(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), &reg);
 	reg |= BAIKAL_PCIE_LTSSM_ENABLE;
-	baikal_pcie_lcru_writel(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
+	regmap_write(rc->lcru, BAIKAL_LCRU_PCIE_GEN_CTL(rc->bus_nr), reg);
 
 	return 0;
 }
 
 static const struct of_device_id of_baikal_pcie_match[] = {
+	{ .compatible = "baikal,bm1000-pcie" },
+
+	/*
+	 * TODO: it is pretty common to use "vendor,chip-*" prefixes
+	 *	 to all SoC specific devices. So "pcie-m" is legacy.
+	 */
 	{ .compatible = "baikal,pcie-m", },
 	{},
 };
 
 static int baikal_pcie_probe(struct platform_device *pdev)
 {
-	struct dw_pcie *pci;
-	struct baikal_pcie *pcie;
+	struct dw_pcie *pcie;
+	struct baikal_pcie_rc *rc;
 	struct device *dev = &pdev->dev;
 	int err;
 	u32 index[2];
@@ -530,37 +575,37 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	u32 reg;
 	int link_up = 0;
 
-	pcie = devm_kzalloc(dev, sizeof(*pcie), GFP_KERNEL);
-	if (!pcie) {
+	rc = devm_kzalloc(dev, sizeof(*rc), GFP_KERNEL);
+	if (!rc) {
 		dev_err(dev, "failed to allocate memory\n");
 		return -ENOMEM;
 	}
 
-	pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
-	if (!pci) {
+	pcie = devm_kzalloc(dev, sizeof(*pcie), GFP_KERNEL);
+	if (!pcie) {
 		dev_err(dev, "failed to allocate memory [2]\n");
 		return -ENOMEM;
 	}
-	pci->dev = dev;
-	pci->ops = &baikal_pcie_ops;
+	pcie->dev = dev;
+	pcie->ops = &baikal_pcie_ops;
 
-	pcie->pci = pci;
+	rc->pcie = pcie;
 
-	pcie->lcru = syscon_regmap_lookup_by_phandle(dev->of_node,
+	rc->lcru = syscon_regmap_lookup_by_phandle(dev->of_node,
 					"baikal,pcie-lcru");
-	if (IS_ERR(pcie->lcru)) {
+	if (IS_ERR(rc->lcru)) {
 		dev_err(dev, "No LCRU phandle specified\n");
-		pcie->lcru = NULL;
+		rc->lcru = NULL;
 		return -EINVAL;
 	}
 
 	if (of_property_read_u32_array(dev->of_node,
 			"baikal,pcie-lcru", index, 2)) {
 		dev_err(dev, "failed to read LCRU\n");
-		pcie->lcru = NULL;
+		rc->lcru = NULL;
 		return -EINVAL;
 	}
-	pcie->bus_nr = index[1];
+	rc->bus_nr = index[1];
 
 	pm_runtime_enable(dev);
 	err = pm_runtime_get_sync(dev);
@@ -569,10 +614,10 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		goto err_pm_disable;
 	}
 
-	reg = baikal_pcie_lcru_readl(pcie->lcru, BAIKAL_LCRU_PCIE_STATUS(pcie->bus_nr));
+	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_STATUS(rc->bus_nr), &reg);
 	dev_dbg(dev, "%s: bus %d - link state %x, reset %x\n",
-		__func__, pcie->bus_nr, reg,
-		baikal_pcie_lcru_readl(pcie->lcru, BAIKAL_LCRU_PCIE_RESET(pcie->bus_nr)));
+		__func__, rc->bus_nr, reg,
+		(regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->bus_nr), &reg), reg));
 	if ((reg & (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP)) ==
 	    (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP)) {
 		link_up = 1;
@@ -581,7 +626,7 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	if (gpio_is_valid(reset_gpio)) {
 		unsigned long gpio_flags;
 
-		snprintf(pcie->reset_name, 32, "pcie%d-reset", pcie->bus_nr);
+		snprintf(rc->reset_name, 32, "pcie%d-reset", rc->bus_nr);
 		/* gpio_flags correspond to "reset" state */
 		if (flags & OF_GPIO_ACTIVE_LOW)
 			gpio_flags = GPIOF_ACTIVE_LOW | GPIOF_OUT_INIT_LOW;
@@ -595,12 +640,12 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		if (link_up)
 			gpio_flags ^= GPIOF_OUT_INIT_HIGH ^ GPIOF_OUT_INIT_LOW;
 		err = devm_gpio_request_one(dev, reset_gpio, gpio_flags,
-					    pcie->reset_name);
+					    rc->reset_name);
 		if (err) {
 			dev_err(dev, "request GPIO failed (%d)\n", err);
 			goto err_pm_disable;
 		}
-		pcie->reset_gpio = gpio_to_desc(reset_gpio);
+		rc->reset_gpio = gpio_to_desc(reset_gpio);
 
 	} else if (reset_gpio == -EPROBE_DEFER) {
 		err = reset_gpio;
@@ -608,14 +653,14 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	}
 
 	if (!link_up) {
-		baikal_pcie_hw_init_m(pcie);
-		if (pcie->reset_gpio)
-			gpiod_set_value_cansleep(pcie->reset_gpio, 0);
+		baikal_pcie_hw_init_m(rc);
+		if (rc->reset_gpio)
+			gpiod_set_value_cansleep(rc->reset_gpio, 0);
 	}
 
-	platform_set_drvdata(pdev, pcie);
+	platform_set_drvdata(pdev, rc);
 
-	err = baikal_add_pcie_port(pcie, pdev);
+	err = baikal_add_pcie_port(rc, pdev);
 	if (!err)
 		return 0;
 
@@ -630,28 +675,28 @@ err_pm_disable:
 #ifdef CONFIG_PM_SLEEP
 static int baikal_pcie_suspend(struct device *dev)
 {
-	struct baikal_pcie *rc = dev_get_drvdata(dev);
-	struct dw_pcie *pci = rc->pci;
+	struct baikal_pcie_rc *rc = dev_get_drvdata(dev);
+	struct dw_pcie *pcie = rc->pcie;
 	u32 val;
 
 	/* clear MSE */
-	val = dw_pcie_readl_dbi(pci, PCI_COMMAND);
+	val = dw_pcie_readl_dbi(pcie, PCI_COMMAND);
 	val &= ~PCI_COMMAND_MEMORY;
-	dw_pcie_writel_dbi(pci, PCI_COMMAND, val);
+	dw_pcie_writel_dbi(pcie, PCI_COMMAND, val);
 
 	return 0;
 }
 
 static int baikal_pcie_resume(struct device *dev)
 {
-	struct baikal_pcie *rc = dev_get_drvdata(dev);
-	struct dw_pcie *pci = rc->pci;
+	struct baikal_pcie_rc *rc = dev_get_drvdata(dev);
+	struct dw_pcie *pcie = rc->pcie;
 	u32 val;
 
 	/* set MSE */
-	val = dw_pcie_readl_dbi(pci, PCI_COMMAND);
+	val = dw_pcie_readl_dbi(pcie, PCI_COMMAND);
 	val |= PCI_COMMAND_MEMORY;
-	dw_pcie_writel_dbi(pci, PCI_COMMAND, val);
+	dw_pcie_writel_dbi(pcie, PCI_COMMAND, val);
 
 	return 0;
 }
@@ -684,3 +729,718 @@ static struct platform_driver baikal_pcie_driver = {
 };
 
 builtin_platform_driver(baikal_pcie_driver);
+
+#ifdef CONFIG_ACPI
+static int baikal_pcie_get_res_acpi(struct acpi_device *adev, struct pcie_port *pp)
+{
+	struct device *dev = &adev->dev;
+	struct resource_entry *entry;
+	struct list_head list, *pos;
+	int ret;
+	unsigned long flags = IORESOURCE_MEM;
+
+	INIT_LIST_HEAD(&list);
+	ret = acpi_dev_get_resources(adev, &list,
+				     acpi_dev_filter_resource_type_cb,
+				     (void *) flags);
+	if (ret < 0) {
+		dev_err(dev, "failed to parse _CRS method, error code %d\n", ret);
+		return ret;
+	}
+
+	if (ret != 3) {
+		dev_err(dev, "invalid number of MEM resources present in _CRS (%i, need 3)\n", ret);
+		return -EINVAL;
+	}
+
+	/* ECAM (CONFIG) */
+	pos = list.next;
+	entry = list_entry(pos, struct resource_entry, node);
+	pp->cfg0_size = resource_size(entry->res);
+	pp->cfg1_size = pp->cfg0_size;
+	pp->cfg0_base = entry->res->start;
+	pp->cfg1_base = pp->cfg0_base;
+
+	/* DBI */
+	pos = pos->next;
+	entry = list_entry(pos, struct resource_entry, node);
+	to_dw_pcie_from_pp(pp)->dbi_base = devm_ioremap_resource(dev, entry->res);
+	if (IS_ERR(to_dw_pcie_from_pp(pp)->dbi_base)) {
+		dev_err(dev, "error with dbi ioremap\n");
+		ret = PTR_ERR(to_dw_pcie_from_pp(pp)->dbi_base);
+		return ret;
+	}
+
+	/* 32bit non-prefetchable memory */
+	pos = pos->next;
+	entry = list_entry(pos, struct resource_entry, node);
+	pp->mem_base = entry->res->start;
+	pp->mem_size = resource_size(entry->res);
+	pp->mem_bus_addr = entry->res->start - entry->offset;
+
+	acpi_dev_free_resource_list(&list);
+
+	/* I/O */
+	INIT_LIST_HEAD(&list);
+	flags = IORESOURCE_IO;
+	ret = acpi_dev_get_resources(adev, &list,
+				     acpi_dev_filter_resource_type_cb,
+				     (void *) flags);
+	if (ret < 0) {
+		dev_err(dev, "failed to parse _CRS method, error code %d\n", ret);
+		return ret;
+	}
+
+	if (ret != 1) {
+		dev_err(dev, "invalid number of IO resources present in _CRS (%i, need 1)\n", ret);
+		return -EINVAL;
+	}
+
+	pos = list.next;
+	entry = list_entry(pos, struct resource_entry, node);
+	pp->io_base = entry->res->start;
+	pp->io_size = resource_size(entry->res);
+	pp->io_bus_addr = entry->res->start - entry->offset;
+
+	acpi_dev_free_resource_list(&list);
+	return 0;
+}
+
+static int baikal_pcie_get_irq_acpi(struct acpi_device *adev, struct pcie_port *pp)
+{
+	struct device *dev = &adev->dev;
+	struct resource res;
+	int ret;
+
+	memset(&res, 0, sizeof(res));
+
+	ret = acpi_irq_get(adev->handle, 0, &res);
+	if (ret) {
+		dev_err(dev, "failed to get irq %d\n", 0);
+		return ret;
+	}
+
+	if (res.flags & IORESOURCE_BITS) {
+		struct irq_data *irqd;
+
+		irqd = irq_get_irq_data(res.start);
+		if (!irqd)
+			return -ENXIO;
+		irqd_set_trigger_type(irqd, res.flags & IORESOURCE_BITS);
+	}
+
+	pp->irq = res.start;
+
+	ret = devm_request_irq(dev, pp->irq, baikal_pcie_err_irq_handler,
+			       IRQF_SHARED, "baikal-pcie-error-irq", to_dw_pcie_from_pp(pp));
+	if (ret) {
+		dev_err(dev, "failed to request irq %d\n", pp->irq);
+		return ret;
+	}
+
+	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+		memset(&res, 0, sizeof(res));
+
+		ret = acpi_irq_get(adev->handle, 1, &res);
+		if (ret) {
+			dev_err(dev, "failed to get irq %d\n", 1);
+			return ret;
+		}
+
+		if (res.flags & IORESOURCE_BITS) {
+			struct irq_data *irqd;
+
+			irqd = irq_get_irq_data(res.start);
+			if (!irqd)
+				return -ENXIO;
+			irqd_set_trigger_type(irqd, res.flags & IORESOURCE_BITS);
+		}
+
+		pp->msi_irq = res.start;
+	}
+
+	return 0;
+}
+
+static struct acpi_device *baikal_lcru;
+static struct regmap *baikal_regmap;
+
+static const struct regmap_config baikal_pcie_syscon_regmap_config = {
+	.reg_bits = 32,
+	.val_bits = 32,
+	.reg_stride = 4
+};
+
+static struct regmap *baikal_get_regmap(struct acpi_device *adev)
+{
+	struct device *dev = &adev->dev;
+	struct list_head list, *pos;
+	struct resource *res;
+	void __iomem *base;
+	int ret;
+	struct regmap *regmap = NULL;
+	struct regmap_config config = baikal_pcie_syscon_regmap_config;
+	unsigned long flags = IORESOURCE_MEM;
+
+	INIT_LIST_HEAD(&list);
+	ret = acpi_dev_get_resources(adev, &list,
+				     acpi_dev_filter_resource_type_cb,
+				     (void *) flags);
+	if (ret < 0) {
+		dev_err(dev, "failed to parse _CRS method, error code %d\n", ret);
+		return NULL;
+	}
+
+	if (ret != 1) {
+		dev_err(dev, "invalid number of MEM resources present in _CRS (%i, need 1)\n", ret);
+		goto ret;
+	}
+
+	pos = list.next;
+	res = list_entry(pos, struct resource_entry, node)->res;
+
+	base = devm_ioremap(dev, res->start, resource_size(res));
+	if (!base) {
+		dev_err(dev, "error with ioremap\n");
+		goto ret;
+	}
+
+	config.max_register = resource_size(res) - 4;
+
+	regmap = devm_regmap_init_mmio(dev, base, &config);
+	if (IS_ERR(regmap)) {
+		dev_err(dev, "regmap init failed\n");
+		devm_iounmap(dev, base);
+		goto ret;
+	}
+
+	dev_dbg(dev, "regmap %pR registered\n", res);
+
+	baikal_lcru = adev;
+	baikal_regmap = regmap;
+
+ret:
+	acpi_dev_free_resource_list(&list);
+	return regmap;
+}
+
+static struct regmap *baikal_pcie_get_lcru_acpi(struct acpi_device *adev, struct baikal_pcie_rc *rc)
+{
+	struct device *dev = &adev->dev;
+	struct acpi_device *lcru;
+	struct regmap *regmap = NULL;
+	union acpi_object *package = NULL;
+	union acpi_object *element = NULL;
+	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+	acpi_status status = AE_OK;
+	int ret;
+
+	status = acpi_evaluate_object_typed(adev->handle, "LCRU", NULL, &buffer, ACPI_TYPE_PACKAGE);
+	if (ACPI_FAILURE(status)) {
+		dev_err(dev, "failed to get LCRU data\n");
+		return ERR_PTR(-ENODEV);
+	}
+
+	package = buffer.pointer;
+
+	if (package->package.count != 2) {
+		dev_err(dev, "invalid LCRU data\n");
+		goto ret;
+	}
+
+	element = &(package->package.elements[0]);
+
+	if (element->type != ACPI_TYPE_LOCAL_REFERENCE || !element->reference.handle) {
+		dev_err(dev, "invalid LCRU reference\n");
+		goto ret;
+	}
+
+	ret = acpi_bus_get_device(element->reference.handle, &lcru);
+	if (ret) {
+		dev_err(dev, "failed to process LCRU reference\n");
+		goto ret;
+	}
+
+	element = &(package->package.elements[1]);
+
+	if (element->type != ACPI_TYPE_INTEGER) {
+		dev_err(dev, "failed to get LCRU index\n");
+		goto ret;
+	}
+
+	rc->bus_nr = element->integer.value;
+	if (baikal_regmap && lcru == baikal_lcru) {
+		regmap = baikal_regmap;
+	} else {
+		regmap = baikal_get_regmap(lcru);
+	}
+
+ret:
+	acpi_os_free(buffer.pointer);
+	return regmap;
+}
+
+static void baikal_dw_msi_ack_irq(struct irq_data *d)
+{
+	irq_chip_ack_parent(d);
+}
+
+static void baikal_dw_msi_mask_irq(struct irq_data *d)
+{
+	pci_msi_mask_irq(d);
+	irq_chip_mask_parent(d);
+}
+
+static void baikal_dw_msi_unmask_irq(struct irq_data *d)
+{
+	pci_msi_unmask_irq(d);
+	irq_chip_unmask_parent(d);
+}
+
+static struct irq_chip baikal_dw_pcie_msi_irq_chip = {
+	.name = "PCI-MSI",
+	.irq_ack = baikal_dw_msi_ack_irq,
+	.irq_mask = baikal_dw_msi_mask_irq,
+	.irq_unmask = baikal_dw_msi_unmask_irq
+};
+
+static struct msi_domain_info baikal_dw_pcie_msi_domain_info = {
+	.flags	= (MSI_FLAG_USE_DEF_DOM_OPS | MSI_FLAG_USE_DEF_CHIP_OPS |
+		   MSI_FLAG_PCI_MSIX | MSI_FLAG_MULTI_PCI_MSI),
+	.chip	= &baikal_dw_pcie_msi_irq_chip
+};
+
+static irqreturn_t baikal_dw_handle_msi_irq(struct pcie_port *pp)
+{
+	int i, pos, irq;
+	unsigned long val;
+	u32 status, num_ctrls;
+	irqreturn_t ret = IRQ_NONE;
+
+	num_ctrls = pp->num_vectors / MAX_MSI_IRQS_PER_CTRL;
+
+	for (i = 0; i < num_ctrls; i++) {
+		dw_pcie_read(to_dw_pcie_from_pp(pp)->dbi_base +
+				PCIE_MSI_INTR0_STATUS +
+				(i * MSI_REG_CTRL_BLOCK_SIZE),
+			     4, &status);
+		if (!status) {
+			continue;
+		}
+
+		ret = IRQ_HANDLED;
+		val = status;
+		pos = 0;
+		while ((pos = find_next_bit(&val, MAX_MSI_IRQS_PER_CTRL,
+					    pos)) != MAX_MSI_IRQS_PER_CTRL) {
+			irq = irq_find_mapping(pp->irq_domain,
+					       (i * MAX_MSI_IRQS_PER_CTRL) +
+					       pos);
+			generic_handle_irq(irq);
+			pos++;
+		}
+	}
+
+	return ret;
+}
+
+static void baikal_dw_chained_msi_isr(struct irq_desc *desc)
+{
+	struct irq_chip *chip = irq_desc_get_chip(desc);
+	struct pcie_port *pp;
+
+	chained_irq_enter(chip, desc);
+
+	pp = irq_desc_get_handler_data(desc);
+	baikal_dw_handle_msi_irq(pp);
+
+	chained_irq_exit(chip, desc);
+}
+
+static void baikal_dw_pci_setup_msi_msg(struct irq_data *d, struct msi_msg *msg)
+{
+	struct pcie_port *pp = irq_data_get_irq_chip_data(d);
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	u64 msi_target;
+
+	msi_target = (u64)pp->msi_data;
+
+	msg->address_lo = lower_32_bits(msi_target);
+	msg->address_hi = upper_32_bits(msi_target);
+
+	msg->data = d->hwirq;
+
+	dev_dbg(pci->dev, "msi#%d address_hi %#x address_lo %#x\n",
+		(int)d->hwirq, msg->address_hi, msg->address_lo);
+}
+
+static int baikal_dw_pci_msi_set_affinity(struct irq_data *d,
+					  const struct cpumask *mask,
+					  bool force)
+{
+	return -EINVAL;
+}
+
+static void baikal_dw_pci_bottom_mask(struct irq_data *d)
+{
+	struct pcie_port *pp = irq_data_get_irq_chip_data(d);
+	unsigned int res, bit, ctrl;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&pp->lock, flags);
+
+	ctrl = d->hwirq / MAX_MSI_IRQS_PER_CTRL;
+	res = ctrl * MSI_REG_CTRL_BLOCK_SIZE;
+	bit = d->hwirq % MAX_MSI_IRQS_PER_CTRL;
+
+	pp->irq_mask[ctrl] |= BIT(bit);
+	dw_pcie_write(to_dw_pcie_from_pp(pp)->dbi_base + PCIE_MSI_INTR0_MASK + res,
+		      4, pp->irq_mask[ctrl]);
+
+	raw_spin_unlock_irqrestore(&pp->lock, flags);
+}
+
+static void baikal_dw_pci_bottom_unmask(struct irq_data *d)
+{
+	struct pcie_port *pp = irq_data_get_irq_chip_data(d);
+	unsigned int res, bit, ctrl;
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&pp->lock, flags);
+
+	ctrl = d->hwirq / MAX_MSI_IRQS_PER_CTRL;
+	res = ctrl * MSI_REG_CTRL_BLOCK_SIZE;
+	bit = d->hwirq % MAX_MSI_IRQS_PER_CTRL;
+
+	pp->irq_mask[ctrl] &= ~BIT(bit);
+	dw_pcie_write(to_dw_pcie_from_pp(pp)->dbi_base + PCIE_MSI_INTR0_MASK + res,
+		      4, pp->irq_mask[ctrl]);
+
+	raw_spin_unlock_irqrestore(&pp->lock, flags);
+}
+
+static void baikal_dw_pci_bottom_ack(struct irq_data *d)
+{
+	struct pcie_port *pp = irq_data_get_irq_chip_data(d);
+	unsigned int res, bit, ctrl;
+
+	ctrl = d->hwirq / MAX_MSI_IRQS_PER_CTRL;
+	res = ctrl * MSI_REG_CTRL_BLOCK_SIZE;
+	bit = d->hwirq % MAX_MSI_IRQS_PER_CTRL;
+
+	dw_pcie_write(to_dw_pcie_from_pp(pp)->dbi_base + PCIE_MSI_INTR0_STATUS + res,
+		      4, BIT(bit));
+}
+
+static struct irq_chip baikal_dw_pci_msi_bottom_irq_chip = {
+	.name = "BAIKALPCI-MSI",
+	.irq_ack = baikal_dw_pci_bottom_ack,
+	.irq_compose_msi_msg = baikal_dw_pci_setup_msi_msg,
+	.irq_set_affinity = baikal_dw_pci_msi_set_affinity,
+	.irq_mask = baikal_dw_pci_bottom_mask,
+	.irq_unmask = baikal_dw_pci_bottom_unmask
+};
+
+static int baikal_dw_pcie_irq_domain_alloc(struct irq_domain *domain,
+					   unsigned int virq, unsigned int nr_irqs,
+					   void *args)
+{
+	struct pcie_port *pp = domain->host_data;
+	unsigned long flags;
+	u32 i;
+	int bit;
+
+	raw_spin_lock_irqsave(&pp->lock, flags);
+
+	bit = bitmap_find_free_region(pp->msi_irq_in_use, pp->num_vectors,
+				      order_base_2(nr_irqs));
+
+	raw_spin_unlock_irqrestore(&pp->lock, flags);
+
+	if (bit < 0) {
+		return -ENOSPC;
+	}
+
+	for (i = 0; i < nr_irqs; i++) {
+		irq_domain_set_info(domain, virq + i, bit + i,
+				    pp->msi_irq_chip,
+				    pp, handle_edge_irq,
+				    NULL, NULL);
+	}
+
+	return 0;
+}
+
+static void baikal_dw_pcie_irq_domain_free(struct irq_domain *domain,
+					   unsigned int virq, unsigned int nr_irqs)
+{
+	struct irq_data *d = irq_domain_get_irq_data(domain, virq);
+	struct pcie_port *pp = irq_data_get_irq_chip_data(d);
+	unsigned long flags;
+
+	raw_spin_lock_irqsave(&pp->lock, flags);
+
+	bitmap_release_region(pp->msi_irq_in_use, d->hwirq,
+			      order_base_2(nr_irqs));
+
+	raw_spin_unlock_irqrestore(&pp->lock, flags);
+}
+
+static const struct irq_domain_ops baikal_dw_pcie_msi_domain_ops = {
+	.alloc	= baikal_dw_pcie_irq_domain_alloc,
+	.free	= baikal_dw_pcie_irq_domain_free
+};
+
+static int baikal_dw_pcie_allocate_domains(struct pcie_port *pp)
+{
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	struct fwnode_handle *fwnode = pci->dev->fwnode;
+
+	pp->irq_domain = irq_domain_create_linear(fwnode, pp->num_vectors,
+						  &baikal_dw_pcie_msi_domain_ops, pp);
+	if (!pp->irq_domain) {
+		dev_err(pci->dev, "Failed to create IRQ domain\n");
+		return -ENOMEM;
+	}
+
+	irq_domain_update_bus_token(pp->irq_domain, DOMAIN_BUS_NEXUS);
+
+	pp->msi_domain = pci_msi_create_irq_domain(fwnode,
+						   &baikal_dw_pcie_msi_domain_info,
+						   pp->irq_domain);
+	if (!pp->msi_domain) {
+		dev_err(pci->dev, "Failed to create MSI domain\n");
+		irq_domain_remove(pp->irq_domain);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+static void baikal_dw_pcie_free_msi(struct pcie_port *pp)
+{
+	if (pp->msi_irq) {
+		irq_set_chained_handler(pp->msi_irq, NULL);
+		irq_set_handler_data(pp->msi_irq, NULL);
+	}
+
+	irq_domain_remove(pp->msi_domain);
+	irq_domain_remove(pp->irq_domain);
+
+	if (pp->msi_page) {
+		__free_page(pp->msi_page);
+	}
+}
+
+static int baikal_pcie_msi_init(struct pcie_port *pp)
+{
+	int ret;
+
+	if (pci_msi_enabled()) {
+		pp->num_vectors = MSI_DEF_NUM_VECTORS;
+
+		pp->msi_irq_chip = &baikal_dw_pci_msi_bottom_irq_chip;
+
+		ret = baikal_dw_pcie_allocate_domains(pp);
+		if (ret) {
+			return ret;
+		}
+
+		if (pp->msi_irq) {
+			irq_set_chained_handler_and_data(pp->msi_irq,
+							 baikal_dw_chained_msi_isr,
+							 pp);
+		}
+	}
+
+	return 0;
+}
+
+static int baikal_pcie_init(struct pci_config_window *cfg)
+{
+	struct device *dev = cfg->parent;
+	struct acpi_device *adev = to_acpi_device(dev);
+	struct baikal_pcie_rc *rc;
+	struct dw_pcie *pcie;
+	struct pcie_port *pp;
+	acpi_status status = AE_OK;
+	u64 num_viewport;
+	int ret;
+
+	pcie = devm_kzalloc(dev, sizeof(*pcie), GFP_KERNEL);
+	if (!pcie) {
+		return -ENOMEM;
+	}
+
+	pcie->dev = dev;
+	pcie->ops = &baikal_pcie_ops;
+
+	rc = devm_kzalloc(dev, sizeof(*rc), GFP_KERNEL);
+	if (!rc) {
+		return -ENOMEM;
+	}
+
+	rc->pcie = pcie;
+	cfg->priv = rc;
+	pp = &pcie->pp;
+	dev_set_drvdata(dev, rc);
+
+	rc->lcru = baikal_pcie_get_lcru_acpi(adev, rc);
+
+	if (IS_ERR_OR_NULL(rc->lcru)) {
+		dev_err(dev, "No LCRU specified\n");
+		return -EINVAL;
+	}
+
+	if (rc->bus_nr > 2) {
+		dev_err(dev, "incorrect LCRU index\n");
+		return -EINVAL;
+        }
+
+	/* TODO: gpio */
+
+	ret = baikal_pcie_get_res_acpi(adev, pp);
+	if (ret) {
+		dev_err(dev, "failed to get resource info\n");
+		return ret;
+	}
+
+	ret = baikal_pcie_get_irq_acpi(adev, pp);
+	if (ret) {
+		dev_err(dev, "failed to get irq info\n");
+		return ret;
+	}
+
+	pp->ops = &baikal_pcie_host_ops;
+	pp->root_bus_nr = cfg->busr.start;
+	pp->busn = &cfg->busr;
+
+	raw_spin_lock_init(&pp->lock);
+	pp->va_cfg0_base = devm_pci_remap_cfgspace(dev, pp->cfg0_base, pp->cfg0_size);
+	if (!pp->va_cfg0_base) {
+		dev_err(dev, "error with ioremap\n");
+		return -ENOMEM;
+	}
+	pp->va_cfg1_base = pp->va_cfg0_base;
+
+	status = acpi_evaluate_integer(adev->handle, "NUMV", NULL, &num_viewport);
+	if (ACPI_FAILURE(status)) {
+		dev_err(dev, "failed to get num-viewport\n");
+		return -EINVAL;
+	}
+	pcie->num_viewport = num_viewport;
+
+	ret = baikal_pcie_msi_init(pp);
+	if (ret) {
+		dev_err(dev, "failed to init MSI\n");
+		return ret;
+	}
+
+	ret = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
+	if (ret) {
+		dev_err(dev, "failed to enable DMA\n");
+		return ret;
+	}
+
+	ret = baikal_pcie_host_init(pp);
+
+	if (ret && pci_msi_enabled()) {
+		baikal_dw_pcie_free_msi(pp);
+	}
+
+	return ret;
+}
+
+static void __iomem *baikal_pci_ecam_map_bus(struct pci_bus *bus, unsigned int devfn,
+				     int where)
+{
+	struct pci_config_window *cfg = bus->sysdata;
+	struct baikal_pcie_rc *priv = cfg->priv;
+	u64 cpu_addr = priv->pcie->pp.cfg0_base;
+	unsigned int devfn_shift = cfg->ops->bus_shift - 8;
+	unsigned int busn = bus->number;
+	void __iomem *base;
+	int type;
+	u32 retries, val;
+
+	if (bus->parent->number == priv->pcie->pp.root_bus_nr) {
+		type = PCIE_ATU_TYPE_CFG0;
+	} else {
+		type = PCIE_ATU_TYPE_CFG1;
+	}
+
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_VIEWPORT, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1);
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_LOWER_BASE, lower_32_bits(cpu_addr));
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_UPPER_BASE, upper_32_bits(cpu_addr));
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_LIMIT, lower_32_bits(cpu_addr + resource_size(&cfg->res) - 1));
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_LOWER_TARGET, 0);
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_UPPER_TARGET, 0);
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_CR1, type);
+	dw_pcie_writel_dbi(priv->pcie, PCIE_ATU_CR2, PCIE_ATU_ENABLE | (0x1 << 28));
+
+	/*
+	 * Make sure ATU enable takes effect before any subsequent config
+	 * and I/O accesses.
+	 */
+	for (retries = 0; retries < LINK_WAIT_MAX_IATU_RETRIES; retries++) {
+		val = dw_pcie_readl_dbi(priv->pcie, PCIE_ATU_CR2);
+		if (val & PCIE_ATU_ENABLE) {
+			break;
+		}
+
+		mdelay(LINK_WAIT_IATU);
+	}
+
+	if (!(val & PCIE_ATU_ENABLE)) {
+		dev_err(priv->pcie->dev, "Outbound iATU is not being enabled\n");
+	}
+
+	if (busn < cfg->busr.start || busn > cfg->busr.end) {
+		return NULL;
+	}
+
+	busn -= cfg->busr.start;
+	base = cfg->win + (busn << cfg->ops->bus_shift);
+	return base + (devfn << devfn_shift) + where;
+}
+
+static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus, unsigned int devfn,
+					 int where)
+{
+	struct pci_config_window *cfg = bus->sysdata;
+	struct baikal_pcie_rc *priv = cfg->priv;
+
+	if (priv->pcie->pp.root_bus == NULL) {
+		priv->pcie->pp.root_bus = bus;
+		baikal_pcie_establish_link(priv->pcie);
+	}
+
+	if (bus->number != cfg->busr.start && !baikal_pcie_link_up(priv->pcie)) {
+		return NULL;
+	}
+
+	if (bus->number == cfg->busr.start) {
+		/*
+		 * The DW PCIe core doesn't filter out transactions to other
+		 * devices/functions on the root bus num, so we do this here.
+		 */
+		if (PCI_SLOT(devfn) > 0) {
+			return NULL;
+		} else {
+			return priv->pcie->dbi_base + where;
+		}
+	}
+
+	return baikal_pci_ecam_map_bus(bus, devfn, where);
+}
+
+struct pci_ecam_ops baikal_pcie_ecam_ops = {
+	.bus_shift	= 20,
+	.init		= baikal_pcie_init,
+	.pci_ops	= {
+		.map_bus	= baikal_pcie_map_bus,
+		.read		= pci_generic_config_read,
+		.write		= pci_generic_config_write
+	}
+};
+#endif

@@ -89,6 +89,7 @@ config PCIE_BAIKAL
 	depends on PCI_MSI_IRQ_DOMAIN
 	select PCIE_DW
 	select PCIE_DW_HOST
+	select PCI_QUIRKS if ACPI
 	help
 	  Enables support for the PCIe controller in the Baikal SoC.  There
 	  are three instances of PCIe controller in Baikal-M.  Two of the controllers
