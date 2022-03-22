@@ -20,8 +20,8 @@ variables:
       - ./linux-${BOARD}.tar
     expire_in: 1 month
 
-et101-mb-11:
+bm1000:
   variables:
-    DEFCONFIG: et101_defconfig
-    BOARD: "et101-mb-11"
+    DEFCONFIG: bm1000_defconfig
+    BOARD: "bm1000"
   <<: *build_kernel_dfn
