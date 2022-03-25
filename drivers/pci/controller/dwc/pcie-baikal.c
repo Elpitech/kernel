@@ -332,8 +332,6 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 			cfg_size = 0x0ff00000;
 		else
 			cfg_size = (cfg_end - cfg_base) & PCIE_ECAM_BUS_MASK;
-		if (pp->va_cfg0_base)
-			iounmap(pp->va_cfg0_base);
 		pp->va_cfg0_base = ioremap(cfg_base, cfg_size);
 		/* set up region 2 for bus 1 */
 		dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
