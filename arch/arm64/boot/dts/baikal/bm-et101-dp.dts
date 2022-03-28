@@ -40,6 +40,12 @@
 
 &uart1 {
 	status = "okay";
+
+	ps2mult {
+		compatible = "serdev,serio";
+		current-speed = <115200>;
+		protocol = <0x3c>; /* SERIO_PS2MULT */
+	};
 };
 
 &sata0 {

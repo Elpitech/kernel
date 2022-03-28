@@ -12,6 +12,6 @@ dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101-lvds.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-et111.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-em407.dtb
 
-always		:= $(dtb-y)
+always-y	:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
 clean-files	:= *.dtb
