@@ -362,7 +362,7 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2,
 				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
 		rc->ecam = true;
-		rc->max_bus = (cfg_size >> PCIE_ECAM_BUS_SHIFT) + 1;
+		rc->max_bus = cfg_size >> PCIE_ECAM_BUS_SHIFT;
 		dev_info(pcie->dev, "ECAM configured. Max bus %u\n",
 			 rc->max_bus);
 	}
