@@ -273,10 +273,10 @@ static int baikal_vdu_drm_probe(struct platform_device *pdev)
 
 		if (of_property_read_string(pdev->dev.of_node, "data-mapping",
 					    &data_mapping)) {
-			priv->cr1_cfg |= CR1_OPS_LCD18;
-		} else if (strncmp(data_mapping, "vesa-24", 7)) {
 			priv->cr1_cfg |= CR1_OPS_LCD24;
-		} else if (strncmp(data_mapping, "jeida-18", 8)) {
+		} else if (!strncmp(data_mapping, "vesa-24", 8)) {
+			priv->cr1_cfg |= CR1_OPS_LCD24;
+		} else if (!strncmp(data_mapping, "jeida-18", 9)) {
 			priv->cr1_cfg |= CR1_OPS_LCD18;
 			priv->lvds_gpior |= GPIOR_UHD_FMT_JEIDA;
 		} else {
