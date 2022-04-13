@@ -287,7 +287,6 @@ static int hda_baikal_first_init(struct azx *chip, struct platform_device *pdev)
 	if (err)
 		return err;
 
-#if 0 /* Don't setup irq handler - leave irq disabled */
 	err = devm_request_irq(chip->card->dev, irq_id, azx_interrupt,
 			     IRQF_SHARED, KBUILD_MODNAME, chip);
 	if (err) {
@@ -296,7 +295,6 @@ static int hda_baikal_first_init(struct azx *chip, struct platform_device *pdev)
 			irq_id);
 		return err;
 	}
-#endif
 	bus->irq = irq_id;
 
 	synchronize_irq(bus->irq);
@@ -397,6 +395,8 @@ static int hda_baikal_create(struct snd_card *card,
 
 	chip->bus.core.needs_damn_long_delay = 1;
 	chip->bus.core.aligned_mmio = 1;
+	chip->bus.core.response_irq_broken = 1;
+	chip->bus.core.baikal_codec_addr_quirk = 1;
 
 	/* force polling mode, because RIRB interrupts don't working */
 	if (of_property_read_bool(hda->dev->of_node, "cyclic-codec-probe"))

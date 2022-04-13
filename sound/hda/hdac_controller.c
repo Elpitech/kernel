@@ -11,10 +11,6 @@
 #include <sound/hda_register.h>
 #include "local.h"
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#endif
-
 /* clear CORB read pointer properly */
 static void azx_clear_corbrp(struct hdac_bus *bus)
 {
@@ -82,8 +78,11 @@ void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 	snd_hdac_chip_writew(bus, RIRBWP, AZX_RIRBWP_RST);
 	/* set N=1, get RIRB response interrupt for new entry */
 	snd_hdac_chip_writew(bus, RINTCNT, 1);
-	/* enable rirb dma and response irq */
-	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN);
+	/* enable rirb dma and response irq (if not broken) */
+	if (!bus->response_irq_broken)
+		snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN);
+	else
+		snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN);
 	/* Accept unsolicited responses */
 	snd_hdac_chip_updatel(bus, GCTL, AZX_GCTL_UNSOL, AZX_GCTL_UNSOL);
 	spin_unlock_irq(&bus->reg_lock);
@@ -150,11 +149,8 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 
 	spin_lock_irq(&bus->reg_lock);
 
-#ifdef CONFIG_OF
-	if (of_property_read_bool(bus->dev->of_node, 
-			"increment-codec-address"))
+	if (bus->baikal_codec_addr_quirk)
 		val = val + 0x10000000;
-#endif
 	bus->last_cmd[azx_command_addr(val)] = val;
 
 	/* add command to corb */
