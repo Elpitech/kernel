@@ -115,6 +115,7 @@
 	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
 	snps,reset-delays-us = <10>, <10000>, <50000>;
 	phy-mode = "rgmii-rxid";
+	phy-handle = <&gmac1_phy>;
 };
 
 &mdio1 {
