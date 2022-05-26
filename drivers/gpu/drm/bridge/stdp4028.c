@@ -92,6 +92,7 @@ u8 *stdp4028_get_edid(struct i2c_client *client)
 	struct i2c_adapter *adapter = client->adapter;
 	unsigned char start = 0x00;
 	unsigned int total_size;
+	int i, rc;
 	u8 *block = kmalloc(EDID_LENGTH, GFP_KERNEL);
 
 	struct i2c_msg msgs[] = {
@@ -111,9 +112,13 @@ u8 *stdp4028_get_edid(struct i2c_client *client)
 	if (!block)
 		return NULL;
 
-	if (i2c_transfer(adapter, msgs, 2) != 2) {
-		DRM_ERROR("Unable to read EDID.\n");
-		goto err;
+	for (i = 0; i < 256; i++) {
+		start = i;
+		msgs[1].buf = block + i;
+		if ((rc = i2c_transfer(adapter, msgs, 2)) != 2) {
+			DRM_ERROR("Unable to read EDID at %x (ret = %d).\n", start, rc);
+			goto err;
+		}
 	}
 
 	if (!drm_edid_block_valid(block, 0, false, NULL)) {
