@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M Mini-ITX board device tree (test version)
- *
+ * Baikal-M ET101 common device tree
  */
-
-/dts-v1/;
 
 #include "bm1000.dtsi"
 #include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 / {
 
-	model = "Elpitech Baikal-M mitx board";
 	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
@@ -22,38 +18,6 @@
 	};
 
 	chosen { };
-
-	panel {
-		compatible = "panel-lvds";
-		width-mm = <223>;
-		height-mm = <125>;
-		data-mapping = "vesa-24";
-		enable-gpios = <&porta 16 GPIO_ACTIVE_HIGH>;
-		panel-timing {
-		// 1920x1080 @60Hz
-			clock-frequency = <148500000>;
-			hactive = <1920>;
-			vactive = <1080>;
-			hsync-len = <44>;
-			hfront-porch = <88>;
-			hback-porch = <148>;
-			vsync-len = <5>;
-			vfront-porch = <4>;
-			vback-porch = <36>;
-		};
-		port {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			panel0_lvds0: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&vdu_lvds0_pads>;
-			};
-			panel0_lvds1: endpoint@1 {
-				reg = <1>;
-				remote-endpoint = <&vdu_lvds1_pads>;
-			};
-		};
-	};
 
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -100,11 +64,6 @@
 	gmac0_phy: ethernet-phy@3 {
 		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
-		txd0-skew-ps = <0>;
-		txd1-skew-ps = <0>;
-		txd2-skew-ps = <0>;
-		txd3-skew-ps = <0>;
-		txc-skew-ps  = <0xff>;
 		realtek,led-mode = <RTL8211F_LED_MODE_B>;
 		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
 		realtek,led1-control = <RTL8211F_LINK10_ACT>;
@@ -124,31 +83,9 @@
 	gmac1_phy: ethernet-phy@3 {
 		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
-		txd0-skew-ps = <0>;
-		txd1-skew-ps = <0>;
-		txd2-skew-ps = <0>;
-		txd3-skew-ps = <0>;
-		txc-skew-ps  = <0xff>;
 		realtek,led-mode = <RTL8211F_LED_MODE_B>;
 		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
 		realtek,led1-control = <RTL8211F_LINK10_ACT>;
-	};
-};
-
-&vdu0 {
-	status = "okay";
-	num-lanes = <2>;
-	port {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		vdu_lvds0_pads: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&panel0_lvds0>;
-		};
-		vdu_lvds1_pads: endpoint@1 {
-			reg = <1>;
-			remote-endpoint = <&panel0_lvds1>;
-		};
 	};
 };
 
@@ -225,26 +162,9 @@
 &i2c0 {
 	status = "okay";
 
-	bmc@8 {
-		compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
-		reg = <0x08>;
-	};
-
-	gpio@50 {
-		compatible = "nxp,pca9670";
-		#gpio-cells = <2>;
-		gpio-controller;
-		reg = <0x50>;
-	};
-
 	rtc@51 {
 		compatible = "nxp,pcf2129", "nxp,pcf2127";
 		reg = <0x51>;
-	};
-
-	hwmon@52 {
-		compatible = "tp,bm_mitx_hwmon";
-		reg = <0x52>;
 	};
 
 	eeprom@53 {
@@ -252,17 +172,6 @@
 		pagesize = <32>;
 		reg = <0x53>;
 	};
-
-	ps2port@54 {
-		compatible = "tp,tp_serio";
-		reg = <0x54>;
-		interrupt-parent = <&porta>;
-		interrupts = <14 8>;
-	};
-};
-
-&i2c1 {
-	status = "disabled";
 };
 
 &smbus0 {
