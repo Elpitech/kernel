@@ -9,22 +9,13 @@
 
 /dts-v1/;
 
-#include "bm-mbm.dtsi"
+#include "bm1000-mbm.dtsi"
 
 / {
+	model = "Baikal Electronics MBM 1.0";
+	compatible = "baikal,mbm10", "baikal,bm1000", "baikal,baikal-m";
+
 	sound {
 		simple-audio-card,hp-det-gpio = <&porta 27 GPIO_ACTIVE_HIGH>;
 	};
-};
-
-&gmac0 {
-	status = "okay";
-	snps,reset-gp-out;
-	snps,reset-active-low;
-};
-
-&gmac1 {
-	status = "okay";
-	snps,reset-gp-out;
-	snps,reset-active-low;
 };

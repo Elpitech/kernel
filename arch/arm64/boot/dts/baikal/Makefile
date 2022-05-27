@@ -1,8 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0
-dtb-$(CONFIG_ARCH_BAIKAL) += bm-dbm.dtb
-dtb-$(CONFIG_ARCH_BAIKAL) += bm-mbm10.dtb
-dtb-$(CONFIG_ARCH_BAIKAL) += bm-mbm20.dtb
-dtb-$(CONFIG_ARCH_BAIKAL) += bm-qemu.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-dbm10.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-dbm20.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-mbm10.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-mbm20.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-qemu-m.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bs1000-dbs.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bs1000-qemu-s.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-mitx-d.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-e107.dtb
@@ -11,7 +14,3 @@ dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101-dp.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101-lvds.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-et111.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-em407.dtb
-
-always-y	:= $(dtb-y)
-subdir-y	:= $(dts-dirs)
-clean-files	:= *.dtb

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Device tree include file for MBM-compatible boards
- * Copyright (C) 2021 Baikal Electronics, JSC
+ * Copyright (C) 2021-2022 Baikal Electronics, JSC
  */
 
 #include "bm1000.dtsi"
 
 / {
-	model = "Baikal Electronics MBM";
-	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
 
 	chosen { };
 
@@ -52,6 +55,18 @@
 	};
 };
 
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
 &gpio32 {
 	status = "okay";
 };
@@ -64,7 +79,7 @@
 	status = "okay";
 
 	bmc@8 {
-		compatible = "tp,mitx2-bmc", "t-platforms,mitx2-bmc";
+		compatible = "tp,mitx2-bmc";
 		reg = <0x08>;
 	};
 
@@ -113,6 +128,30 @@
 	status = "okay";
 	system-clock-frequency = <12000000>;
 	#sound-dai-cells = <0>;
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
 };
 
 &mmc {

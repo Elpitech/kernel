@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Device tree source for Baikal-M software emulator (QEMU) platform
+ * Device tree source for Baikal Electronics QEMU-M virtual platform
  * Copyright (C) 2018-2021 Baikal Electronics, JSC
  */
 
 /dts-v1/;
 
 #include "bm1000.dtsi"
-
-/*
- * Device "flash@0" was added to allow UEFI to boot on emulator.
- * TODO: the tree should be replaced by actual Baikal-M component tree
- */
 
 / {
 	model = "Baikal Electronics QEMU-M";
@@ -112,35 +107,38 @@
 		spi-max-frequency = <12500000>;
 		status = "okay";
 
-		mtd0@0 {
-			label = "fip";
-			reg = <0x00000000 0x00400000>;
-			read-only;
-		};
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-		mtd1@400000 {
-			label = "env";
-			reg = <0x00400000 0x00100000>;
-		};
+			partition@0 {
+				label = "bl1";
+				reg = <0x000000 0x40000>;
+				read-only;
+			};
 
-		mtd2@500000 {
-			label = "kernel";
-			reg = <0x00500000 0x00400000>;
-		};
+			partition@40000 {
+				label = "dtb";
+				reg = <0x040000 0x40000>;
+				read-only;
+			};
 
-		mtd3@900000 {
-			label = "rootfs";
-			reg = <0x00900000 0x00800000>;
-		};
+			partition@80000 {
+				label = "uefi-vars";
+				reg = <0x080000 0xc0000>;
+			};
 
-		mtd4@1100000 {
-			label = "data0";
-			reg = <0x01100000 0x00f00000>;
+			partition@140000 {
+				label = "fip";
+				reg = <0x140000 0x6c0000>;
+				read-only;
+			};
 		};
 	};
 };
 
-&uart0 {
+&uart1 {
 	status = "okay";
 };
 

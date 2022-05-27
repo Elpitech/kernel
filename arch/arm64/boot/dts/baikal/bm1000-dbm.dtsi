@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Device tree source for Baikal Electronics DBM board
- * Copyright (C) 2019-2021 Baikal Electronics, JSC
+ * Device tree source for Baikal Electronics DBM boards
+ * Copyright (C) 2019-2022 Baikal Electronics, JSC
  */
-
-/dts-v1/;
 
 #include <dt-bindings/input/input.h>
 #include "bm1000.dtsi"
 
 / {
-	model = "Baikal Electronics DBM";
-	compatible = "baikal,dbm", "baikal,bm1000", "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
 
 	aliases {
-		ethernet0       = &gmac0;
-		ethernet1       = &gmac1;
-		mdio-gpio0      = &mdio_gpio;
+		ethernet0	= &gmac0;
+		ethernet1	= &gmac1;
+		mdio-gpio0	= &mdio_gpio;
 	};
 
 	chosen { };
@@ -73,37 +69,39 @@
 		};
 	};
 
+	soc {
+		mdio_gpio: mdio {
+			compatible = "baikal,mdio-gpio", "be,mdio-gpio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			mdc-pin = <&porta 30 GPIO_ACTIVE_HIGH>;
+			mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
+			clocks = <&gpio_clk>;
+			clock-names = "gpioclk";
+			status = "okay";
+
+			ethphy2: ethernet-phy@c {
+				compatible = "ethernet-phy-ieee802.3-c45";
+				reg = <0xc>;
+				phy-mode = "xgmii";
+				mv,line-mode = "KR";
+				mv,host-mode = "KX4";
+			};
+
+			ethphy3: ethernet-phy@e {
+				compatible = "ethernet-phy-ieee802.3-c45";
+				reg = <0xe>;
+				phy-mode = "xgmii";
+				mv,line-mode = "KR";
+				mv,host-mode = "KX4";
+			};
+		};
+	};
+
 	sound {
 		compatible = "baikal,snd_soc_be";
 		baikal,cpu-dai = <&i2s>;
 		baikal,audio-codec = <&tlv320aic3x>;
-	};
-
-	/* Baikal internal MDIO */
-	mdio_gpio: be-mdio {
-		compatible = "be,mdio-gpio";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		mdc-pin = <&porta 30 GPIO_ACTIVE_HIGH>;
-		mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
-		clocks = <&gpio_clk>;
-		clock-names = "gpioclk";
-
-		ethphy2: ethernet-phy@c {
-			compatible = "ethernet-phy-ieee802.3-c45";
-			reg = <0xc>;
-			phy-mode = "xgmii";
-			mv,line-mode = "KR";
-			mv,host-mode = "KX4";
-		};
-
-		ethphy3: ethernet-phy@e {
-			compatible = "ethernet-phy-ieee802.3-c45";
-			reg = <0xe>;
-			phy-mode = "xgmii";
-			mv,line-mode = "KR";
-			mv,host-mode = "KX4";
-		};
 	};
 };
 
@@ -121,18 +119,12 @@
 
 &gmac0 {
 	status = "okay";
-	snps,reset-gp-out;
-	snps,reset-active-low;
-	clk_csr = <0x3>;
 	phy-handle = <&ethphy0>;
 	phy-mode = "rgmii-id";
 };
 
 &gmac1 {
 	status = "okay";
-	snps,reset-gp-out;
-	snps,reset-active-low;
-	clk_csr = <0x3>;
 	phy-handle = <&ethphy1>;
 	phy-mode = "rgmii-id";
 };
@@ -160,11 +152,6 @@
 		status = "okay";
 		ai3x-micbias-vg = <1>;
 		ai3x-ocmv = <1>;
-	};
-
-	rtc@56 {
-		compatible = "abracon,abeoz9";
-		reg = <0x56>;
 	};
 };
 
@@ -271,37 +258,47 @@
 
 &spi {
 	num-cs = <4>;
-	cs-gpios =
-		<&porta 24 GPIO_ACTIVE_LOW>, /* ss0 xp8 - DD53 normal flash */
-		<&porta 25 GPIO_ACTIVE_LOW>, /* ss1 xp9 */
-		<&porta 26 GPIO_ACTIVE_LOW>, /* ss2 xp10 */
-		<&porta 27 GPIO_ACTIVE_LOW>; /* ss3 xp11 */
+	cs-gpios = <&porta 24 GPIO_ACTIVE_LOW>, /* ss0 xp8 - DD53 normal flash */
+		   <&porta 25 GPIO_ACTIVE_LOW>, /* ss1 xp9 */
+		   <&porta 26 GPIO_ACTIVE_LOW>, /* ss2 xp10 */
+		   <&porta 27 GPIO_ACTIVE_LOW>; /* ss3 xp11 */
 	status = "okay";
 
-	/* SPI flash chip #1 */
-	flash0: m25p80@0 {
-		compatible = "micron,n25q256a", "jedec,spi-nor";
+	flash@0 {
+		compatible = "jedec,spi-nor";
 		reg = <0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
 		spi-max-frequency = <12500000>;
 		status = "okay";
 
-		/* Flash chip0 partitions */
-		mtd0@0 {
-			label = "bl1";
-			reg = <0x00000000 0x00040000>;
-			read-only;
-		};
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-		mtd1@40000 {
-			label = "fip";
-			reg = <0x00040000 0x007c0000>;
-		};
+			partition@0 {
+				label = "bl1";
+				reg = <0x000000 0x40000>;
+				read-only;
+			};
 
-		mtd2@800000 {
-			label = "rescue";
-			reg = <0x00800000 0x01800000>;
+			partition@40000 {
+				label = "dtb";
+				reg = <0x040000 0x40000>;
+				read-only;
+			};
+
+			partition@80000 {
+				label = "uefi-vars";
+				reg = <0x080000 0xc0000>;
+			};
+
+			partition@140000 {
+				label = "fip";
+				reg = <0x140000 0x6c0000>;
+				read-only;
+			};
 		};
 	};
 };
@@ -373,14 +370,10 @@
 
 &xgmac0 {
 	status = "okay";
-	phy-mode = "xgmii";
-	be,pcs-mode = "KX4";
 	ext-phy-handle = <&ethphy2>;
 };
 
 &xgmac1 {
 	status = "okay";
-	phy-mode = "xgmii";
-	be,pcs-mode = "KX4";
 	ext-phy-handle = <&ethphy3>;
 };
