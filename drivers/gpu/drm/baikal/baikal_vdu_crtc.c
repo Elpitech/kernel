@@ -226,8 +226,6 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 
 	rate = mode->clock * 1000;
 
-	if (__clk_is_enabled(priv->clk))
-		clk_disable_unprepare(priv->clk);
 	ret = clk_set_rate(priv->clk, rate);
 	DRM_DEV_DEBUG_DRIVER(dev->dev, "Requested pixel clock is %ld Hz\n",
 			     rate);
@@ -324,19 +322,15 @@ static void baikal_vdu_crtc_helper_enable(struct drm_crtc *crtc,
 void baikal_vdu_crtc_helper_disable(struct drm_crtc *crtc)
 {
 	struct baikal_vdu_private *priv = crtc->dev->dev_private;
-	u32 reg;
 
 	drm_panel_disable(priv->connector.panel);
 
 	drm_panel_unprepare(priv->connector.panel);
 	drm_crtc_vblank_off(crtc);
 
-	/* Disable VDU */
-	reg = readl(priv->regs + CR1);
-	reg &= ~CR1_LCE;
-	writel(reg, priv->regs + CR1);
-
-	/* Can't disable clock until LDD */
+	baikal_vdu_wait_off(priv);
+	clk_disable_unprepare(priv->clk);
+	priv->state = 0;
 }
 
 static void baikal_vdu_crtc_helper_atomic_flush(struct drm_crtc *crtc,

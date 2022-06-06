@@ -325,6 +325,32 @@ static int baikal_vdu_drm_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int baikal_vdu_suspend(struct device *dev)
+{
+	struct drm_device *drm = dev_get_drvdata(dev);
+
+	dev_dbg(dev, "Suspend\n");
+	drm_mode_config_helper_suspend(drm);
+
+	return 0;
+}
+
+static int baikal_vdu_resume(struct device *dev)
+{
+	struct drm_device *drm = dev_get_drvdata(dev);
+
+	dev_dbg(dev, "Resume\n");
+
+	drm_mode_config_helper_resume(drm);
+	
+	return 0;
+}
+
+static const struct dev_pm_ops baikal_vdu_pm_ops = {
+	.suspend = baikal_vdu_suspend,
+	.resume = baikal_vdu_resume,
+};
+
 static const struct of_device_id baikal_vdu_of_match[] = {
 	{ .compatible = "baikal,vdu" },
 	{ },
@@ -336,6 +362,7 @@ static struct platform_driver baikal_vdu_platform_driver = {
 	.driver = {
 		.name   = DRIVER_NAME,
 		.of_match_table = baikal_vdu_of_match,
+		.pm = &baikal_vdu_pm_ops,
 	},
 };
 
