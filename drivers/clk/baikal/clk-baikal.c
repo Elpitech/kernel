@@ -309,9 +309,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 			__func__, cmu->name);
 	}
 
-	/* FIXME We probably SHOULDN'T enable it here */
-	clk_prepare_enable(clk);
-
 	number = of_property_count_u32_elems(node, "clock-indices");
 
 	if (number > 0) {
@@ -386,8 +383,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 				pr_err("%s: could not register lookup clk %s\n",
 				__func__, clk_ch_name);
 			}
-			/* FIXME We probably SHOULDN'T enable it here */
-			clk_prepare_enable(clk_ch->clks[index]);
 			i++;
 		}
 		return of_clk_add_provider(pdev->dev.of_node,
