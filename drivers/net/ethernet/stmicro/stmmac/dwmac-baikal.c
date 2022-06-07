@@ -79,6 +79,22 @@ static void baikal_dwmac_fix_mac_speed(void *priv, unsigned int speed)
 	}
 }
 
+static int dwmac_baikal_init(struct platform_device *pdev, void *plat_priv)
+{
+	struct baikal_dwmac *dwmac = plat_priv;
+
+	clk_prepare_enable(dwmac->tx2_clk);
+
+	return 0;
+}
+
+static void dwmac_baikal_exit(struct platform_device *pdev, void *plat_priv)
+{
+	struct baikal_dwmac *dwmac = plat_priv;
+
+	clk_disable_unprepare(dwmac->tx2_clk);
+}
+
 static int dwmac_baikal_probe(struct platform_device *pdev)
 {
 	struct plat_stmmacenet_data *plat_dat;
@@ -129,6 +145,7 @@ static int dwmac_baikal_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "coldn't get TX2 clock\n");
 		dwmac->tx2_clk = NULL;
 	}
+	clk_prepare_enable(dwmac->tx2_clk);
 	plat_dat->fix_mac_speed = baikal_dwmac_fix_mac_speed;
 	plat_dat->bsp_priv = dwmac;
 
@@ -136,6 +153,8 @@ static int dwmac_baikal_probe(struct platform_device *pdev)
 	plat_dat->enh_desc = 1;
 	plat_dat->tx_coe = 1;
 	plat_dat->rx_coe = 1;
+	plat_dat->exit = dwmac_baikal_exit;
+	plat_dat->init = dwmac_baikal_init;
 	// TODO: set CSR correct clock in dts!
 	plat_dat->clk_csr = 3;
 

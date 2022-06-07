@@ -814,8 +814,6 @@ static int __maybe_unused stmmac_pltfr_noirq_resume(struct device *dev)
 		ret = pm_runtime_force_resume(dev);
 		if (ret)
 			return ret;
-
-		stmmac_init_tstamp_counter(priv, priv->systime_flags);
 	}
 
 	return 0;
