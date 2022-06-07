@@ -931,7 +931,7 @@
 			interrupts = <GIC_SPI 291 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			max-speed = <1000>;
-			clocks = <&soc_ethclk>, <&cmu0_xgbe 10>, <&cmu0_xgbe 0>;
+			clocks = <&cmu0_xgbe 9>, <&cmu0_xgbe 10>, <&cmu0_xgbe 8>;
 			clock-names = "ptp_ref", "tx2_clk", "stmmaceth";
 			mac-address = [ 00 00 00 00 00 00 ];
 			local-mac-address = [ 00 00 00 00 00 00 ];
@@ -956,7 +956,7 @@
 			interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "macirq";
 			max-speed = <1000>;
-			clocks = <&soc_ethclk>, <&cmu0_xgbe 13>, <&cmu0_xgbe 0>;
+			clocks = <&cmu0_xgbe 12>, <&cmu0_xgbe 13>, <&cmu0_xgbe 11>;
 			clock-names = "ptp_ref", "tx2_clk", "stmmaceth";
 			mac-address = [ 00 00 00 00 00 00 ];
 			local-mac-address = [ 00 00 00 00 00 00 ];

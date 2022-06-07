@@ -138,8 +138,8 @@
 			clock-output-names = "baikal-xgbe-cmu0";
 			#clock-cells = <1>;
 			clocks = <&osc25>;
-			clock-names = "csr50mhz", "gmac0_tx2", "gmac1_tx2", "hdmi_aclk", "isfr";
-			clock-indices = <0>, <10>, <13>, <15>, <17>;
+			clock-names = "csr50mhz", "gmac0_aclk", "gmac0_ptp", "gmac0_tx2", "gmac1_aclk", "gmac1_ptp", "gmac1_tx2", "hdmi_aclk", "isfr";
+			clock-indices = <0>, <8>, <9>, <10>, <11>, <12>, <13>, <15>, <17>;
 			cmu-id = <0x30000000>;
 			max = <1250000000>;
 			min = <50000000>;
