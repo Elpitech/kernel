@@ -87,72 +87,6 @@ static inline int stdp_write(struct stdp4028 *stdp, int reg, u16 val)
 #define connector_to_stdp4028(connector) \
 	container_of(connector, struct stdp4028, connector)
 
-u8 *stdp4028_get_edid(struct i2c_client *client)
-{
-	struct i2c_adapter *adapter = client->adapter;
-	unsigned char start = 0x00;
-	unsigned int total_size;
-	int i, rc;
-	u8 *block = kmalloc(EDID_LENGTH, GFP_KERNEL);
-
-	struct i2c_msg msgs[] = {
-		{
-			.addr   = client->addr,
-			.flags  = 0,
-			.len    = 1,
-			.buf    = &start,
-		}, {
-			.addr   = client->addr,
-			.flags  = I2C_M_RD,
-			.len    = EDID_LENGTH,
-			.buf    = block,
-		}
-	};
-
-	if (!block)
-		return NULL;
-
-	for (i = 0; i < 256; i++) {
-		start = i;
-		msgs[1].buf = block + i;
-		if ((rc = i2c_transfer(adapter, msgs, 2)) != 2) {
-			DRM_ERROR("Unable to read EDID at %x (ret = %d).\n", start, rc);
-			goto err;
-		}
-	}
-
-	if (!drm_edid_block_valid(block, 0, false, NULL)) {
-		DRM_ERROR("Invalid EDID block\n");
-		goto err;
-	}
-
-	total_size = (block[EDID_EXT_BLOCK_CNT] + 1) * EDID_LENGTH;
-	if (total_size > EDID_LENGTH) {
-		kfree(block);
-		block = kmalloc(total_size, GFP_KERNEL);
-		if (!block)
-			return NULL;
-
-		/* Yes, read the entire buffer, and do not skip the first
-		 * EDID_LENGTH bytes.
-		 */
-		start = 0x00;
-		msgs[1].len = total_size;
-		msgs[1].buf = block;
-
-		if (i2c_transfer(adapter, msgs, 2) != 2) {
-			DRM_ERROR("Unable to read EDID extension blocks.\n");
-			goto err;
-		}
-	}
-
-	return block;
-
-err:
-	kfree(block);
-	return NULL;
-}
-
 /*
  * Get videomode specified in the devicetree.
  * Return 1 on success, 0 otherwise.
@@ -201,12 +135,9 @@ static int stdp4028_get_modes(struct drm_connector *connector)
 	}
 
 	kfree(stdp->edid);
-	stdp->edid = (struct edid *) stdp4028_get_edid(client);
+	stdp->edid = (struct edid *) drm_get_edid(connector, client->adapter);
 
-	if (stdp->edid) {
-		drm_connector_update_edid_property(connector, stdp->edid);
-		num_modes = drm_add_edid_modes(connector, stdp->edid);
-	}
+	num_modes = drm_add_edid_modes(connector, stdp->edid);
 
 	mutex_unlock(&stdp->lock);
 
