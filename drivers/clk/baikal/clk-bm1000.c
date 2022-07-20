@@ -276,6 +276,11 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 	cmu->hw.init = &init;
 	cmu->is_clk_ch = 0;
 
+	number = of_property_count_u32_elems(node, "clock-indices");
+
+	if (number > 1)
+		init.flags |= CLK_IS_CRITICAL;
+
 	/* Register the clock */
 	pr_debug("%s: add %s, parent %s\n", __func__,
 			cmu->name, parent_name ? parent_name : "null");
@@ -294,8 +299,6 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 		pr_err("%s: could not register lookup clk %s\n",
 			__func__, cmu->name);
 	}
-
-	number = of_property_count_u32_elems(node, "clock-indices");
 
 	if (number > 0) {
 		clk_ch = kmalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
