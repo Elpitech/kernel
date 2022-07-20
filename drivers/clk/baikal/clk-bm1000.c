@@ -235,12 +235,11 @@ static const struct clk_ops baikal_clk_ops = {
 	.round_rate = baikal_clk_round_rate,
 };
 
-static int  baikal_clk_probe(struct platform_device *pdev)
+static void __init baikal_clk_init(struct device_node *node)
 {
 	struct clk_init_data init;
 	struct baikal_clk_cmu *cmu;
 	struct baikal_clk_cmu **cmu_ch;
-	struct device_node *node = pdev->dev.of_node;
 
 	struct clk *clk;
 	struct clk_onecell_data *clk_ch;
@@ -255,7 +254,7 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 	cmu = kmalloc(sizeof(struct baikal_clk_cmu *), GFP_KERNEL);
 	if (!cmu) {
 		pr_err("%s: could not allocate CMU clk\n", __func__);
-		return -ENOMEM;
+		return;
 	}
 
 	of_property_read_string(node, "clock-output-names", &cmu->name);
@@ -288,7 +287,7 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 
 	if (IS_ERR(clk)) {
 		pr_err("%s: could not register clk %s\n", __func__, cmu->name);
-		return -ENOMEM;
+		return;
 	}
 
 	clk_hw_set_rate_range(&cmu->hw, cmu->min, cmu->max);
@@ -305,7 +304,7 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 		if (!clk_ch) {
 			pr_err("%s: could not allocate CMU clk channel\n",
 				__func__);
-			return -ENOMEM;
+			return;
 		}
 		/* Get the last index to find out max number of children*/
 		of_property_for_each_u32(node, "clock-indices",
@@ -319,7 +318,7 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 				GFP_KERNEL);
 		if (!cmu_ch) {
 			kfree(clk_ch);
-			return -ENOMEM;
+			return;
 		}
 
 		of_property_for_each_u32(node, "clock-indices", prop,
@@ -372,19 +371,11 @@ static int  baikal_clk_probe(struct platform_device *pdev)
 			}
 			i++;
 		}
-		return of_clk_add_provider(pdev->dev.of_node,
-					of_clk_src_onecell_get, clk_ch);
+		of_clk_add_provider(node, of_clk_src_onecell_get, clk_ch);
+		return;
 	}
 
-	return of_clk_add_provider(pdev->dev.of_node,
-				of_clk_src_simple_get, clk);
-}
-
-static int baikal_clk_remove(struct platform_device *pdev)
-{
-	of_clk_del_provider(pdev->dev.of_node);
-
-	return 0;
+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
 }
 
 #ifdef CONFIG_ACPI
@@ -721,25 +712,5 @@ static int __init baikal_acpi_clk_driver_init(void)
 device_initcall(baikal_acpi_clk_driver_init);
 #endif
 
-static const struct of_device_id baikal_clk_of_match[] =  {
-	{.compatible = "baikal,bm1000-cmu"},
-	/* Compatibility with older firmware */
-	{.compatible = "baikal,cmu"},
-	{ /* sentinel */ }
-};
-
-static struct platform_driver bm1000_cmu_driver = {
-	.probe  = baikal_clk_probe,
-	.remove = baikal_clk_remove,
-	.driver = {
-		.name   = "bm1000-cmu",
-		.of_match_table = baikal_clk_of_match,
-	},
-};
-
-module_platform_driver(bm1000_cmu_driver);
-
-MODULE_DESCRIPTION("Baikal BE-M1000 clock driver");
-MODULE_AUTHOR("Ekaterina Skachko <ekaterina.skachko@baikalelectronics.ru>");
-MODULE_LICENSE("GPL");
-MODULE_ALIAS("platform:bm1000-cmu");
+CLK_OF_DECLARE(bm1000_cmu, "baikal,bm1000-cmu", baikal_clk_init);
+CLK_OF_DECLARE(bm1000_cmu_compat, "baikal,cmu", baikal_clk_init);
