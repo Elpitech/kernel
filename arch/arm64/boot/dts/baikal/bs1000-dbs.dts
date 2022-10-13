@@ -11,8 +11,6 @@
 / {
 	model = "Baikal Electronics DBS";
 	compatible = "baikal,dbs", "baikal,bs1000";
-	#address-cells = <2>;
-	#size-cells = <2>;
 
 	aliases {
 		ethernet0 = &gmac0;
@@ -36,18 +34,6 @@
 	status = "okay";
 	phy-handle = <&ethphy1>;
 	phy-mode = "rgmii-rxid";
-};
-
-&gpio8_1 {
-	status = "okay";
-};
-
-&gpio8_2 {
-	status = "okay";
-};
-
-&gpio16 {
-	status = "okay";
 };
 
 &gpio32 {
@@ -92,6 +78,14 @@
 	status = "okay";
 };
 
+&pcie1_p0 {
+	status = "okay";
+};
+
+&pcie1_p1 {
+	status = "okay";
+};
+
 &pcie2_p0 {
 	status = "okay";
 };
@@ -113,6 +107,22 @@
 };
 
 &pcie3_p3 {
+	status = "okay";
+};
+
+&pcie4_p0 {
+	status = "okay";
+};
+
+&pcie4_p1 {
+	status = "okay";
+};
+
+&pcie4_p2 {
+	status = "okay";
+};
+
+&pcie4_p3 {
 	status = "okay";
 };
 
@@ -278,10 +288,22 @@
 	status = "okay";
 };
 
-&uart_s {
+&wdt {
 	status = "okay";
 };
 
-&wdt {
+&mux {
+	status = "okay";
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
 	status = "okay";
 };

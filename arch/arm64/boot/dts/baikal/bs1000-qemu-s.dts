@@ -11,8 +11,11 @@
 / {
 	model = "Baikal Electronics QEMU-S";
 	compatible = "baikal,qemu-s", "baikal,bs1000";
-	#address-cells = <2>;
-	#size-cells = <2>;
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
 
 	chosen { };
 
@@ -24,6 +27,32 @@
 		compatible = "cfi-flash";
 		reg = <0x0 0x4000000 0x0 0x4000000>;
 		bank-width = <0x4>;
+	};
+};
+
+&gmac0 {
+    status = "okay";
+    phy-handle = <&ethphy0>;
+    phy-mode = "rgmii-rxid";
+};
+
+&gmac1 {
+    status = "okay";
+    phy-handle = <&ethphy1>;
+    phy-mode = "rgmii-rxid";
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
 	};
 };
 

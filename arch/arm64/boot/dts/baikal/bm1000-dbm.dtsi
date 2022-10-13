@@ -8,9 +8,6 @@
 #include "bm1000.dtsi"
 
 / {
-	#address-cells = <2>;
-	#size-cells = <2>;
-
 	aliases {
 		ethernet0	= &gmac0;
 		ethernet1	= &gmac1;
@@ -43,6 +40,9 @@
 	};
 
 	panel {
+		/* In order to utilize LVDS LCD panel, make sure that
+		   status is "okay" along with &vdu0 status (see below). */
+		status = "disabled";
 		compatible = "panel-lvds";
 		width-mm = <223>;
 		height-mm = <125>;
@@ -102,6 +102,16 @@
 		compatible = "baikal,snd_soc_be";
 		baikal,cpu-dai = <&i2s>;
 		baikal,audio-codec = <&tlv320aic3x>;
+	};
+
+	sfp-xgmac0 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c1>;
+	};
+
+	sfp-xgmac1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c1>;
 	};
 };
 
@@ -340,7 +350,9 @@
 };
 
 &vdu0 {
-	status = "okay";
+	/* In order to utilize LVDS LCD panel, make sure that
+	   status is "okay" along with panel status (see above). */
+	status = "disabled";
 	enable-gpios = <&porta 16 GPIO_ACTIVE_LOW>;
 	backlight {
 		min-brightness-level = <10>;

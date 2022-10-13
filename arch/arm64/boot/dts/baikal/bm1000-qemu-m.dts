@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Device tree source for Baikal Electronics QEMU-M virtual platform
- * Copyright (C) 2018-2021 Baikal Electronics, JSC
+ * Copyright (C) 2018-2022 Baikal Electronics, JSC
  */
 
 /dts-v1/;
@@ -11,8 +11,6 @@
 / {
 	model = "Baikal Electronics QEMU-M";
 	compatible = "baikal,qemu-m", "baikal,bm1000";
-	#address-cells = <2>;
-	#size-cells = <2>;
 
 	aliases {
 		ethernet0 = &gmac0;
@@ -138,7 +136,7 @@
 	};
 };
 
-&uart1 {
+&uart0 {
 	status = "okay";
 };
 

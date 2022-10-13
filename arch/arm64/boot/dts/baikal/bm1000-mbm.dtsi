@@ -7,9 +7,6 @@
 #include "bm1000.dtsi"
 
 / {
-	#address-cells = <2>;
-	#size-cells = <2>;
-
 	aliases {
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;

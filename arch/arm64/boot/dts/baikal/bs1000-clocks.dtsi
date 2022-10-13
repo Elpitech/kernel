@@ -20,7 +20,7 @@
 		type = <CLK_TYPE_PLL>;					\
 		clocks = <&clk_ref>;					\
 		#clock-cells = <0>;					\
-		clock-frequency = <2000000000>;				\
+		clock-frequency = <1600000000>;				\
 	};								\
 	cluster##num##_cmu1_pll:					\
 	cluster##num##_cmu1_pll {					\
@@ -380,7 +380,7 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				clock-frequency = <2000000000>;
 			};
 			cmu_ddr_1_pll: cmu_ddr_1_pll {
 				compatible = "baikal,bs1000-cmu";

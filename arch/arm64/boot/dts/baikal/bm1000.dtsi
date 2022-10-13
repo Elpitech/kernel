@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M SoC device tree
+ * Device tree include file for BE-M1000 SoC
+ * Copyright (C) 2017-2022 Baikal Electronics, JSC
  */
 
 #include "bm1000-clocks.dtsi"
@@ -65,20 +66,16 @@
 	interrupt-parent = <&gic>;
 
 	aliases {
-		gpio0		= &gpio32;
-		hda		= &hda;
 		i2c0		= &i2c0;
 		i2c1		= &i2c1;
 		i2c2		= &smbus0;
 		i2c3		= &smbus1;
-		pvt-mali	= &pvt_mali;
 		sata0		= &sata0;
 		sata1		= &sata1;
 		serial0		= &uart0;
 		serial1		= &uart1;
 		usb2		= &usb2;
 		usb3		= &usb3;
-		vdec		= &vdec;
 		vdu-lvds	= &vdu0;
 	};
 
