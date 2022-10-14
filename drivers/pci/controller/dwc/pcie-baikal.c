@@ -1431,7 +1431,7 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus, unsigned int devfn
 	return baikal_pci_ecam_map_bus(bus, devfn, where);
 }
 
-const struct pci_ecam_ops baikal_pcie_ecam_ops = {
+const struct pci_ecam_ops baikal_m_pcie_ecam_ops = {
 	.bus_shift	= 20,
 	.init		= baikal_pcie_init,
 	.pci_ops	= {

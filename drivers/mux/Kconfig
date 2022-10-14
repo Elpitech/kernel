@@ -58,4 +58,13 @@ config MUX_MMIO
 	  To compile the driver as a module, choose M here: the module will
 	  be called mux-mmio.
 
+config MUX_BAIKAL
+	tristate "Baikal-S SoC low speed peripheral IO Multiplexer"
+	help
+	  The driver allows to control three switches of the multiplexer
+	  independently:
+	  - 8 GPIOs or UART/SMBus/SMBus;
+	  - 8 GPIOs or SPI;
+	  - 16 GPIOs or eSPI.
+
 endmenu

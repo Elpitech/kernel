@@ -56,10 +56,26 @@ static struct mcfg_fixup mcfg_quirks[] = {
 #define BAIKAL_ECAM(table_id, rev, seg, ops) \
 	{ "BAIKAL", table_id, rev, seg, MCFG_BUS_ANY, ops }
 
-	/* Baikal Synopsys DesignWare PCIe */
-	BAIKAL_ECAM("BKLEMCFG", 0, 0, &baikal_pcie_ecam_ops),
-	BAIKAL_ECAM("BKLEMCFG", 0, 1, &baikal_pcie_ecam_ops),
-	BAIKAL_ECAM("BKLEMCFG", 0, 2, &baikal_pcie_ecam_ops),
+	/* Baikal-M Synopsys DesignWare PCIe */
+	BAIKAL_ECAM("BKLEMCFG", 1, 0, &baikal_m_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 1, 1, &baikal_m_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 1, 2, &baikal_m_pcie_ecam_ops),
+
+	/* Baikal-S Synopsys DesignWare PCIe */
+	BAIKAL_ECAM("BKLEMCFG", 2, 0, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 1, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 2, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 3, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 4, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 5, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 6, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 7, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 8, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 9, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 10, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 11, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 12, &baikal_s_pcie_ecam_ops),
+	BAIKAL_ECAM("BKLEMCFG", 2, 13, &baikal_s_pcie_ecam_ops),
 
 #define QCOM_ECAM32(seg) \
 	{ "QCOM  ", "QDF2432 ", 1, seg, MCFG_BUS_ANY, &pci_32b_ops }

@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Baikal-M memory controller edac kernel module.
  *
- * Copyright (C) 2021 Baikal Electronics, JSC.
- *
+ * Copyright (C) 2021 Baikal Electronics, JSC
  */
 
 #include <linux/edac.h>
@@ -148,11 +147,9 @@ static int baikal_mc_probe(struct platform_device *pdev)
 	struct mem_ctl_info *mci;
 	struct dimm_info *dimm;
 	void __iomem *baseaddr;
-	struct resource *res;
 	int ret;
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	baseaddr = devm_ioremap_resource(&pdev->dev, res);
+	baseaddr = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(baseaddr))
 		return PTR_ERR(baseaddr);
 
@@ -185,6 +182,7 @@ static int baikal_mc_probe(struct platform_device *pdev)
 	mci->edac_cap = EDAC_FLAG_SECDED;
 	mci->mod_name = pdev->dev.driver->name;
 	mci->dev_name = dev_name(&pdev->dev);
+	mci->ctl_name = "baikal_edac_ctl";
 	mci->scrub_mode = SCRUB_HW_TUNABLE;
 	mci->mc_idx = pdev->name[0] != 'e' ? 1 : 0;
 	mci->pdev = &pdev->dev;
