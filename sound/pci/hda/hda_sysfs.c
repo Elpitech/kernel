@@ -686,9 +686,7 @@ static int get_line_from_fw(char *buf, int size, size_t *fw_size_p,
 		return 0;
 
 	for (len = 0; len < fw_size; len++) {
-		if (!*p)
-			break;
-		if (*p == '\n') {
+		if ( !*p || *p == '\n') {
 			p++;
 			len++;
 			break;
