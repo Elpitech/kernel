@@ -151,16 +151,10 @@ int baikal_vdu_primary_plane_init(struct drm_device *drm)
 	struct baikal_vdu_private *priv = drm->dev_private;
 	struct drm_plane *plane = &priv->primary;
 	static const u32 formats[] = {
-		DRM_FORMAT_BGR888,
 		DRM_FORMAT_RGB888,
-		DRM_FORMAT_ABGR8888,
-		DRM_FORMAT_XBGR8888,
 		DRM_FORMAT_ARGB8888,
 		DRM_FORMAT_XRGB8888,
-		DRM_FORMAT_BGR565,
 		DRM_FORMAT_RGB565,
-		DRM_FORMAT_ABGR1555,
-		DRM_FORMAT_XBGR1555,
 		DRM_FORMAT_ARGB1555,
 		DRM_FORMAT_XRGB1555,
 	};
