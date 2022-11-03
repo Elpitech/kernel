@@ -47,6 +47,12 @@ struct baikal_lsp_mux_priv {
 	struct platform_device *pdev;
 };
 
+struct baikal_mux_chip_priv {
+	unsigned int state;
+	struct mutex chip_lock;
+	struct baikal_lsp_mux_priv channel_priv[BAIKAL_LSP_MUX_COUNT];
+};
+
 static char *baikal_lsp_mux_property(unsigned int state)
 {
 	if (acpi_disabled)
@@ -567,12 +573,28 @@ static DEFINE_MUTEX(baikal_lsp_mux_lock);
 static int baikal_lsp_mux_set(struct mux_control *mux, int state)
 {
 	struct arm_smccc_res res;
+	struct baikal_mux_chip_priv *chip_priv = mux_chip_priv(mux->chip);
+	unsigned int new_state;
 
-	mutex_lock(&baikal_lsp_mux_lock);
+//vvv	mutex_lock(&baikal_lsp_mux_lock);
+	mutex_lock(&chip_priv->chip_lock);
+	new_state = chip_priv->state;
+	if (state)
+		new_state |= 1 << mux_control_get_index(mux);
+	else
+		new_state &= ~(1 << mux_control_get_index(mux));
+#if 1 //vvv
+	arm_smccc_smc(BAIKAL_LSP_MUX_SMC_ID,
+		      new_state,
+		      0, 0, 0, 0, 0, 0, &res);
+	chip_priv->state = new_state;
+#else
 	arm_smccc_smc(BAIKAL_LSP_MUX_SMC_ID,
 		      state << mux_control_get_index(mux) & 0x7,
 		      0, 0, 0, 0, 0, 0, &res);
-	mutex_unlock(&baikal_lsp_mux_lock);
+#endif
+//vvv	mutex_unlock(&baikal_lsp_mux_lock);
+	mutex_unlock(&chip_priv->chip_lock);
 
 	return res.a0;
 }
@@ -585,15 +607,19 @@ static int baikal_lsp_mux_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mux_chip *mux_chip;
+	struct baikal_mux_chip_priv *chip_priv;
 	int i, ret;
 
-	mux_chip = devm_mux_chip_alloc(dev, BAIKAL_LSP_MUX_COUNT, 0);
+	mux_chip = devm_mux_chip_alloc(dev, BAIKAL_LSP_MUX_COUNT,
+				       sizeof(struct baikal_mux_chip_priv));
 	if (IS_ERR(mux_chip)) {
 		dev_err(dev, "failed to allocate mux chip\n");
 		return PTR_ERR(mux_chip);
 	}
 
 	mux_chip->ops = &baikal_lsp_mux_ops;
+	chip_priv = mux_chip_priv(mux_chip);
+	mutex_init(&chip_priv->chip_lock);
 
 	if (uart_smbus == BAIKAL_LSP_MUX_AS_IS) {
 		uart_smbus = !!device_property_present(dev, "uart-smbus-enabled");
