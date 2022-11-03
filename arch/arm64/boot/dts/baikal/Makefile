@@ -15,3 +15,4 @@ dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101-v2-dp.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-et101-v2-lvds.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-et111.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm-em407.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bs-et113.dtb

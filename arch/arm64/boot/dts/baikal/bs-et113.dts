@@ -29,6 +29,7 @@
 &gmac0 {
 	status = "okay";
 	snps,reset-gpios = <&portb 4 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
 	phy-handle = <&ethphy0>;
 	phy-mode = "rgmii-rxid";
 };
@@ -36,6 +37,7 @@
 &gmac1 {
 	status = "okay";
 	snps,reset-gpios = <&portb 5 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
 	phy-handle = <&ethphy1>;
 	phy-mode = "rgmii-rxid";
 };
@@ -60,6 +62,25 @@
 	status = "okay";
 };
 
+&i2c5 {
+	status = "okay";
+};
+
+&i2c6 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	max98089: codec@10 {
+		compatible = "maxim,max98089";
+		reg = <0x10>;
+	};
+
+	rtc@0x54 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x54>;
+	};
+};
+
 &mdio0 {
 	ethphy0: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
@@ -81,18 +102,12 @@
 
 &pcie0_p0 {
 	status = "okay";
-};
-
-&pcie0_p1 {
-	status = "okay";
+	num-lanes = <16>;
 };
 
 &pcie1_p0 {
 	status = "okay";
-};
-
-&pcie1_p1 {
-	status = "okay";
+	num-lanes = <16>;
 };
 
 &pcie2_p0 {
@@ -121,18 +136,17 @@
 
 &pcie4_p0 {
 	status = "okay";
-};
-
-&pcie4_p1 {
-	status = "okay";
+	num-lanes = <8>;
 };
 
 &pcie4_p2 {
 	status = "okay";
+	num-lanes = <1>;
 };
 
 &pcie4_p3 {
 	status = "okay";
+	num-lanes = <1>;
 };
 
 &pvt_ca75_0 {
@@ -239,7 +253,6 @@
 		spi-max-frequency = <10000000>;
 		spi-tx-bus-width = <1>;
 		spi-rx-bus-width = <1>;
-//vvv		spi-cs-high;
 		status = "okay";
 
 		partitions {
@@ -303,6 +316,7 @@
 
 &mux {
 	status = "okay";
+	uart-smbus-enabled;
 };
 
 &mux0 {
