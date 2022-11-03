@@ -8,6 +8,10 @@
  * All bugs by Alexey Sheplyakov <asheplyakov@altlinux.org>
  */
 
+#include <linux/acpi.h>
+#include <linux/arm-smccc.h>
+#include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/iopoll.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -22,9 +26,14 @@
 #define MAC_GPIO	0x000000e0	/* GPIO register */
 #define MAC_GPIO_GPO0	(1 << 8)	/* 0-output port */
 
-struct baikal_dwmac {
+#define BAIKAL_SMC_GMAC_DIV2_ENABLE	0x82000500
+#define BAIKAL_SMC_GMAC_DIV2_DISABLE	0x82000501
+
+struct baikal_gmac {
 	struct device	*dev;
+	uint64_t	base;
 	struct clk	*tx2_clk;
+	int		has_aux_div2;
 };
 
 static struct stmmac_dma_ops baikal_dma_ops;
@@ -32,9 +41,10 @@ static struct stmmac_dma_ops baikal_dma_ops;
 static int baikal_dwmac_dma_reset(void __iomem *ioaddr)
 {
 	int err;
-	u32 value = readl(ioaddr + DMA_BUS_MODE);
+	u32 value;
 
 	/* DMA SW reset */
+	value = readl(ioaddr + DMA_BUS_MODE);
 	value |= DMA_BUS_MODE_SFT_RESET;
 	writel(value, ioaddr + DMA_BUS_MODE);
 
@@ -54,52 +64,67 @@ static int baikal_dwmac_dma_reset(void __iomem *ioaddr)
 	return 0;
 }
 
-static void baikal_dwmac_fix_mac_speed(void *priv, unsigned int speed)
+static void baikal_gmac_fix_mac_speed(void *priv, unsigned int speed)
 {
-	struct baikal_dwmac *dwmac = priv;
+	struct arm_smccc_res res;
+	struct baikal_gmac *gmac = priv;
 	unsigned long tx2_clk_freq = 0;
 
-	dev_dbg(dwmac->dev, "fix_mac_speed new speed %u\n", speed);
+	dev_dbg(gmac->dev, "fix_mac_speed new speed %u\n", speed);
 	switch (speed) {
 	case SPEED_1000:
 		tx2_clk_freq = 250000000;
+		if (gmac->has_aux_div2) {
+			arm_smccc_smc(BAIKAL_SMC_GMAC_DIV2_DISABLE,
+				      gmac->base, 0, 0, 0, 0, 0, 0, &res);
+		}
 		break;
 	case SPEED_100:
 		tx2_clk_freq = 50000000;
+		if (gmac->has_aux_div2) {
+			arm_smccc_smc(BAIKAL_SMC_GMAC_DIV2_DISABLE,
+				      gmac->base, 0, 0, 0, 0, 0, 0, &res);
+		}
 		break;
 	case SPEED_10:
 		tx2_clk_freq = 5000000;
+		if (gmac->has_aux_div2) {
+			tx2_clk_freq = 5000000;
+			arm_smccc_smc(BAIKAL_SMC_GMAC_DIV2_ENABLE,
+				      gmac->base, 0, 0, 0, 0, 0, 0, &res);
+		}
 		break;
 	}
 
-	if (dwmac->tx2_clk && tx2_clk_freq != 0) {
-		dev_dbg(dwmac->dev, "setting TX2 clock frequency to %lu\n",
+	if (gmac->tx2_clk && tx2_clk_freq != 0) {
+		dev_dbg(gmac->dev, "setting TX2 clock frequency to %lu\n",
 			tx2_clk_freq);
-		clk_set_rate(dwmac->tx2_clk, tx2_clk_freq);
+		clk_set_rate(gmac->tx2_clk, tx2_clk_freq);
 	}
 }
 
 static int dwmac_baikal_init(struct platform_device *pdev, void *plat_priv)
 {
-	struct baikal_dwmac *dwmac = plat_priv;
+	struct baikal_gmac *gmac = plat_priv;
 
-	clk_prepare_enable(dwmac->tx2_clk);
+	clk_prepare_enable(gmac->tx2_clk);
 
 	return 0;
 }
 
 static void dwmac_baikal_exit(struct platform_device *pdev, void *plat_priv)
 {
-	struct baikal_dwmac *dwmac = plat_priv;
+	struct baikal_gmac *gmac = plat_priv;
 
-	clk_disable_unprepare(dwmac->tx2_clk);
+	clk_disable_unprepare(gmac->tx2_clk);
 }
 
 static int dwmac_baikal_probe(struct platform_device *pdev)
 {
 	struct plat_stmmacenet_data *plat_dat;
 	struct stmmac_resources stmmac_res;
-	struct baikal_dwmac *dwmac;
+	struct resource *res;
+	struct baikal_gmac *gmac;
 	u32 value;
 	int ret;
 
@@ -133,21 +158,31 @@ static int dwmac_baikal_probe(struct platform_device *pdev)
 		plat_dat->unicast_filter_entries = 1;
 	}
 
-	dwmac = devm_kzalloc(&pdev->dev, sizeof(*dwmac), GFP_KERNEL);
-	if (!dwmac) {
+	gmac = devm_kzalloc(&pdev->dev, sizeof(*gmac), GFP_KERNEL);
+	if (!gmac) {
 		ret = -ENOMEM;
 		goto err_remove_config_dt;
 	}
 
-	dwmac->dev = &pdev->dev;
-	dwmac->tx2_clk = devm_clk_get(dwmac->dev, "tx2_clk");
-	if (IS_ERR(dwmac->tx2_clk)) {
+	gmac->dev = &pdev->dev;
+	gmac->tx2_clk = devm_clk_get(gmac->dev, "tx2_clk");
+	if (IS_ERR(gmac->tx2_clk)) {
 		dev_warn(&pdev->dev, "coldn't get TX2 clock\n");
-		dwmac->tx2_clk = NULL;
+		gmac->tx2_clk = NULL;
 	}
-	clk_prepare_enable(dwmac->tx2_clk);
-	plat_dat->fix_mac_speed = baikal_dwmac_fix_mac_speed;
-	plat_dat->bsp_priv = dwmac;
+	clk_prepare_enable(gmac->tx2_clk);
+
+	if (gmac->dev->of_node &&
+	     of_device_is_compatible(gmac->dev->of_node, "baikal,bs1000-gmac")) {
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		gmac->base = res->start;
+		gmac->has_aux_div2 = 1;
+	} else {
+		gmac->has_aux_div2 = 0;
+	}
+
+	plat_dat->fix_mac_speed = baikal_gmac_fix_mac_speed;
+	plat_dat->bsp_priv = gmac;
 
 	plat_dat->has_gmac = 1;
 	plat_dat->enh_desc = 1;
@@ -190,6 +225,8 @@ err_remove_config_dt:
 }
 
 static const struct of_device_id dwmac_baikal_match[] = {
+	{ .compatible = "baikal,bm1000-gmac" },
+	{ .compatible = "baikal,bs1000-gmac" },
 	{ .compatible = "be,dwmac-3.710"},
 	{ .compatible = "be,dwmac"},
 	{ }
@@ -200,7 +237,7 @@ static struct platform_driver dwmac_baikal_driver = {
 	.probe  = dwmac_baikal_probe,
 	.remove = stmmac_pltfr_remove,
 	.driver = {
-		.name		= "baikal-dwmac",
+		.name		= "baikal-gmac-dwmac",
 		.pm		= &stmmac_pltfr_pm_ops,
 		.of_match_table = of_match_ptr(dwmac_baikal_match),
 	},
