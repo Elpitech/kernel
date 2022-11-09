@@ -568,32 +568,22 @@ static struct platform_driver baikal_lsp_mux_channel_driver = {
 	.probe = baikal_lsp_mux_channel_probe
 };
 
-static DEFINE_MUTEX(baikal_lsp_mux_lock);
-
 static int baikal_lsp_mux_set(struct mux_control *mux, int state)
 {
 	struct arm_smccc_res res;
 	struct baikal_mux_chip_priv *chip_priv = mux_chip_priv(mux->chip);
 	unsigned int new_state;
 
-//vvv	mutex_lock(&baikal_lsp_mux_lock);
 	mutex_lock(&chip_priv->chip_lock);
 	new_state = chip_priv->state;
 	if (state)
 		new_state |= 1 << mux_control_get_index(mux);
 	else
 		new_state &= ~(1 << mux_control_get_index(mux));
-#if 1 //vvv
 	arm_smccc_smc(BAIKAL_LSP_MUX_SMC_ID,
 		      new_state,
 		      0, 0, 0, 0, 0, 0, &res);
 	chip_priv->state = new_state;
-#else
-	arm_smccc_smc(BAIKAL_LSP_MUX_SMC_ID,
-		      state << mux_control_get_index(mux) & 0x7,
-		      0, 0, 0, 0, 0, 0, &res);
-#endif
-//vvv	mutex_unlock(&baikal_lsp_mux_lock);
 	mutex_unlock(&chip_priv->chip_lock);
 
 	return res.a0;
