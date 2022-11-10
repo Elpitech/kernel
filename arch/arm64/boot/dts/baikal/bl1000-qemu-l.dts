@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Device tree source for Baikal Electronics QEMU-S virtual platform
- * Copyright (C) 2021-2022 Baikal Electronics, JSC
+ * Device tree source for Baikal Electronics QEMU-L virtual platform
+ * Copyright (C) 2022 Baikal Electronics, JSC
  */
 
 /dts-v1/;
 
-#include "bs1000.dtsi"
+#include "bl1000.dtsi"
 
 / {
-	model = "Baikal Electronics QEMU-S";
-	compatible = "baikal,qemu-s", "baikal,bs1000";
-
-	aliases {
-		ethernet0 = &gmac0;
-		ethernet1 = &gmac1;
-	};
+	model = "Baikal Electronics QEMU-L";
+	compatible = "baikal,qemu-l", "baikal,bl1000";
 
 	chosen { };
 
@@ -30,41 +25,7 @@
 	};
 };
 
-&ehci {
-	status = "okay";
-};
-
-&gmac0 {
-	status = "okay";
-	phy-handle = <&ethphy0>;
-	phy-mode = "rgmii-rxid";
-};
-
-&gmac1 {
-	status = "okay";
-	phy-handle = <&ethphy1>;
-	phy-mode = "rgmii-rxid";
-};
-
-&mdio0 {
-	ethphy0: ethernet-phy@3 {
-		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x3>;
-	};
-};
-
-&mdio1 {
-	ethphy1: ethernet-phy@3 {
-		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x3>;
-	};
-};
-
-&ohci {
-	status = "okay";
-};
-
-&qspi1 {
+&qspi {
 	num-cs = <4>;
 	status = "okay";
 
@@ -107,18 +68,6 @@
 	};
 };
 
-&timer1 {
-	status = "okay";
-};
-
-&uart_a1 {
-	status = "okay";
-};
-
-&uart_a2 {
-	status = "okay";
-};
-
-&uart_s {
+&uart0 {
 	status = "okay";
 };

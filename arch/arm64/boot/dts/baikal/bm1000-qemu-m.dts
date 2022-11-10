@@ -85,6 +85,13 @@
 	};
 };
 
+&mmc {
+	status = "okay";
+	disable-wp;
+	bus-width = <4>;
+	max-clock = <25000000>;
+};
+
 &sata0 {
 	status = "okay";
 };
@@ -93,7 +100,7 @@
 	status = "okay";
 };
 
-&spi {
+&spi0 {
 	num-cs = <6>;
 	status = "okay";
 
@@ -103,6 +110,9 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		spi-cs-high;
 		status = "okay";
 
 		partitions {
@@ -113,13 +123,11 @@
 			partition@0 {
 				label = "bl1";
 				reg = <0x000000 0x40000>;
-				read-only;
 			};
 
 			partition@40000 {
 				label = "dtb";
 				reg = <0x040000 0x40000>;
-				read-only;
 			};
 
 			partition@80000 {
@@ -130,7 +138,6 @@
 			partition@140000 {
 				label = "fip";
 				reg = <0x140000 0x6c0000>;
-				read-only;
 			};
 		};
 	};
@@ -138,6 +145,8 @@
 
 &uart0 {
 	status = "okay";
+	clocks = <&cmu0_avlsp 1>;
+	clock-names = "baudclk";
 };
 
 &vdu0 {

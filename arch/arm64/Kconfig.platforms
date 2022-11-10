@@ -36,12 +36,12 @@ config ARCH_BAIKAL
 	select GPIO_SYSFS
 	select GPIO_DWAPB
 	select GPIO_GENERIC
+	select I2C_BAIKAL_SMBUS
 	select STMMAC_ETH
 	select SPI_DESIGNWARE
 	select SPI_DW_MMIO
 	select DW_APB_TIMER
 	select DW_APB_TIMER_OF
-	select ARM64_VA_BITS_48
 	select PCI
 	select MULTIPLEXER
 	help

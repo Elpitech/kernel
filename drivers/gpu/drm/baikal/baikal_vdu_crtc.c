@@ -236,7 +236,7 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 	}
 
 	ppl = mode->hdisplay / 16;
-	if (priv->type == VDU_TYPE_LVDS) {
+	if (priv->type == VDU_TYPE_LVDS && priv->num_lanes == 2) {
 		hsw = mode->hsync_end - mode->hsync_start;
 		hfp = mode->hsync_start - mode->hdisplay - 1;
 		hbp = mode->htotal - mode->hsync_end;

@@ -2,7 +2,7 @@
 /*
  * Baikal-M memory controller edac kernel module.
  *
- * Copyright (C) 2021 Baikal Electronics, JSC
+ * Copyright (C) 2021-2022 Baikal Electronics, JSC
  */
 
 #include <linux/edac.h>
@@ -14,28 +14,28 @@
 
 #include "edac_mc.h"
 
-#define BE_EDAC_MSG_SIZE	80
+#define BAIKAL_EDAC_MSG_SIZE	80
 
-#define DDRC_ECCCFG0		0x70	/* ECC Configuration Register */
-#define DDRC_ECCCFG1		0x74	/* ECC Configuration Register */
-#define DDRC_ECCSTAT		0x78	/* ECC Status Register */
-#define DDRC_ECCCLR		0x7c	/* ECC Clear Register */
-#define DDRC_ECCERRCNT		0x80	/* ECC Error Counter Register */
-#define DDRC_ECCCADDR0		0x84	/* ECC Corrected Error Address Register 0 */
-#define DDRC_ECCCADDR1		0x88	/* ECC Corrected Error Address Register 1 */
-#define DDRC_ECCCSYN0		0x8c	/* ECC Corrected Syndrome Register 0 */
-#define DDRC_ECCCSYN1		0x90	/* ECC Corrected Syndrome Register 1 */
-#define DDRC_ECCCSYN2		0x94	/* ECC Corrected Syndrome Register 2 */
-#define DDRC_ECCBITMASK0	0x98	/* ECC Corrected Data Bit Mask Register 0 */
-#define DDRC_ECCBITMASK1	0x9c	/* ECC Corrected Data Bit Mask Register 1 */
-#define DDRC_ECCBITMASK2	0xa0	/* ECC Corrected Data Bit Mask Register 2 */
-#define DDRC_ECCUADDR0		0xa4	/* ECC Uncorrected Error Address Register 0 */
-#define DDRC_ECCUADDR1		0xa8	/* ECC Uncorrected Error Address Register 1 */
-#define DDRC_ECCUSYN0		0xac	/* ECC Uncorrected Syndrome Register 0 */
-#define DDRC_ECCUSYN1		0xb0	/* ECC Uncorrected Syndrome Register 1 */
-#define DDRC_ECCUSYN2		0xb4	/* ECC Uncorrected Syndrome Register 2 */
-#define DDRC_ECCPOISONADDR0	0xb8	/* ECC Data Poisoning Address Register 0 */
-#define DDRC_ECCPOISONADDR1	0xbc	/* ECC Data Poisoning Address Register 1 */
+#define DDRC_ECCCFG0		0x70 /* ECC Configuration Register */
+#define DDRC_ECCCFG1		0x74 /* ECC Configuration Register */
+#define DDRC_ECCSTAT		0x78 /* ECC Status Register */
+#define DDRC_ECCCLR		0x7c /* ECC Clear Register */
+#define DDRC_ECCERRCNT		0x80 /* ECC Error Counter Register */
+#define DDRC_ECCCADDR0		0x84 /* ECC Corrected Error Address Register 0 */
+#define DDRC_ECCCADDR1		0x88 /* ECC Corrected Error Address Register 1 */
+#define DDRC_ECCCSYN0		0x8c /* ECC Corrected Syndrome Register 0 */
+#define DDRC_ECCCSYN1		0x90 /* ECC Corrected Syndrome Register 1 */
+#define DDRC_ECCCSYN2		0x94 /* ECC Corrected Syndrome Register 2 */
+#define DDRC_ECCBITMASK0	0x98 /* ECC Corrected Data Bit Mask Register 0 */
+#define DDRC_ECCBITMASK1	0x9c /* ECC Corrected Data Bit Mask Register 1 */
+#define DDRC_ECCBITMASK2	0xa0 /* ECC Corrected Data Bit Mask Register 2 */
+#define DDRC_ECCUADDR0		0xa4 /* ECC Uncorrected Error Address Register 0 */
+#define DDRC_ECCUADDR1		0xa8 /* ECC Uncorrected Error Address Register 1 */
+#define DDRC_ECCUSYN0		0xac /* ECC Uncorrected Syndrome Register 0 */
+#define DDRC_ECCUSYN1		0xb0 /* ECC Uncorrected Syndrome Register 1 */
+#define DDRC_ECCUSYN2		0xb4 /* ECC Uncorrected Syndrome Register 2 */
+#define DDRC_ECCPOISONADDR0	0xb8 /* ECC Data Poisoning Address Register 0 */
+#define DDRC_ECCPOISONADDR1	0xbc /* ECC Data Poisoning Address Register 1 */
 
 #define ECCCTL_ENABLE_INTR	0x300
 #define ECCCTL_CLEAR_CERR	(1 << 0)
@@ -63,17 +63,19 @@ struct baikal_edac_priv {
 static int ecc_mask_bitnum(unsigned mask)
 {
 	int bitnum = 0;
+
 	while (mask) {
 		mask >>= 1;
 		bitnum++;
 	}
+
 	return bitnum;
 }
 
 static irqreturn_t baikal_mc_err_handler(int irq, void *dev_id)
 {
 	u32 regaddr0, regaddr1;
-	char msg[BE_EDAC_MSG_SIZE];
+	char msg[BAIKAL_EDAC_MSG_SIZE];
 	struct mem_ctl_info *mci = dev_id;
 	const struct baikal_edac_priv *priv = mci->pvt_info;
 
@@ -81,7 +83,7 @@ static irqreturn_t baikal_mc_err_handler(int irq, void *dev_id)
 		regaddr0 = readl(priv->baseaddr + DDRC_ECCCADDR0);
 		regaddr1 = readl(priv->baseaddr + DDRC_ECCCADDR1);
 
-		snprintf(msg, BE_EDAC_MSG_SIZE, "catched at "
+		snprintf(msg, BAIKAL_EDAC_MSG_SIZE, "catched at "
 			"Rank: %d, BankGroup: %d, Bank: %d, Row: %d, Col: %d\n",
 			(regaddr0 & ECCADDR_RANK_MASK) >> ECCADDR_RANK_SHIFT,
 			(regaddr1 & ECCADDR_BG_MASK) >> ECCADDR_BG_SHIFT,
@@ -99,11 +101,12 @@ static irqreturn_t baikal_mc_err_handler(int irq, void *dev_id)
 
 		return IRQ_HANDLED;
 	}
+
 	if (irq == priv->irq_uer) {
 		regaddr0 = readl(priv->baseaddr + DDRC_ECCUADDR0);
 		regaddr1 = readl(priv->baseaddr + DDRC_ECCUADDR1);
 
-		snprintf(msg, BE_EDAC_MSG_SIZE, "catched at "
+		snprintf(msg, BAIKAL_EDAC_MSG_SIZE, "catched at "
 			"Rank: %d, BankGroup: %d, Bank: %d, Row: %d, Col: %d\n",
 			(regaddr0 & ECCADDR_RANK_MASK) >> ECCADDR_RANK_SHIFT,
 			(regaddr1 & ECCADDR_BG_MASK) >> ECCADDR_BG_SHIFT,

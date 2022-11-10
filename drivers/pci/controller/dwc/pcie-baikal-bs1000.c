@@ -8,19 +8,24 @@
 #include <linux/acpi.h>
 #include <linux/delay.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/pci-ecam.h>
 #include <linux/pm_runtime.h>
 
 #include "pcie-designware.h"
 
-struct baikal_pcie_rc {
-	struct dw_pcie	*pcie;
+struct baikal_pcie {
+	struct dw_pcie	*pci;
 	void __iomem	*apb_base;
 	u64		cpu_addr_mask;
 };
 
-#define to_baikal_pcie_rc(x)	dev_get_drvdata((x)->dev)
+struct baikal_pcie_of_data {
+	enum dw_pcie_device_mode	mode;
+};
+
+#define to_baikal_pcie(x)	dev_get_drvdata((x)->dev)
 
 #define PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG		0x78
 #define PCIE_CAP_CORR_ERR_REPORT_EN			BIT(0)
@@ -46,6 +51,9 @@ struct baikal_pcie_rc {
 
 #define PCIE_IATU_REGION_CTRL_2_REG_SHIFT_MODE		BIT(28)
 
+#define BS1000_PCIE_APB_PE_GEN_CTRL3			0x58
+#define BS1000_PCIE_APB_PE_GEN_CTRL3_LTTSM_EN		BIT(0)
+
 #define BS1000_PCIE_APB_PE_LINK_DBG2			0xb4
 #define BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_L0	0x11
 #define BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_MASK	0x3f
@@ -55,19 +63,38 @@ struct baikal_pcie_rc {
 #define BS1000_PCIE_APB_PE_ERR_STS			0xe0
 #define BS1000_PCIE_APB_PE_INT_STS			0xe8
 
+#define BS1000_PCIE0_P0_DBI_BASE			0x39000000
+#define BS1000_PCIE0_P1_DBI_BASE			0x39400000
+#define BS1000_PCIE1_P0_DBI_BASE			0x3d000000
+#define BS1000_PCIE1_P1_DBI_BASE			0x3d400000
+#define BS1000_PCIE2_P0_DBI_BASE			0x45000000
+#define BS1000_PCIE2_P1_DBI_BASE			0x45400000
+
 static u64 baikal_pcie_cpu_addr_fixup(struct dw_pcie *pcie, u64 cpu_addr)
 {
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
+	struct baikal_pcie *bp = to_baikal_pcie(pcie);
 
-	return cpu_addr & rc->cpu_addr_mask;
+	return cpu_addr & bp->cpu_addr_mask;
+}
+
+static int baikal_pcie_establish_link(struct dw_pcie *pci)
+{
+	struct baikal_pcie *bp = to_baikal_pcie(pci);
+	u32 reg;
+
+	reg = readl(bp->apb_base + BS1000_PCIE_APB_PE_GEN_CTRL3);
+	reg |= BS1000_PCIE_APB_PE_GEN_CTRL3_LTTSM_EN;
+	writel(reg, bp->apb_base + BS1000_PCIE_APB_PE_GEN_CTRL3);
+
+	return 0;
 }
 
 static int baikal_pcie_link_up(struct dw_pcie *pcie)
 {
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
+	struct baikal_pcie *bp = to_baikal_pcie(pcie);
 	u32 reg;
 
-	reg = readl(rc->apb_base + BS1000_PCIE_APB_PE_LINK_DBG2);
+	reg = readl(bp->apb_base + BS1000_PCIE_APB_PE_LINK_DBG2);
 	return ((reg & BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_MASK) ==
 		       BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_L0) &&
 		(reg & BS1000_PCIE_APB_PE_LINK_DBG2_SMLH_LINK_UP) &&
@@ -134,8 +161,8 @@ static const struct dw_pcie_host_ops baikal_pcie_host_ops = {
 
 static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
 {
-	struct baikal_pcie_rc *rc = arg;
-	struct dw_pcie *pcie = rc->pcie;
+	struct baikal_pcie *bp = arg;
+	struct dw_pcie *pcie = bp->pci;
 	struct device *dev = pcie->dev;
 
 	u32 apb_pe_err_status;
@@ -145,8 +172,8 @@ static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
 	u32 root_err_status;
 	u32 uncorr_err_status;
 
-	apb_pe_err_status   = readl(rc->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
-	apb_pe_int_status   = readl(rc->apb_base + BS1000_PCIE_APB_PE_INT_STS);
+	apb_pe_err_status   = readl(bp->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
+	apb_pe_int_status   = readl(bp->apb_base + BS1000_PCIE_APB_PE_INT_STS);
 	uncorr_err_status   = dw_pcie_readl_dbi(pcie,
 					 PCIE_UNCORR_ERR_STATUS_REG);
 	corr_err_status	    = dw_pcie_readl_dbi(pcie,
@@ -156,8 +183,8 @@ static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
 	dev_ctrl_dev_status = dw_pcie_readl_dbi(pcie,
 					 PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG);
 
-	writel(apb_pe_err_status, rc->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
-	writel(apb_pe_int_status, rc->apb_base + BS1000_PCIE_APB_PE_INT_STS);
+	writel(apb_pe_err_status, bp->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
+	writel(apb_pe_int_status, bp->apb_base + BS1000_PCIE_APB_PE_INT_STS);
 	dw_pcie_writel_dbi(pcie,
 		    PCIE_UNCORR_ERR_STATUS_REG, uncorr_err_status);
 	dw_pcie_writel_dbi(pcie,
@@ -176,11 +203,10 @@ static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
 	return IRQ_HANDLED;
 }
 
-static int baikal_pcie_add_pcie_port(struct baikal_pcie_rc *rc,
-				     struct platform_device *pdev,
-				     const phys_addr_t phys_dbi_base)
+static int baikal_pcie_add_pcie_port(struct baikal_pcie *bp,
+				     struct platform_device *pdev)
 {
-	struct dw_pcie *pcie = rc->pcie;
+	struct dw_pcie *pcie = bp->pci;
 	struct pcie_port *pp = &pcie->pp;
 	struct device *dev = &pdev->dev;
 	int ret;
@@ -192,7 +218,7 @@ static int baikal_pcie_add_pcie_port(struct baikal_pcie_rc *rc,
 	}
 
 	ret = devm_request_irq(dev, pp->irq, baikal_pcie_intr_irq_handler,
-			       IRQF_SHARED, "bs1000-pcie-intr", rc);
+			       IRQF_SHARED, "bs1000-pcie-intr", bp);
 	if (ret) {
 		dev_err(dev, "failed to request IRQ %d\n", pp->irq);
 		return ret;
@@ -216,11 +242,86 @@ static int baikal_pcie_add_pcie_port(struct baikal_pcie_rc *rc,
 	return 0;
 }
 
+static void baikal_pcie_ep_init(struct dw_pcie_ep *ep)
+{
+	struct dw_pcie *pci = to_dw_pcie_from_ep(ep);
+	enum pci_barno bar;
+
+	for (bar = BAR_0; bar <= BAR_5; bar++)
+		dw_pcie_ep_reset_bar(pci, bar);
+}
+
+static int baikal_pcie_ep_raise_irq(struct dw_pcie_ep *ep, u8 func_no,
+				    enum pci_epc_irq_type type,
+				    u16 interrupt_num)
+{
+	struct dw_pcie *pci = to_dw_pcie_from_ep(ep);
+
+	switch (type) {
+	case PCI_EPC_IRQ_LEGACY:
+		return dw_pcie_ep_raise_legacy_irq(ep, func_no);
+	case PCI_EPC_IRQ_MSI:
+		return dw_pcie_ep_raise_msi_irq(ep, func_no, interrupt_num);
+	default:
+		dev_err(pci->dev, "UNKNOWN IRQ type\n");
+		return -EINVAL;
+	}
+}
+
+static const struct pci_epc_features baikal_pcie_epc_features = {
+	.linkup_notifier = false,
+	.msi_capable = true,
+	.msix_capable = false,
+	.reserved_bar = BIT(BAR_3) | BIT(BAR_5),
+};
+
+static const struct pci_epc_features*
+baikal_pcie_ep_get_features(struct dw_pcie_ep *ep)
+{
+	return &baikal_pcie_epc_features;
+}
+
+static const struct dw_pcie_ep_ops pcie_ep_ops = {
+	.ep_init = baikal_pcie_ep_init,
+	.raise_irq = baikal_pcie_ep_raise_irq,
+	.get_features = baikal_pcie_ep_get_features,
+};
+
+static int baikal_pcie_add_pcie_ep(struct baikal_pcie *bp,
+				   struct platform_device *pdev)
+{
+	int ret;
+	struct dw_pcie_ep *ep;
+	struct resource *res;
+	struct device *dev = &pdev->dev;
+	struct dw_pcie *pci = bp->pci;
+
+	ep = &pci->ep;
+	ep->ops = &pcie_ep_ops;
+
+	pci->dbi_base2 = pci->dbi_base + 0x100000;
+
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "addr_space");
+	if (!res)
+		return -EINVAL;
+
+	ep->phys_base = res->start;
+	ep->addr_size = resource_size(res);
+
+	ret = dw_pcie_ep_init(ep);
+	if (ret) {
+		dev_err(dev, "failed to initialize endpoint\n");
+		return ret;
+	}
+
+	return 0;
+}
+
 #ifdef CONFIG_PM_SLEEP
 static int baikal_pcie_pm_resume(struct device *dev)
 {
-	struct baikal_pcie_rc *rc = dev_get_drvdata(dev);
-	struct dw_pcie *pcie = rc->pcie;
+	struct baikal_pcie *bp = dev_get_drvdata(dev);
+	struct dw_pcie *pcie = bp->pci;
 	u32 reg;
 
 	/* Set Memory Space Enable (MSE) bit */
@@ -237,8 +338,8 @@ static int baikal_pcie_pm_resume_noirq(struct device *dev)
 
 static int baikal_pcie_pm_suspend(struct device *dev)
 {
-	struct baikal_pcie_rc *rc = dev_get_drvdata(dev);
-	struct dw_pcie *pcie = rc->pcie;
+	struct baikal_pcie *bp = dev_get_drvdata(dev);
+	struct dw_pcie *pcie = bp->pci;
 	u32 reg;
 
 	/* Clear Memory Space Enable (MSE) bit */
@@ -261,25 +362,52 @@ static const struct dev_pm_ops baikal_pcie_pm_ops = {
 				      baikal_pcie_pm_resume_noirq)
 };
 
-static const struct of_device_id of_baikal_pcie_match[] = {
-	{ .compatible = "baikal,bs1000-pcie" },
+static const struct baikal_pcie_of_data baikal_pcie_rc_of_data = {
+	.mode = DW_PCIE_RC_TYPE,
+};
+
+static const struct baikal_pcie_of_data baikal_pcie_ep_of_data = {
+	.mode = DW_PCIE_EP_TYPE,
+};
+
+static const struct of_device_id baikal_pcie_of_match[] = {
+	{
+		.compatible = "baikal,bs1000-pcie",
+		.data = &baikal_pcie_rc_of_data,
+	},
+	{
+		.compatible = "baikal,bs1000-pcie-ep",
+		.data = &baikal_pcie_ep_of_data,
+	},
 	{}
 };
-MODULE_DEVICE_TABLE(of, of_baikal_pcie_match);
+MODULE_DEVICE_TABLE(of, baikal_pcie_of_match);
 
 static const struct dw_pcie_ops baikal_pcie_ops = {
 	.cpu_addr_fixup = baikal_pcie_cpu_addr_fixup,
-	.link_up = baikal_pcie_link_up
+	.link_up = baikal_pcie_link_up,
+	.start_link = baikal_pcie_establish_link,
 };
 
 static int baikal_pcie_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct baikal_pcie_rc *rc;
+	struct baikal_pcie *bp;
 	struct dw_pcie *pcie;
 	int ret;
 	struct resource *res;
-	phys_addr_t phys_dbi_base;
+	const struct baikal_pcie_of_data *data;
+	const struct of_device_id *match;
+	enum dw_pcie_device_mode mode;
+
+	match = of_match_device(baikal_pcie_of_match, dev);
+	if (!match) {
+		return -EINVAL;
+	}
+
+	data = (struct baikal_pcie_of_data *)match->data;
+	mode = (enum dw_pcie_device_mode)data->mode;
+
 
 	pcie = devm_kzalloc(dev, sizeof(*pcie), GFP_KERNEL);
 	if (!pcie) {
@@ -289,12 +417,12 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	pcie->dev = dev;
 	pcie->ops = &baikal_pcie_ops;
 
-	rc = devm_kzalloc(dev, sizeof(*rc), GFP_KERNEL);
-	if (!rc) {
+	bp = devm_kzalloc(dev, sizeof(*bp), GFP_KERNEL);
+	if (!bp) {
 		return -ENOMEM;
 	}
 
-	rc->pcie = pcie;
+	bp->pci = pcie;
 
 	pm_runtime_enable(dev);
 	ret = pm_runtime_get_sync(dev);
@@ -303,21 +431,26 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		goto err_pm_disable;
 	}
 
-	platform_set_drvdata(pdev, rc);
+	platform_set_drvdata(pdev, bp);
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dbi");
 	if (res) {
 		devm_request_resource(dev, &iomem_resource, res);
 		pcie->dbi_base = devm_ioremap_resource(dev, res);
-		phys_dbi_base = res->start;
-		if (phys_dbi_base == 0x39000000 ||
-		    phys_dbi_base == 0x39400000 ||
-		    phys_dbi_base == 0x3d000000 ||
-		    phys_dbi_base == 0x3d400000 ||
-		    phys_dbi_base == 0x45000000 ||
-		    phys_dbi_base == 0x45400000) {
-			rc->cpu_addr_mask = 0x7fffffffff;
+		if (IS_ERR(pcie->dbi_base)) {
+			dev_err(dev, "error with ioremap\n");
+			ret = PTR_ERR(pcie->dbi_base);
+			goto err_pm_put;
+		}
+
+		if (res->start == BS1000_PCIE0_P0_DBI_BASE ||
+		    res->start == BS1000_PCIE0_P1_DBI_BASE ||
+		    res->start == BS1000_PCIE1_P0_DBI_BASE ||
+		    res->start == BS1000_PCIE1_P1_DBI_BASE ||
+		    res->start == BS1000_PCIE2_P0_DBI_BASE ||
+		    res->start == BS1000_PCIE2_P1_DBI_BASE) {
+			bp->cpu_addr_mask = 0x7fffffffff;
 		} else {
-			rc->cpu_addr_mask = 0xffffffffff;
+			bp->cpu_addr_mask = 0xffffffffff;
 		}
 
 		if (IS_ERR(pcie->dbi_base)) {
@@ -334,10 +467,10 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "apb");
 	if (res) {
 		devm_request_resource(dev, &iomem_resource, res);
-		rc->apb_base = devm_ioremap_resource(dev, res);
-		if (IS_ERR(rc->apb_base)) {
+		bp->apb_base = devm_ioremap_resource(dev, res);
+		if (IS_ERR(bp->apb_base)) {
 			dev_err(dev, "error with ioremap\n");
-			ret = PTR_ERR(rc->apb_base);
+			ret = PTR_ERR(bp->apb_base);
 			goto err_pm_put;
 		}
 	} else {
@@ -346,9 +479,23 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		goto err_pm_put;
 	}
 
-	ret = baikal_pcie_add_pcie_port(rc, pdev, phys_dbi_base);
-	if (ret < 0) {
-		goto err_pm_put;
+	switch (mode) {
+	case DW_PCIE_RC_TYPE:
+		ret = baikal_pcie_add_pcie_port(bp, pdev);
+		if (ret < 0) {
+			goto err_pm_put;
+		}
+
+		break;
+	case DW_PCIE_EP_TYPE:
+		ret = baikal_pcie_add_pcie_ep(bp, pdev);
+		if (ret < 0) {
+			goto err_pm_put;
+		}
+
+		break;
+	default:
+		dev_err(dev, "INVALID device type %d\n", mode);
 	}
 
 	return 0;
@@ -363,7 +510,7 @@ err_pm_disable:
 static struct platform_driver baikal_pcie_bs1000_driver = {
 	.driver = {
 		.name = "baikal-pcie-bs1000",
-		.of_match_table = of_baikal_pcie_match,
+		.of_match_table = baikal_pcie_of_match,
 		.suppress_bind_attrs = true,
 		.pm = &baikal_pcie_pm_ops
 	},
@@ -476,7 +623,7 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 {
 	struct device *dev = &adev->dev;
 	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
+	struct baikal_pcie *bp = to_baikal_pcie(pcie);
 	struct resource_entry *entry;
 	struct list_head list, *pos;
 	struct fwnode_handle *fwnode;
@@ -524,9 +671,9 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	    entry->res->start == 0x3d400000 ||
 	    entry->res->start == 0x45000000 ||
 	    entry->res->start == 0x45400000) {
-		rc->cpu_addr_mask = 0x7fffffffff;
+		bp->cpu_addr_mask = 0x7fffffffff;
 	} else {
-		rc->cpu_addr_mask = 0xffffffffff;
+		bp->cpu_addr_mask = 0xffffffffff;
 	}
 
 	pcie->dbi_base = devm_ioremap_resource(dev, entry->res);
@@ -542,10 +689,10 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	/* APB */
 	pos = pos->next;
 	entry = list_entry(pos, struct resource_entry, node);
-	rc->apb_base = devm_ioremap_resource(dev, entry->res);
-	if (IS_ERR(rc->apb_base)) {
+	bp->apb_base = devm_ioremap_resource(dev, entry->res);
+	if (IS_ERR(bp->apb_base)) {
 		dev_err(dev, "error with apb ioremap\n");
-		ret = PTR_ERR(rc->apb_base);
+		ret = PTR_ERR(bp->apb_base);
 		return ret;
 	}
 
@@ -603,7 +750,7 @@ static int baikal_pcie_get_irq_acpi(struct acpi_device *adev,
 				    struct pcie_port *pp)
 {
 	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
+	struct baikal_pcie *bp = to_baikal_pcie(pcie);
 	struct device *dev = &adev->dev;
 	struct resource res;
 	int ret;
@@ -629,7 +776,7 @@ static int baikal_pcie_get_irq_acpi(struct acpi_device *adev,
 
 	pp->irq = res.start;
 	ret = devm_request_irq(dev, pp->irq, baikal_pcie_intr_irq_handler,
-			       IRQF_SHARED, "bs1000-pcie-intr", rc);
+			       IRQF_SHARED, "bs1000-pcie-intr", bp);
 	if (ret) {
 		dev_err(dev, "failed to request IRQ %d\n", pp->irq);
 		return ret;
@@ -638,11 +785,18 @@ static int baikal_pcie_get_irq_acpi(struct acpi_device *adev,
 	return 0;
 }
 
+static struct device_type baikal_pcie_acpi_device_type = {
+	.name =         "baikal_pcie_acpi",
+#if defined(CONFIG_PM) && defined(CONFIG_PM_SLEEP)
+	.pm =           &baikal_pcie_pm_ops
+#endif
+};
+
 static int baikal_pcie_init(struct pci_config_window *cfg)
 {
 	struct device *dev = cfg->parent;
 	struct acpi_device *adev = to_acpi_device(dev), *child;
-	struct baikal_pcie_rc *rc;
+	struct baikal_pcie *bp;
 	struct dw_pcie *pcie;
 	struct pcie_port *pp;
 	acpi_status status = AE_OK;
@@ -657,15 +811,15 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 	pcie->dev = dev;
 	pcie->ops = &baikal_pcie_ops;
 
-	rc = devm_kzalloc(dev, sizeof(*rc), GFP_KERNEL);
-	if (!rc) {
+	bp = devm_kzalloc(dev, sizeof(*bp), GFP_KERNEL);
+	if (!bp) {
 		return -ENOMEM;
 	}
 
-	rc->pcie = pcie;
-	cfg->priv = rc;
+	bp->pci = pcie;
+	cfg->priv = bp;
 	pp = &pcie->pp;
-	dev_set_drvdata(dev, rc);
+	dev_set_drvdata(dev, bp);
 
 	ret = baikal_pcie_get_res_acpi(adev, &child, pp);
 	if (ret) {
@@ -703,6 +857,8 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 		return ret;
 	}
 
+	pcie->dev->type = &baikal_pcie_acpi_device_type;
+
 	ret = baikal_pcie_host_init(pp);
 	if (ret) {
 		dev_err(dev, "failed to initialize host\n");
@@ -712,24 +868,17 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 	return 0;
 }
 
-static struct device_type baikal_pcie_acpi_device_type = {
-	.name =         "baikal_pcie_acpi",
-#if defined(CONFIG_PM) && defined(CONFIG_PM_SLEEP)
-	.pm =           &baikal_pcie_pm_ops
-#endif
-};
-
 static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus,
 					 unsigned int devfn, int where)
 {
 	struct pci_config_window *cfg = bus->sysdata;
-	struct baikal_pcie_rc *priv = cfg->priv;
+	struct baikal_pcie *bp = cfg->priv;
 	unsigned int devfn_shift = cfg->ops->bus_shift - 8;
 	unsigned int busn = bus->number;
 	void __iomem *base;
 
 	if (bus->number != cfg->busr.start &&
-	    !baikal_pcie_link_up(priv->pcie)) {
+	    !baikal_pcie_link_up(bp->pci)) {
 		return NULL;
 	}
 
@@ -741,7 +890,7 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus,
 		if (PCI_SLOT(devfn) > 0) {
 			return NULL;
 		} else {
-			return priv->pcie->dbi_base + where;
+			return bp->pci->dbi_base + where;
 		}
 	}
 

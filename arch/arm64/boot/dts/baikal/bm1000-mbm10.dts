@@ -4,7 +4,7 @@
  *   - TP-TF307-MB-A0 Rev.1.0 (BM1BM1-A)
  *   - TF307-MB-S-C Rev.3.0
  *
- * Copyright (C) 2021 Baikal Electronics, JSC
+ * Copyright (C) 2021-2022 Baikal Electronics, JSC
  */
 
 /dts-v1/;
@@ -13,7 +13,7 @@
 
 / {
 	model = "Baikal Electronics MBM 1.0";
-	compatible = "baikal,mbm10", "baikal,bm1000", "baikal,baikal-m";
+	compatible = "baikal,mbm10", "baikal,bm1000";
 
 	sound {
 		simple-audio-card,hp-det-gpio = <&porta 27 GPIO_ACTIVE_HIGH>;

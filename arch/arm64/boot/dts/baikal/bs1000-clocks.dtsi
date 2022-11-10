@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Device tree include file for BE-S1000 SoC clocks
- * Copyright (C) 2021 Baikal Electronics, JSC
+ * Copyright (C) 2021-2022 Baikal Electronics, JSC
  */
 
 #define CLK_TYPE_NO	0
@@ -20,7 +20,8 @@
 		type = <CLK_TYPE_PLL>;					\
 		clocks = <&clk_ref>;					\
 		#clock-cells = <0>;					\
-		clock-frequency = <1600000000>;				\
+		/*clock-frequency = <1600000000>;*/			\
+		clock-output-names = "cmu0_pll";			\
 	};								\
 	cluster##num##_cmu1_pll:					\
 	cluster##num##_cmu1_pll {					\
@@ -29,7 +30,8 @@
 		type = <CLK_TYPE_PLL>;					\
 		clocks = <&clk_ref>;					\
 		#clock-cells = <0>;					\
-		clock-frequency = <2000000000>;				\
+		/*clock-frequency = <2000000000>;*/			\
+		clock-output-names = "cmu1_pll";			\
 	};								\
 	/* clkch */							\
 	cluster##num##_cmu0:						\
@@ -58,6 +60,7 @@
 		type = <CLK_TYPE_CLKEN>;				\
 		clocks = <&cluster##num##_cmu0 0>; /* "sclk" */		\
 		#clock-cells = <0>;					\
+		clock-output-names = "clken";				\
 	};								\
 	cluster##num##_cmu0_en1:					\
 	cluster##num##_cmu0_en1 {					\
@@ -232,7 +235,8 @@
 				reg = <0xdead>;
 				type = <CLK_TYPE_REFCLK>;
 				#clock-cells = <0>;
-				clock-frequency = <25000000>; // 25 or 100 MHz
+				//clock-frequency = <25000000>; // 25 or 100 MHz
+				clock-output-names = "clk_ref";
 			};
 
 			/* CA75 */
@@ -257,7 +261,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2000000000>; */
+				clock-output-names = "pci_0_pll";
 			};
 			cmu_pci_1_pll: cmu_pci_1_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -265,7 +270,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2000000000>; */
+				clock-output-names = "pci_1_pll";
 			};
 			cmu_pci_2_pll: cmu_pci_2_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -273,7 +279,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2000000000>; */
+				clock-output-names = "pci_2_pll";
 			};
 			cmu_pci_3_pll: cmu_pci_3_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -281,7 +288,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2000000000>; */
+				clock-output-names = "pci_3_pll";
 			};
 			cmu_pci_4_pll: cmu_pci_4_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -289,7 +297,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2000000000>; */
+				clock-output-names = "pci_4_pll";
 			};
 
 			/* pci.clkch */
@@ -380,7 +389,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2000000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_0_pll";
 			};
 			cmu_ddr_1_pll: cmu_ddr_1_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -388,7 +398,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_1_pll";
 			};
 			cmu_ddr_2_pll: cmu_ddr_2_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -396,7 +407,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_3_pll";
 			};
 			cmu_ddr_3_pll: cmu_ddr_3_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -404,7 +416,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_3_pll";
 			};
 			cmu_ddr_4_pll: cmu_ddr_4_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -412,7 +425,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_4_pll";
 			};
 			cmu_ddr_5_pll: cmu_ddr_5_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -420,7 +434,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <2400000000>;
+				/* clock-frequency = <2200000000>; */
+				clock-output-names = "ddr_5_pll";
 			};
 
 			/* ddr.clkch */
@@ -507,7 +522,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <1200000000>; // 1.2 GHz
+				/* clock-frequency = <1200000000>; */
+				clock-output-names = "sc_0_pll";
 			};
 			cmu_sc_1_pll: cmu_sc_1_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -515,7 +531,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <1200000000>;
+				/* clock-frequency = <1200000000>; */
+				clock-output-names = "sc_1_pll";
 			};
 			cmu_sc_2_pll: cmu_sc_2_pll {
 				compatible = "baikal,bs1000-cmu";
@@ -523,7 +540,8 @@
 				type = <CLK_TYPE_PLL>;
 				clocks = <&clk_ref>;
 				#clock-cells = <0>;
-				clock-frequency = <1500000000>;
+				/* clock-frequency = <1500000000>; */
+				clock-output-names = "sc_2_pll";
 			};
 
 			/* sc.clkch */

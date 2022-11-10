@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
+dtb-$(CONFIG_ARCH_BAIKAL) += bl1000-qemu-l.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-dbm10.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-dbm20.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bm1000-mbm10.dtb

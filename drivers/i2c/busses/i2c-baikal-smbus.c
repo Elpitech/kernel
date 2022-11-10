@@ -2,9 +2,8 @@
 /*
  * SMBus controller driver for Baikal SoC
  *
- * Copyright (C) 2019-2021 Baikal Electronics, JSC
- * Authors: Georgy Vlasov <georgy.vlasov@baikalelectronics.ru>
- *	    Mikhail Ivanov <michail.ivanov@baikalelectronics.ru>
+ * Copyright (C) 2019-2022 Baikal Electronics, JSC
+ * Author: Georgy Vlasov <georgy.vlasov@baikalelectronics.ru>
  */
 
 #include <linux/clk.h>
@@ -15,36 +14,36 @@
 #include <linux/platform_device.h>
 
 /* Register definitions */
-#define BE_SMBUS_CR1		0x00
-#define BE_CR1_IRT		BIT(0)
-#define BE_CR1_TRS		BIT(1)
-#define BE_CR1_IEB		BIT(3)
+#define BAIKAL_SMBUS_CR1	0x00
+#define BAIKAL_CR1_IRT		BIT(0)
+#define BAIKAL_CR1_TRS		BIT(1)
+#define BAIKAL_CR1_IEB		BIT(3)
 
-#define BE_SMBUS_CR2		0x04
-#define BE_CR2_FTE		BIT(1)
+#define BAIKAL_SMBUS_CR2	0x04
+#define BAIKAL_CR2_FTE		BIT(1)
 
-#define BE_SMBUS_FBCR1		0x08
-#define BE_SMBUS_FIFO		0x0c
-#define BE_SMBUS_SCD1		0x10
+#define BAIKAL_SMBUS_FBCR1	0x08
+#define BAIKAL_SMBUS_FIFO	0x0c
+#define BAIKAL_SMBUS_SCD1	0x10
 
-#define BE_SMBUS_SCD2		0x14
-#define BE_SCD2_MASK		0x03
-#define BE_SCD2_SHT		BIT(7)
+#define BAIKAL_SMBUS_SCD2	0x14
+#define BAIKAL_SCD2_MASK	0x03
+#define BAIKAL_SCD2_SHT		BIT(7)
 
-#define BE_SMBUS_ADR1		0x18
+#define BAIKAL_SMBUS_ADR1	0x18
 
-#define BE_SMBUS_ISR1		0x20
-#define BE_ISR1_MASK		0x7f
-#define BE_ISR1_FER		BIT(2)
-#define BE_ISR1_RNK		BIT(3)
-#define BE_ISR1_ALD		BIT(4)
-#define BE_ISR1_TCS		BIT(6)
+#define BAIKAL_SMBUS_ISR1	0x20
+#define BAIKAL_ISR1_MASK	0x7f
+#define BAIKAL_ISR1_FER		BIT(2)
+#define BAIKAL_ISR1_RNK		BIT(3)
+#define BAIKAL_ISR1_ALD		BIT(4)
+#define BAIKAL_ISR1_TCS		BIT(6)
 
-#define BE_SMBUS_IMR1		0x24
-#define BE_SMBUS_FBCR2		0x2c
-#define BE_SMBUS_IMR2		0x48
+#define BAIKAL_SMBUS_IMR1	0x24
+#define BAIKAL_SMBUS_FBCR2	0x2c
+#define BAIKAL_SMBUS_IMR2	0x48
 
-#define BE_SMBUS_FIFO_SIZE	16
+#define BAIKAL_SMBUS_FIFO_SIZE	16
 
 struct baikal_smbus_dev {
 	struct device		*dev;
@@ -61,15 +60,15 @@ static int baikal_smbus_init(struct baikal_smbus_dev *smbus)
 			clk_get_rate(smbus->smbus_clk) :
 			smbus->smbus_clk_rate) / smbus->bus_clk_rate - 1;
 
-	writel(BE_CR1_IRT, smbus->base + BE_SMBUS_CR1);
-	writel(0, smbus->base + BE_SMBUS_CR1);
-	writel(0, smbus->base + BE_SMBUS_CR2);
-	writel(0, smbus->base + BE_SMBUS_FBCR2);
-	writel(0, smbus->base + BE_SMBUS_IMR1);
-	writel(0, smbus->base + BE_SMBUS_IMR2);
-	writel(divider & 0xff, smbus->base + BE_SMBUS_SCD1);
-	writel(BE_SCD2_SHT | ((divider >> 8) & BE_SCD2_MASK),
-		smbus->base + BE_SMBUS_SCD2);
+	writel(BAIKAL_CR1_IRT, smbus->base + BAIKAL_SMBUS_CR1);
+	writel(0, smbus->base + BAIKAL_SMBUS_CR1);
+	writel(0, smbus->base + BAIKAL_SMBUS_CR2);
+	writel(0, smbus->base + BAIKAL_SMBUS_FBCR2);
+	writel(0, smbus->base + BAIKAL_SMBUS_IMR1);
+	writel(0, smbus->base + BAIKAL_SMBUS_IMR2);
+	writel(divider & 0xff, smbus->base + BAIKAL_SMBUS_SCD1);
+	writel(BAIKAL_SCD2_SHT | ((divider >> 8) & BAIKAL_SCD2_MASK),
+		smbus->base + BAIKAL_SMBUS_SCD2);
 
 	return 0;
 }
@@ -83,36 +82,36 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 
 	switch (size) {
 	case I2C_SMBUS_BYTE:
-		writel(BE_CR1_IRT, smbus->base + BE_SMBUS_CR1);
-		writel(0, smbus->base + BE_SMBUS_CR1);
-		writel(addr, smbus->base + BE_SMBUS_ADR1);
-		writel(1, smbus->base + BE_SMBUS_FBCR1);
+		writel(BAIKAL_CR1_IRT, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(0, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(addr, smbus->base + BAIKAL_SMBUS_ADR1);
+		writel(1, smbus->base + BAIKAL_SMBUS_FBCR1);
 
 		if (read_write == I2C_SMBUS_WRITE) {
-			writel(BE_CR1_TRS | BE_CR1_IEB,
-				smbus->base + BE_SMBUS_CR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
+			writel(BAIKAL_CR1_TRS | BAIKAL_CR1_IEB,
+				smbus->base + BAIKAL_SMBUS_CR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
 		} else {
-			writel(BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
+			writel(BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
 		}
 
-		writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-		writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+		writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+		writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-		while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-			!(readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+		while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+			!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-		if (readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_ALD | BE_ISR1_RNK)) {
+		if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 			ret = -ENXIO;
 			goto exit;
 		}
 
 		if (read_write == I2C_SMBUS_READ) {
-			data->byte = readl(smbus->base + BE_SMBUS_FIFO);
+			data->byte = readl(smbus->base + BAIKAL_SMBUS_FIFO);
 
-			if (readl(smbus->base + BE_SMBUS_ISR1) & BE_ISR1_FER) {
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) & BAIKAL_ISR1_FER) {
 				ret = -EMSGSIZE;
 				goto exit;
 			}
@@ -121,51 +120,51 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 		ret = 0;
 		break;
 	case I2C_SMBUS_BYTE_DATA:
-		writel(BE_CR1_IRT, smbus->base + BE_SMBUS_CR1);
-		writel(0, smbus->base + BE_SMBUS_CR1);
-		writel(addr, smbus->base + BE_SMBUS_ADR1);
-		writel(BE_CR1_TRS | BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
+		writel(BAIKAL_CR1_IRT, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(0, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(addr, smbus->base + BAIKAL_SMBUS_ADR1);
+		writel(BAIKAL_CR1_TRS | BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
 
 		if (read_write == I2C_SMBUS_WRITE) {
-			writel(2, smbus->base + BE_SMBUS_FBCR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
-			writel(data->byte, smbus->base + BE_SMBUS_FIFO);
+			writel(2, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
+			writel(data->byte, smbus->base + BAIKAL_SMBUS_FIFO);
 		} else {
-			writel(1, smbus->base + BE_SMBUS_FBCR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
+			writel(1, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
 		}
 
-		writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-		writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+		writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+		writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-		while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-			!(readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+		while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+			!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-		if (readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_ALD | BE_ISR1_RNK)) {
+		if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 			ret = -ENXIO;
 			goto exit;
 		}
 
 		if (read_write == I2C_SMBUS_READ) {
-			writel(BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
-			writel(1, smbus->base + BE_SMBUS_FBCR1);
-			writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-			writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+			writel(BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
+			writel(1, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+			writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-			while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-				!(readl(smbus->base + BE_SMBUS_ISR1) &
-				  (BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+			while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+				!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-			if (readl(smbus->base + BE_SMBUS_ISR1) &
-					(BE_ISR1_ALD | BE_ISR1_RNK)) {
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 				ret = -ENXIO;
 				goto exit;
 			}
 
-			data->byte = readl(smbus->base + BE_SMBUS_FIFO);
-			if (readl(smbus->base + BE_SMBUS_ISR1) & BE_ISR1_FER) {
+			data->byte = readl(smbus->base + BAIKAL_SMBUS_FIFO);
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) & BAIKAL_ISR1_FER) {
 				ret = -EMSGSIZE;
 				goto exit;
 			}
@@ -174,55 +173,55 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 		ret = 0;
 		break;
 	case I2C_SMBUS_WORD_DATA:
-		writel(BE_CR1_IRT, smbus->base + BE_SMBUS_CR1);
-		writel(0, smbus->base + BE_SMBUS_CR1);
-		writel(addr, smbus->base + BE_SMBUS_ADR1);
-		writel(BE_CR1_TRS | BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
+		writel(BAIKAL_CR1_IRT, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(0, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(addr, smbus->base + BAIKAL_SMBUS_ADR1);
+		writel(BAIKAL_CR1_TRS | BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
 
 		if (read_write == I2C_SMBUS_WRITE) {
-			writel(3, smbus->base + BE_SMBUS_FBCR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
+			writel(3, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
 			writel((data->word >> 0) & 0xff,
-				smbus->base + BE_SMBUS_FIFO);
+				smbus->base + BAIKAL_SMBUS_FIFO);
 			writel((data->word >> 8) & 0xff,
-				smbus->base + BE_SMBUS_FIFO);
+				smbus->base + BAIKAL_SMBUS_FIFO);
 		} else {
-			writel(1, smbus->base + BE_SMBUS_FBCR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
+			writel(1, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
 		}
 
-		writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-		writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+		writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+		writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-		while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-			!(readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+		while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+			!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-		if (readl(smbus->base + BE_SMBUS_ISR1) &
-				(BE_ISR1_ALD | BE_ISR1_RNK)) {
+		if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+			(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 			ret = -ENXIO;
 			goto exit;
 		}
 
 		if (read_write == I2C_SMBUS_READ) {
-			writel(BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
-			writel(2, smbus->base + BE_SMBUS_FBCR1);
-			writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-			writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+			writel(BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
+			writel(2, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+			writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-			while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-				!(readl(smbus->base + BE_SMBUS_ISR1) &
-				  (BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+			while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+				!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-			if (readl(smbus->base + BE_SMBUS_ISR1) &
-					(BE_ISR1_ALD| BE_ISR1_RNK)) {
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_ALD| BAIKAL_ISR1_RNK)) {
 				ret = -ENXIO;
 				goto exit;
 			}
 
-			data->word  = readl(smbus->base + BE_SMBUS_FIFO);
-			data->word |= readl(smbus->base + BE_SMBUS_FIFO) << 8;
-			if (readl(smbus->base + BE_SMBUS_ISR1) & BE_ISR1_FER) {
+			data->word  = readl(smbus->base + BAIKAL_SMBUS_FIFO);
+			data->word |= readl(smbus->base + BAIKAL_SMBUS_FIFO) << 8;
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) & BAIKAL_ISR1_FER) {
 				ret = -EMSGSIZE;
 				goto exit;
 			}
@@ -231,10 +230,10 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 		ret = 0;
 		break;
 	case I2C_SMBUS_BLOCK_DATA:
-		writel(BE_CR1_IRT, smbus->base + BE_SMBUS_CR1);
-		writel(0, smbus->base + BE_SMBUS_CR1);
-		writel(addr, smbus->base + BE_SMBUS_ADR1);
-		writel(BE_CR1_TRS | BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
+		writel(BAIKAL_CR1_IRT, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(0, smbus->base + BAIKAL_SMBUS_CR1);
+		writel(addr, smbus->base + BAIKAL_SMBUS_ADR1);
+		writel(BAIKAL_CR1_TRS | BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
 
 		if (read_write == I2C_SMBUS_WRITE) {
 			unsigned txedsize = 0;
@@ -244,18 +243,18 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 				unsigned xfersize;
 
 				xfersize = data->block[0] + 1 - txedsize;
-				if (xfersize > BE_SMBUS_FIFO_SIZE) {
-					xfersize = BE_SMBUS_FIFO_SIZE;
+				if (xfersize > BAIKAL_SMBUS_FIFO_SIZE) {
+					xfersize = BAIKAL_SMBUS_FIFO_SIZE;
 				}
 
-				writel(xfersize, smbus->base + BE_SMBUS_FBCR1);
+				writel(xfersize, smbus->base + BAIKAL_SMBUS_FBCR1);
 				if (!txedsize) {
 					/*
 					 * The first xfer should start with
 					 * command byte
 					 */
 					writel(command,
-						smbus->base + BE_SMBUS_FIFO);
+						smbus->base + BAIKAL_SMBUS_FIFO);
 					xblocknum = 1;
 					++txedsize;
 				} else {
@@ -264,19 +263,19 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 
 				while (xblocknum < xfersize) {
 					writel(data->block[txedsize++],
-						smbus->base + BE_SMBUS_FIFO);
+						smbus->base + BAIKAL_SMBUS_FIFO);
 					++xblocknum;
 				}
 
-				writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-				writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+				writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+				writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-				while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-					!(readl(smbus->base + BE_SMBUS_ISR1) &
-					  (BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+				while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+					!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+					(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-				if (readl(smbus->base + BE_SMBUS_ISR1) &
-						(BE_ISR1_ALD | BE_ISR1_RNK)) {
+				if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+					(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 					ret = -ENXIO;
 					goto exit;
 				}
@@ -284,46 +283,46 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 		} else {
 			unsigned rxedsize = 0;
 
-			writel(1, smbus->base + BE_SMBUS_FBCR1);
-			writel(command, smbus->base + BE_SMBUS_FIFO);
-			writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-			writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+			writel(1, smbus->base + BAIKAL_SMBUS_FBCR1);
+			writel(command, smbus->base + BAIKAL_SMBUS_FIFO);
+			writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+			writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-			while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-				!(readl(smbus->base + BE_SMBUS_ISR1) &
-				  (BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+			while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+				!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-			if (readl(smbus->base + BE_SMBUS_ISR1) &
-					(BE_ISR1_ALD | BE_ISR1_RNK)) {
+			if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+				(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 				ret = -ENXIO;
 				goto exit;
 			}
 
-			writel(BE_CR1_IEB, smbus->base + BE_SMBUS_CR1);
+			writel(BAIKAL_CR1_IEB, smbus->base + BAIKAL_SMBUS_CR1);
 
 			while (rxedsize < I2C_SMBUS_BLOCK_MAX) {
 				unsigned i;
 
-				writel(BE_SMBUS_FIFO_SIZE, smbus->base + BE_SMBUS_FBCR1);
-				writel(BE_ISR1_MASK, smbus->base + BE_SMBUS_ISR1);
-				writel(BE_CR2_FTE, smbus->base + BE_SMBUS_CR2);
+				writel(BAIKAL_SMBUS_FIFO_SIZE, smbus->base + BAIKAL_SMBUS_FBCR1);
+				writel(BAIKAL_ISR1_MASK, smbus->base + BAIKAL_SMBUS_ISR1);
+				writel(BAIKAL_CR2_FTE, smbus->base + BAIKAL_SMBUS_CR2);
 
-				while ((readl(smbus->base + BE_SMBUS_CR2) & BE_CR2_FTE) &&
-					!(readl(smbus->base + BE_SMBUS_ISR1) &
-					  (BE_ISR1_TCS | BE_ISR1_ALD | BE_ISR1_RNK)));
+				while ((readl(smbus->base + BAIKAL_SMBUS_CR2) & BAIKAL_CR2_FTE) &&
+					!(readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+					(BAIKAL_ISR1_TCS | BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)));
 
-				if (readl(smbus->base + BE_SMBUS_ISR1) &
-						(BE_ISR1_ALD | BE_ISR1_RNK)) {
+				if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+					(BAIKAL_ISR1_ALD | BAIKAL_ISR1_RNK)) {
 					ret = -ENXIO;
 					goto exit;
 				}
 
-				for (i = 0; i < BE_SMBUS_FIFO_SIZE; ++i) {
+				for (i = 0; i < BAIKAL_SMBUS_FIFO_SIZE; ++i) {
 					data->block[1 + rxedsize++] =
-						readl(smbus->base + BE_SMBUS_FIFO);
+						readl(smbus->base + BAIKAL_SMBUS_FIFO);
 
-					if (readl(smbus->base + BE_SMBUS_ISR1) &
-							BE_ISR1_FER) {
+					if (readl(smbus->base + BAIKAL_SMBUS_ISR1) &
+							BAIKAL_ISR1_FER) {
 						ret = -EMSGSIZE;
 						goto exit;
 					}
@@ -341,14 +340,14 @@ static int baikal_smbus_xfer(struct i2c_adapter *adap, u16 addr,
 	}
 
 exit:
-	writel(0, smbus->base + BE_SMBUS_CR1);
+	writel(0, smbus->base + BAIKAL_SMBUS_CR1);
 	return ret;
 }
 
 static u32 baikal_functionality(struct i2c_adapter *adapter)
 {
 	return I2C_FUNC_SMBUS_BYTE | I2C_FUNC_SMBUS_BYTE_DATA |
-		I2C_FUNC_SMBUS_WORD_DATA | I2C_FUNC_SMBUS_BLOCK_DATA;
+	       I2C_FUNC_SMBUS_WORD_DATA | I2C_FUNC_SMBUS_BLOCK_DATA;
 }
 
 static const struct i2c_algorithm baikal_smbus_algorithm = {
@@ -400,8 +399,8 @@ static int baikal_smbus_probe(struct platform_device *pdev)
 		smbus->smbus_clk_rate = 0;
 #ifdef CONFIG_ACPI
 	} else if (to_acpi_device_node(pdev->dev.fwnode) &&
-			acpi_evaluate_integer(to_acpi_device_node(pdev->dev.fwnode)->handle,
-					"CLK", NULL, &smbus->smbus_clk_rate)) {
+		   acpi_evaluate_integer(to_acpi_device_node(pdev->dev.fwnode)->handle,
+					 "CLK", NULL, &smbus->smbus_clk_rate)) {
 		dev_err(&pdev->dev, "missing clock-frequency value\n");
 		return -EINVAL;
 #endif
@@ -463,7 +462,6 @@ static int baikal_smbus_remove(struct platform_device *pdev)
 
 	clk_disable_unprepare(smbus->smbus_clk);
 	i2c_del_adapter(&smbus->adapter);
-
 	return 0;
 }
 

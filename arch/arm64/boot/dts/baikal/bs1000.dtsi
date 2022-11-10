@@ -46,7 +46,7 @@
 		d-cache-line-size = <64>;		\
 		d-cache-sets = <64>;			\
 		next-level-cache = <&l2_##core>;	\
-		operating-points-v2 = <&cluster##core##_opp>;	\
+		operating-points-v2 = <&cpu_opp_table>;		\
 		clocks = <&cluster##group##_cmu1 (core%4)>;	\
 		l2_##core: l2-cache {				\
 			compatible = "cache";			\
@@ -56,30 +56,6 @@
 			cache-unified;				\
 			cache-level = <2>;			\
 			next-level-cache = <&l3_##group>;	\
-		};						\
-		CA75_OPP_TABLE(core);				\
-	}
-
-#define CA75_OPP_TABLE(core)					\
-	cluster##core##_opp:					\
-	cluster##core##_opp	{				\
-		compatible = "operating-points-v2";		\
-		opp-shared;					\
-		opp-250000000 {					\
-			opp-hz = /bits/ 64 <250000000>;		\
-			clock-latency-ns = <10000000>;		\
-		};						\
-		opp-500000000 {					\
-			opp-hz = /bits/ 64 <500000000>;		\
-			clock-latency-ns = <10000000>;		\
-		};						\
-		opp-1000000000 {				\
-			opp-hz = /bits/ 64 <1000000000>;	\
-			clock-latency-ns = <10000000>;		\
-		};						\
-		opp-2000000000 {				\
-			opp-hz = /bits/ 64 <2000000000>;	\
-			clock-latency-ns = <10000000>;		\
 		};						\
 	}
 
@@ -180,6 +156,22 @@
 		};
 	};
 
+	cpu_opp_table: opp_table {
+		compatible = "operating-points-v2";
+		opp-250000000 {
+			opp-hz = /bits/ 64 <250000000>;
+		};
+		opp-500000000 {
+			opp-hz = /bits/ 64 <500000000>;
+		};
+		opp-1000000000 {
+			opp-hz = /bits/ 64 <1000000000>;
+		};
+		opp-2000000000 {
+			opp-hz = /bits/ 64 <2000000000>;
+		};
+	};
+
 	pmu {
 		compatible = "arm,cortex-a75-pmu", "arm,armv8-pmuv3";
 		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
@@ -220,6 +212,7 @@
 			interrupt-names = "macirq";
 			clocks = <&cmu_sc_1 9>, <&cmu_sc_2 1>, <&cmu_sc_2 2>;
 			clock-names = "stmmaceth", "ptp_ref", "tx2_clk";
+			dma-coherent;
 			status = "disabled";
 
 			mdio0: mdio {
@@ -236,6 +229,7 @@
 			interrupt-names = "macirq";
 			clocks = <&cmu_sc_1 11>, <&cmu_sc_2 3>, <&cmu_sc_2 4>;
 			clock-names = "stmmaceth", "ptp_ref", "tx2_clk";
+			dma-coherent;
 			status = "disabled";
 
 			mdio1: mdio {
@@ -512,6 +506,18 @@
 			status = "disabled";
 		};
 
+		pcie0_p0_ep: pcie-ep@39000000 {
+			compatible = "baikal,bs1000-pcie-ep";
+			reg = <0x00000000 0x39000000 0x0 0x400000>,
+			      <0x00000000 0x38d40000 0x0 0x100>,
+			      <0x00000700 0x00000000 0x1 0x00000000>;
+			reg-names = "dbi", "apb", "addr_space";
+			num-ib-windows = <4>;
+			num-ob-windows = <4>;
+			num-lanes = <8>;
+			status = "disabled";
+		};
+
 		pcie0_p1: pcie@39400000 {
 			device_type = "pci";
 			compatible = "baikal,bs1000-pcie";
@@ -554,6 +560,18 @@
 			status = "disabled";
 		};
 
+		pcie1_p0_ep: pcie-ep@3d000000 {
+			compatible = "baikal,bs1000-pcie-ep";
+			reg = <0x00000000 0x3d000000 0x0 0x400000>,
+			      <0x00000000 0x3cd40000 0x0 0x100>,
+			      <0x00000780 0x00000000 0x1 0x00000000>;
+			reg-names = "dbi", "apb", "addr_space";
+			num-ib-windows = <4>;
+			num-ob-windows = <4>;
+			num-lanes = <8>;
+			status = "disabled";
+		};
+
 		pcie1_p1: pcie@3d400000 {
 			device_type = "pci";
 			compatible = "baikal,bs1000-pcie";
@@ -593,6 +611,18 @@
 				 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;
 			num-lanes = <8>;
 			num-viewport = <4>;
+			status = "disabled";
+		};
+
+		pcie2_p0_ep: pcie-ep@45000000 {
+			compatible = "baikal,bs1000-pcie-ep";
+			reg = <0x00000000 0x45000000 0x0 0x400000>,
+			      <0x00000000 0x44d40000 0x0 0x100>,
+			      <0x00000500 0x00000000 0x1 0x00000000>;
+			reg-names = "dbi", "apb", "addr_space";
+			num-ib-windows = <4>;
+			num-ob-windows = <4>;
+			num-lanes = <8>;
 			status = "disabled";
 		};
 
@@ -869,148 +899,126 @@
 			status = "disabled";
 		};
 
-		pvt_ca75_0: pvt@4030000 {
+		pvt_cluster0: pvt@4030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x4030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_1: pvt@8030000 {
+		pvt_cluster1: pvt@8030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x8030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_2: pvt@c030000 {
+		pvt_cluster2: pvt@c030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0xc030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_3: pvt@10030000 {
+		pvt_cluster3: pvt@10030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x10030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_4: pvt@14030000 {
+		pvt_cluster4: pvt@14030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x14030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_5: pvt@18030000 {
+		pvt_cluster5: pvt@18030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x18030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_6: pvt@1c030000 {
+		pvt_cluster6: pvt@1c030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x1c030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_7: pvt@20030000 {
+		pvt_cluster7: pvt@20030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x20030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_8: pvt@24030000 {
+		pvt_cluster8: pvt@24030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x24030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_9: pvt@28030000 {
+		pvt_cluster9: pvt@28030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x28030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_10: pvt@2c030000 {
+		pvt_cluster10: pvt@2c030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x2c030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
-		pvt_ca75_11: pvt@30030000 {
+		pvt_cluster11: pvt@30030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x30030000 0x0 0x1000>;
 			status = "disabled";
 		};
-
 		pvt_pcie0: pvt@38030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x38030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_pcie1: pvt@3c030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x3c030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_pcie2: pvt@44030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x44030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_pcie3: pvt@48030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x48030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 275 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_pcie4: pvt@4c030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x4c030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 344 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr0: pvt@50030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x50030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 363 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr1: pvt@54030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x54030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 380 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr2: pvt@58030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x58030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 397 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr3: pvt@60030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x60030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 414 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr4: pvt@64030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x64030000 0x0 0x1000>;
 			interrupts = <GIC_SPI 431 IRQ_TYPE_LEVEL_HIGH>;
 			status = "disabled";
 		};
-
 		pvt_ddr5: pvt@68030000 {
 			compatible = "baikal,bs1000-pvt";
 			reg = <0x0 0x68030000 0x0 0x1000>;

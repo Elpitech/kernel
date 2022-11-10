@@ -71,11 +71,12 @@
 
 	soc {
 		mdio_gpio: mdio {
-			compatible = "baikal,mdio-gpio", "be,mdio-gpio";
+			compatible = "baikal,mdio-gpio";
 			#address-cells = <1>;
 			#size-cells = <0>;
-			mdc-pin = <&porta 30 GPIO_ACTIVE_HIGH>;
+			mdc-pin = <&porta 28 GPIO_ACTIVE_HIGH>;
 			mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
+			rst-pin = <&porta 30 GPIO_ACTIVE_LOW>;
 			clocks = <&gpio_clk>;
 			clock-names = "gpioclk";
 			status = "okay";
@@ -115,16 +116,8 @@
 	};
 };
 
-&espi {
-	cs-gpios = <&porta 28 GPIO_ACTIVE_LOW>; /* TODO: get real gpio */
+&dmac_m2m {
 	status = "okay";
-
-	espi_test0@0 { /* test device #0 */
-		compatible = "rohm,dh2228fv"; /* same as spidev */
-		reg = <0>;
-		spi-max-frequency = <12000000>;
-		status = "okay";
-	};
 };
 
 &gmac0 {
@@ -226,23 +219,19 @@
 	status = "okay";
 };
 
-&pcie_lcru {
+&pvt_cluster0 {
 	status = "okay";
 };
 
-&pvt_ca57_0 {
+&pvt_cluster1 {
 	status = "okay";
 };
 
-&pvt_ca57_1 {
+&pvt_cluster2 {
 	status = "okay";
 };
 
-&pvt_ca57_2 {
-	status = "okay";
-};
-
-&pvt_ca57_3 {
+&pvt_cluster3 {
 	status = "okay";
 };
 
@@ -266,7 +255,7 @@
 	status = "okay";
 };
 
-&spi {
+&spi0 {
 	num-cs = <4>;
 	cs-gpios = <&porta 24 GPIO_ACTIVE_LOW>, /* ss0 xp8 - DD53 normal flash */
 		   <&porta 25 GPIO_ACTIVE_LOW>, /* ss1 xp9 */
@@ -280,6 +269,8 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
 		status = "okay";
 
 		partitions {
@@ -290,13 +281,11 @@
 			partition@0 {
 				label = "bl1";
 				reg = <0x000000 0x40000>;
-				read-only;
 			};
 
 			partition@40000 {
 				label = "dtb";
 				reg = <0x040000 0x40000>;
-				read-only;
 			};
 
 			partition@80000 {
@@ -307,9 +296,26 @@
 			partition@140000 {
 				label = "fip";
 				reg = <0x140000 0x6c0000>;
-				read-only;
 			};
 		};
+	};
+};
+
+&spi1 {
+	num-cs = <8>;
+	cs-gpios = <&porta 0 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	espi_test0@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>; /* CS #0 */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-cpha;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
 	};
 };
 

@@ -162,10 +162,6 @@
 	status = "okay";
 };
 
-&pcie_lcru {
-	status = "okay";
-};
-
 &pcie0 {
 	status = "okay";
 };
@@ -194,19 +190,19 @@
 	status = "okay";
 };
 
-&pvt_ca57_0 {
+&pvt_cluster0 {
 	status = "okay";
 };
 
-&pvt_ca57_1 {
+&pvt_cluster1 {
 	status = "okay";
 };
 
-&pvt_ca57_2 {
+&pvt_cluster2 {
 	status = "okay";
 };
 
-&pvt_ca57_3 {
+&pvt_cluster3 {
 	status = "okay";
 };
 
@@ -289,7 +285,7 @@
 	status = "okay";
 };
 
-&spi {
+&spi0 {
 	num-cs = <4>;
 
 	cs-gpios = <0>;

@@ -52,6 +52,10 @@
 	};
 };
 
+&dmac_m2m {
+	status = "okay";
+};
+
 &gmac0 {
 	status = "okay";
 	phy-handle = <&ethphy0>;
@@ -168,10 +172,6 @@
 	reset-gpios = <&porta 3 GPIO_ACTIVE_LOW>;
 };
 
-&pcie_lcru {
-	status = "okay";
-};
-
 &porta {
 	pcieclk {
 		gpio-hog;
@@ -181,19 +181,19 @@
 	};
 };
 
-&pvt_ca57_0 {
+&pvt_cluster0 {
 	status = "okay";
 };
 
-&pvt_ca57_1 {
+&pvt_cluster1 {
 	status = "okay";
 };
 
-&pvt_ca57_2 {
+&pvt_cluster2 {
 	status = "okay";
 };
 
-&pvt_ca57_3 {
+&pvt_cluster3 {
 	status = "okay";
 };
 
@@ -217,7 +217,7 @@
 	status = "okay";
 };
 
-&spi {
+&spi0 {
 	num-cs = <4>;
 	cs-gpios = <0>;
 	status = "okay";

@@ -83,16 +83,31 @@ config PCIE_DW_PLAT_EP
 	  selected.
 
 config PCIE_BAIKAL
-	bool "Baikal SoC PCIe controller"
+	bool
+
+config PCIE_BAIKAL_HOST
+	bool "Baikal SoC PCIe controller - Host Mode"
 	depends on ARCH_BAIKAL
 	depends on OF && HAS_IOMEM
 	depends on PCI_MSI_IRQ_DOMAIN
 	select PCIE_DW_HOST
 	select PCI_QUIRKS if ACPI
 	help
-	  Enables support for the PCIe controller in the Baikal SoC.  There
-	  are three instances of PCIe controller in Baikal-M.  Two of the controllers
-	  support PCIe 3.0 x4 and the remaining one supports PCIe 3.0 x8.
+	  Enables support for the PCIe controller in Baikal SoCs to work in
+	  host mode. This is the most common use case and it is supported
+	  by all versions of PCIe controller in Baikal SoCs.
+	  This uses the DesignWare core.
+
+config PCIE_BAIKAL_EP
+	bool "Baikal SoCs PCIe controller - Endpoint Mode"
+	depends on PCI_ENDPOINT
+	select PCIE_DW_EP
+	select PCIE_BAIKAL
+	help
+	  Enables support for the PCIe controller in Baikal SoCs to work in
+	  endpoint (device) mode. This is supported by newer versions of PCIe
+	  controller in Baikal SoCs.
+	  This uses the DesignWare core.
 
 config PCI_EXYNOS
 	bool "Samsung Exynos PCIe controller"

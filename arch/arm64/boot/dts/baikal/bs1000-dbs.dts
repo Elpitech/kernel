@@ -66,6 +66,22 @@
 	};
 };
 
+&mux {
+	status = "okay";
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
+	status = "okay";
+};
+
 &ohci {
 	status = "okay";
 };
@@ -126,51 +142,51 @@
 	status = "okay";
 };
 
-&pvt_ca75_0 {
+&pvt_cluster0 {
 	status = "okay";
 };
 
-&pvt_ca75_1 {
+&pvt_cluster1 {
 	status = "okay";
 };
 
-&pvt_ca75_2 {
+&pvt_cluster2 {
 	status = "okay";
 };
 
-&pvt_ca75_3 {
+&pvt_cluster3 {
 	status = "okay";
 };
 
-&pvt_ca75_4 {
+&pvt_cluster4 {
 	status = "okay";
 };
 
-&pvt_ca75_5 {
+&pvt_cluster5 {
 	status = "okay";
 };
 
-&pvt_ca75_6 {
+&pvt_cluster6 {
 	status = "okay";
 };
 
-&pvt_ca75_7 {
+&pvt_cluster7 {
 	status = "okay";
 };
 
-&pvt_ca75_8 {
+&pvt_cluster8 {
 	status = "okay";
 };
 
-&pvt_ca75_9 {
+&pvt_cluster9 {
 	status = "okay";
 };
 
-&pvt_ca75_10 {
+&pvt_cluster10 {
 	status = "okay";
 };
 
-&pvt_ca75_11 {
+&pvt_cluster11 {
 	status = "okay";
 };
 
@@ -241,13 +257,11 @@
 			partition@0 {
 				label = "bl1";
 				reg = <0x000000 0x40000>;
-				read-only;
 			};
 
 			partition@40000 {
 				label = "dtb";
 				reg = <0x040000 0x40000>;
-				read-only;
 			};
 
 			partition@80000 {
@@ -258,7 +272,6 @@
 			partition@140000 {
 				label = "fip";
 				reg = <0x140000 0x6c0000>;
-				read-only;
 			};
 		};
 	};
@@ -289,21 +302,5 @@
 };
 
 &wdt {
-	status = "okay";
-};
-
-&mux {
-	status = "okay";
-};
-
-&mux0 {
-	status = "okay";
-};
-
-&mux1 {
-	status = "okay";
-};
-
-&mux2 {
 	status = "okay";
 };
