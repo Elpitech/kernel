@@ -8,6 +8,8 @@
 
 #include "bm1000.dtsi"
 #include <dt-bindings/net/realtek-phy-rtl8211f.h>
+#include <dt-bindings/input/gpio-keys.h>
+#include <dt-bindings/input/linux-event-codes.h>
 
 / {
 
