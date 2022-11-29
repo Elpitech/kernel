@@ -26,7 +26,7 @@ variables:
       GIT_TAG=$(git describe --tags --no-abbrev)
       FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${BOARD}-${BRANCH}-${VERSION}.tar"
       echo "Full path: ${FULL_PATH}"
-      tar cf - --exclude='*-dbg_*' -C .. linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
+      tar cf - --exclude='*-dbg_*' ../linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
     - rm -f ../linux-*
 
 bm1000:
