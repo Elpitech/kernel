@@ -1,4 +1,4 @@
-image: "xxor/bookworm-builder:1.0"
+image: $CI_REGISTRY/baikal-m/spi_builder:1.1
 
 stages:
   - build
@@ -10,18 +10,33 @@ variables:
   stage: build
   script:
     - rm -f ../linux-*
-    - ARCH=arm64 make ${DEFCONFIG}
-    - ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- make bindeb-pkg -j $(nproc)
-    - tar cf linux-${BOARD}.tar --exclude='*-dbg_*' ../linux-*arm64.deb
+    - make ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- ${DEFCONFIG}
+    - make ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- bindeb-pkg -j $(nproc)
+    - |
+      BRANCH=""
+      if [ "$CI_COMMIT_BRANCH" != "$CI_DEFAULT_BRANCH" ]; then
+        if [ -n "${CI_COMMIT_BRANCH}" ]; then
+          BRANCH="${CI_COMMIT_BRANCH}"
+        fi
+      fi
+      VERSION=$(git describe --tags)
+      echo "Uploading version ${VERSION}"
+      echo "          branch ${BRANCH}"
+      echo "          board ${BOARD}"
+      GIT_TAG=$(git describe --tags --no-abbrev)
+      FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${BOARD}-${BRANCH}-${VERSION}.tar"
+      echo "Full path: ${FULL_PATH}"
+      tar cf - --exclude='*-dbg_*' ../linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
     - rm -f ../linux-*
-  artifacts:
-    name: "linux-$CI_JOB_NAME-$CI_COMMIT_SHORT_SHA"
-    paths:
-      - ./linux-${BOARD}.tar
-    expire_in: 1 month
 
 bm1000:
   variables:
     DEFCONFIG: bm1000_defconfig
     BOARD: "bm1000"
+  <<: *build_kernel_dfn
+
+bs1000:
+  variables:
+    DEFCONFIG: bs1000_defconfig
+    BOARD: "bs1000"
   <<: *build_kernel_dfn
