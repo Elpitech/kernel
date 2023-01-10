@@ -91,6 +91,7 @@ config PCIE_BAIKAL_HOST
 	depends on OF && HAS_IOMEM
 	depends on PCI_MSI_IRQ_DOMAIN
 	select PCIE_DW_HOST
+	select PCIE_BAIKAL
 	select PCI_QUIRKS if ACPI
 	help
 	  Enables support for the PCIe controller in Baikal SoCs to work in
