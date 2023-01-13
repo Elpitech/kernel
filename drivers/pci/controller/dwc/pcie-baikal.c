@@ -615,13 +615,13 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	}
 
 	regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_STATUS(rc->rc_num), &reg);
-	dev_dbg(dev, "%s: bus %d - link state %x, reset %x\n",
-		__func__, rc->rc_num, reg,
-		(regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->rc_num), &reg), reg));
 	if ((reg & (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP)) ==
 	    (BAIKAL_PCIE_RDLH_LINKUP | BAIKAL_PCIE_SMLH_LINKUP)) {
 		link_up = 1;
 	}
+	dev_dbg(dev, "%s: bus %d - link state %x, reset %x\n",
+		__func__, rc->rc_num, reg,
+		(regmap_read(rc->lcru, BAIKAL_LCRU_PCIE_RESET(rc->rc_num), &reg), reg));
 	reset_gpio = of_get_named_gpio_flags(dev->of_node, "reset-gpios", 0, &flags);
 	if (gpio_is_valid(reset_gpio)) {
 		unsigned long gpio_flags;
