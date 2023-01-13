@@ -450,12 +450,6 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		} else {
 			bp->cpu_addr_mask = 0xffffffffff;
 		}
-
-		if (IS_ERR(pcie->dbi_base)) {
-			dev_err(dev, "error with ioremap\n");
-			ret = PTR_ERR(pcie->dbi_base);
-			goto err_pm_put;
-		}
 	} else {
 		dev_err(dev, "missing *dbi* reg space\n");
 		ret = -EINVAL;
