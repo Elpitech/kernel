@@ -19,6 +19,7 @@ struct baikal_pcie {
 	struct dw_pcie	*pci;
 	void __iomem	*apb_base;
 	u64		cpu_addr_mask;
+	bool		its_msi;
 };
 
 struct baikal_pcie_of_data {
@@ -147,14 +148,26 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	dw_pcie_writel_dbi(pcie, PCIE_ROOT_CONTROL_ROOT_CAPABILITIES_REG, reg);
 
 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-		dw_pcie_msi_init(pp);
+		struct baikal_pcie *bp = to_baikal_pcie(pcie);
+		if (!bp->its_msi)
+			dw_pcie_msi_init(pp);
 	}
 
 	return 0;
 }
 
+static int baikal_pcie_msi_host_init(struct pcie_port *pp)
+{
+	return 0;
+}
+
 static const struct dw_pcie_host_ops baikal_pcie_host_ops = {
 	.host_init = baikal_pcie_host_init
+};
+
+static const struct dw_pcie_host_ops baikal_pcie_host_its_msi_ops = {
+	.host_init = baikal_pcie_host_init,
+	.msi_host_init = baikal_pcie_msi_host_init,
 };
 
 static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
@@ -230,7 +243,13 @@ static int baikal_pcie_add_pcie_port(struct baikal_pcie *bp,
 		}
 	}
 
-	pp->ops = &baikal_pcie_host_ops;
+	if (bp->its_msi) {
+		dev_dbg(dev, "its_msi_ops\n");
+		pp->ops = &baikal_pcie_host_its_msi_ops;
+	} else {
+		pp->ops = &baikal_pcie_host_ops;
+		dev_dbg(dev, "dw_msi_ops\n");
+	}
 	ret = dw_pcie_host_init(pp);
 	if (ret) {
 		dev_err(dev, "failed to initialize host\n");
@@ -397,6 +416,9 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 	const struct baikal_pcie_of_data *data;
 	const struct of_device_id *match;
 	enum dw_pcie_device_mode mode;
+	const __be32 *msi_map;
+	int len;
+	u32 phandle;
 
 	match = of_match_device(baikal_pcie_of_match, dev);
 	if (!match) {
@@ -469,6 +491,13 @@ static int baikal_pcie_probe(struct platform_device *pdev)
 		dev_err(dev, "missing *apb* reg space\n");
 		ret = -EINVAL;
 		goto err_pm_put;
+	}
+
+	msi_map = of_get_property(dev->of_node, "msi-map", &len);
+	if (msi_map) {
+		phandle = be32_to_cpup(msi_map + 1);
+		if (of_find_node_by_phandle(phandle))
+			bp->its_msi = true;
 	}
 
 	switch (mode) {
