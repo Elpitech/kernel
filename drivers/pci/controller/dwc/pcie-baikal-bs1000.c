@@ -95,9 +95,7 @@ static int baikal_pcie_link_up(struct dw_pcie *pcie)
 	u32 reg;
 
 	reg = readl(bp->apb_base + BS1000_PCIE_APB_PE_LINK_DBG2);
-	return ((reg & BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_MASK) ==
-		       BS1000_PCIE_APB_PE_LINK_DBG2_LTSSM_STATE_L0) &&
-		(reg & BS1000_PCIE_APB_PE_LINK_DBG2_SMLH_LINK_UP) &&
+	return (reg & BS1000_PCIE_APB_PE_LINK_DBG2_SMLH_LINK_UP) &&
 		(reg & BS1000_PCIE_APB_PE_LINK_DBG2_RDLH_LINK_UP);
 }
 
