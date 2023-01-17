@@ -8,6 +8,7 @@
 
 #include "bs1000.dtsi"
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 / {
 	model = "Elpitech ET113";
@@ -75,7 +76,7 @@
 		reg = <0x10>;
 	};
 
-	rtc@0x54 {
+	rtc@54 {
 		compatible = "nxp,pcf2129", "nxp,pcf2127";
 		reg = <0x54>;
 	};
@@ -85,6 +86,9 @@
 	ethphy0: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+		realtek,led1-control = <RTL8211F_LINK10_ACT>;
 	};
 };
 
@@ -92,6 +96,9 @@
 	ethphy1: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
+		realtek,led1-control = <RTL8211F_LINK10_ACT>;
 	};
 };
 
@@ -103,50 +110,66 @@
 &pcie0_p0 {
 	status = "okay";
 	num-lanes = <16>;
+	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
+	max-link-speed = <2>;
 };
 
 &pcie1_p0 {
 	status = "okay";
 	num-lanes = <16>;
+	reset-gpios = <&porta 25 GPIO_ACTIVE_LOW>;
 };
 
 &pcie2_p0 {
 	status = "okay";
+	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
+	reversed-lanes;
 };
 
 &pcie2_p1 {
 	status = "okay";
+	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
+	reversed-lanes;
 };
 
 &pcie3_p0 {
 	status = "okay";
+	reset-gpios = <&porta 15 GPIO_ACTIVE_LOW>;
+	reversed-lanes;
 };
 
 &pcie3_p1 {
 	status = "okay";
+	reset-gpios = <&portc 6 GPIO_ACTIVE_LOW>;
+	reversed-lanes;
 };
 
 &pcie3_p2 {
 	status = "okay";
+	reset-gpios = <&porta 18 GPIO_ACTIVE_LOW>;
 };
 
 &pcie3_p3 {
 	status = "okay";
+	reset-gpios = <&portc 1 GPIO_ACTIVE_LOW>;
 };
 
 &pcie4_p0 {
 	status = "okay";
 	num-lanes = <8>;
+	reset-gpios = <&porta 17 GPIO_ACTIVE_LOW>;
 };
 
 &pcie4_p2 {
 	status = "okay";
 	num-lanes = <1>;
+	reset-gpios = <&porta 31 GPIO_ACTIVE_LOW>;
 };
 
 &pcie4_p3 {
 	status = "okay";
 	num-lanes = <1>;
+	reset-gpios = <&porta 21 GPIO_ACTIVE_LOW>;
 };
 
 &pvt_cluster0 {
