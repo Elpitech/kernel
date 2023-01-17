@@ -30,6 +30,7 @@
 		height-mm = <125>;
 		data-mapping = "vesa-24";
 		enable-gpios = <&porta 3 GPIO_ACTIVE_HIGH>;
+		elpitech,edp-addr = <&i2c1 0x70>;
 		panel-timing {
 		// 1920x1080 @60Hz
 			clock-frequency = <148500000>;
