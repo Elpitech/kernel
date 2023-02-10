@@ -496,6 +496,7 @@
 			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -529,6 +530,7 @@
 			interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -550,6 +552,7 @@
 			interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -583,6 +586,7 @@
 			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -604,6 +608,7 @@
 			interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -637,6 +642,7 @@
 			interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -658,6 +664,7 @@
 			interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 253 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -679,6 +686,7 @@
 			interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 254 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -700,6 +708,7 @@
 			interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 255 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -721,6 +730,7 @@
 			interrupts = <GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 256 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -742,6 +752,7 @@
 			interrupts = <GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -763,6 +774,7 @@
 			interrupts = <GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 323 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -784,6 +796,7 @@
 			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
@@ -805,6 +818,7 @@
 			interrupts = <GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 325 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
