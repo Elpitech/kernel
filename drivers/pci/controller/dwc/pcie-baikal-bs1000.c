@@ -50,6 +50,14 @@ struct baikal_pcie_of_data {
 
 #define PCIE_ROOT_ERR_STATUS_REG			0x130
 
+#define PCIE_ATU_MIN_SIZE				0x10000		/* 64K */
+#define PCIE_ATU_REGION_INDEX3				0x3
+#define PCIE_ATU_CR2_CFG_SHIFT	BIT(28)
+#define PCIE_ECAM_SIZE					0x10000000	/* 256M */
+#define PCIE_ECAM_MASK					0x0fffffffULL
+#define PCIE_ECAM_BUS_SHIFT				20
+#define PCIE_ECAM_DEVFN_SHIFT				12
+
 #define PCIE_IATU_REGION_CTRL_2_REG_SHIFT_MODE		BIT(28)
 
 #define BS1000_PCIE_APB_PE_GEN_CTRL3			0x58
@@ -100,19 +108,111 @@ static int baikal_pcie_link_up(struct dw_pcie *pcie)
 		(reg & BS1000_PCIE_APB_PE_LINK_DBG2_RDLH_LINK_UP);
 }
 
+static void __iomem *bs_pcie_map_bus(struct pci_bus *bus,
+				     unsigned int devfn, int where)
+{
+	struct pcie_port *pp = bus->sysdata;
+	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+
+	if (!baikal_pcie_link_up(pci)) {
+		return NULL;
+	}
+
+	if (bus->number == 1 && PCI_SLOT(devfn) > 0) {
+		return NULL;
+	} else {
+		return pp->va_cfg0_base +
+			(bus->number << PCIE_ECAM_BUS_SHIFT) +
+			(devfn << PCIE_ECAM_DEVFN_SHIFT) +
+			where;
+	}
+}
+
+static struct pci_ops baikal_s_child_pcie_ops = {
+	.map_bus	= bs_pcie_map_bus,
+	.read		= pci_generic_config_read,
+	.write		= pci_generic_config_write
+};
+
+static void bs_writel_ob_atu(struct dw_pcie *pcie, u32 index,
+			  u32 reg, u32 val)
+{
+	u32 offset = index << 9;
+	writel(val, pcie->atu_base + offset + reg);
+}
+
+static void bs_prog_outbound_atu(struct dw_pcie *pcie, int index, int type,
+				 u64 cpu_addr, u64 pci_addr, u32 size, u32 cr2)
+{
+	u64 limit_addr = cpu_addr + size - 1;
+
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_LOWER_BASE,
+			 lower_32_bits(cpu_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_UPPER_BASE,
+			 upper_32_bits(cpu_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_LOWER_LIMIT,
+			 lower_32_bits(limit_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_UPPER_LIMIT,
+			 upper_32_bits(limit_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_LOWER_TARGET,
+			 lower_32_bits(pci_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_UPPER_TARGET,
+			 upper_32_bits(pci_addr));
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_REGION_CTRL1, type);
+	bs_writel_ob_atu(pcie, index, PCIE_ATU_UNR_REGION_CTRL2,
+			 PCIE_ATU_ENABLE | cr2);
+
+}
+
 static void baikal_pcie_setup_rc_acpi(struct pcie_port *pp);
 
 static int baikal_pcie_host_init(struct pcie_port *pp)
 {
 	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
-	unsigned idx;
 	u32 reg;
+	struct resource_entry *tmp, *entry = NULL;
 
-	/* Deinitialize all outbound iATU regions */
-	for (idx = 0; idx < pcie->num_viewport; ++idx) {
-		dw_pcie_disable_atu(pcie, idx, DW_PCIE_REGION_OUTBOUND);
+	if (pp->cfg0_base & PCIE_ECAM_MASK ||
+	    pp->cfg0_size < PCIE_ECAM_SIZE) {
+		dev_warn(pcie->dev, "No ECAM due to config region size/alignment!\n");
+		goto skip_atu;
 	}
 
+	/* Initialize all outbound iATU regions */
+	pcie->atu_base = pcie->dbi_base + DEFAULT_DBI_ATU_OFFSET;
+	/* CFG0 for bus 1 */
+	bs_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX0,
+			     PCIE_ATU_TYPE_CFG0,
+			     baikal_pcie_cpu_addr_fixup(pcie,
+				 pp->cfg0_base + (1 << PCIE_ECAM_BUS_SHIFT)),
+			     0, PCIE_ATU_MIN_SIZE, PCIE_ATU_CR2_CFG_SHIFT);
+	/* CFG1 for bus > 1 */
+	bs_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX1,
+			     PCIE_ATU_TYPE_CFG1,
+			     baikal_pcie_cpu_addr_fixup(pcie,
+				 pp->cfg0_base + (2 << PCIE_ECAM_BUS_SHIFT)),
+			     0, PCIE_ECAM_SIZE - (2 << PCIE_ECAM_BUS_SHIFT),
+			     PCIE_ATU_CR2_CFG_SHIFT);
+
+	/* Get last memory resource entry */
+	resource_list_for_each_entry(tmp, &pp->bridge->windows)
+		if (resource_type(tmp->res) == IORESOURCE_MEM)
+			entry = tmp;
+
+	bs_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX2,
+			     PCIE_ATU_TYPE_MEM,
+			     baikal_pcie_cpu_addr_fixup(pcie, entry->res->start),
+			     entry->res->start - entry->offset,
+			     resource_size(entry->res), 0);
+
+	bs_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX3,
+			     PCIE_ATU_TYPE_IO,
+			     baikal_pcie_cpu_addr_fixup(pcie, pp->io_base),
+			     pp->io_bus_addr, pp->io_size, 0);
+
+	pp->bridge->child_ops = &baikal_s_child_pcie_ops;
+
+skip_atu:
 	if (acpi_disabled) {
 		dw_pcie_setup_rc(pp);
 	} else {
