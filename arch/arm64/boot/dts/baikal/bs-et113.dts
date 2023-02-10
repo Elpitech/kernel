@@ -111,7 +111,6 @@
 	status = "okay";
 	num-lanes = <16>;
 	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
-	max-link-speed = <2>;
 };
 
 &pcie1_p0 {
@@ -123,25 +122,22 @@
 &pcie2_p0 {
 	status = "okay";
 	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
-	reversed-lanes;
 };
 
 &pcie2_p1 {
 	status = "okay";
 	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
-	reversed-lanes;
 };
 
 &pcie3_p0 {
 	status = "okay";
 	reset-gpios = <&porta 15 GPIO_ACTIVE_LOW>;
-	reversed-lanes;
+	max-link-speed = <2>;
 };
 
 &pcie3_p1 {
 	status = "okay";
 	reset-gpios = <&portc 6 GPIO_ACTIVE_LOW>;
-	reversed-lanes;
 };
 
 &pcie3_p2 {
