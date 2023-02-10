@@ -103,6 +103,9 @@
 		compatible = "baikal,snd_soc_be";
 		baikal,cpu-dai = <&i2s>;
 		baikal,audio-codec = <&tlv320aic3x>;
+		baikal,dai-name = "tlv320aic3x";
+		baikal,codec-name = "tlv320aic3x-hifi";
+		baikal,stream-name = "tlv320aic3x hifi";
 	};
 
 	sfp-xgmac0 {
@@ -146,6 +149,10 @@
 
 &i2c0 {
 	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
 
 	tlv320aic3x: tlv320aic3x@18 {
 		#sound-dai-cells = <0>;
@@ -156,10 +163,6 @@
 		ai3x-micbias-vg = <1>;
 		ai3x-ocmv = <1>;
 	};
-};
-
-&i2c1 {
-	status = "okay";
 };
 
 &i2s {
@@ -388,10 +391,14 @@
 
 &xgmac0 {
 	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
 	ext-phy-handle = <&ethphy2>;
 };
 
 &xgmac1 {
 	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
 	ext-phy-handle = <&ethphy3>;
 };

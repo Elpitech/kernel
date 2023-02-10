@@ -84,14 +84,14 @@
 		osc25: oscillator25 { /* external oscillator */
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency  = <25000000>;
+			clock-frequency = <25000000>;
 			clock-output-names = "osc25";
 		};
 
 		osc27: oscillator27 { /* external oscillator */
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency  = <27000000>;
+			clock-frequency = <27000000>;
 			clock-output-names = "osc27";
 		};
 
@@ -103,7 +103,7 @@
 		uart_clk: uart_clk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
-			clock-frequency = <7361963>;
+			clock-frequency = <7372800>;
 			clock-output-names = "uartclk";
 		};
 
@@ -139,13 +139,6 @@
 			clock-output-names = "gpioclk";
 		};
 
-		soc_ethclk: ethclk {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <125000000>;
-			clock-output-names = "eth_ptp_clk";
-		};
-
 		soc_xgbeclk: xgbeclk {
 			compatible = "fixed-clock";
 			#clock-cells = <0>;
@@ -160,18 +153,10 @@
 			clock-output-names = "sata_clk";
 		};
 
-		usb_clk: usb_clk {
-			#clock-cells = <0>;
-			compatible = "fixed-clock";
-			clock-names = "usbclk";
-			clock-frequency = <500000000>;
-			clock-output-names = "usbclk";
-		};
-
 		cmu1_avlsp_div7: cmu1_avlsp_div7 {
 			compatible = "allwinner,sun4i-a10-pll3-2x-clk", "fixed-factor-clock";
-			clocks = <&cmu1_avlsp>;
 			#clock-cells = <0>;
+			clocks = <&cmu1_avlsp>;
 			clock-div = <7>;
 			clock-mult = <1>;
 			clock-output-names = "lvds_clk";
@@ -409,140 +394,183 @@
 		ranges;
 
 		cmu0_cluster0: clock-controller@28000000 {
-			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-ca57_cmu0";
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0x28000000>;
+			clock-output-names = "bm1000-cluster0-cmu0";
 			#clock-cells = <0>;
 			clocks = <&osc25>;
-			cmu-id = <0x28000000>;
-			max = <1500000000>;
-			min = <500000000>;
 			clock-frequency = <1500000000>;
+			min = <500000000>;
+			max = <1500000000>;
 		};
 
 		cmu0_cluster1: clock-controller@c000000 {
-			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-ca57_cmu1";
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0xc000000>;
+			clock-output-names = "bm1000-cluster1-cmu0";
 			#clock-cells = <0>;
 			clocks = <&osc25>;
-			cmu-id = <0xc000000>;
-			max = <1500000000>;
-			min = <500000000>;
 			clock-frequency = <1500000000>;
+			min = <500000000>;
+			max = <1500000000>;
 		};
 
 		cmu0_cluster2: clock-controller@a000000 {
-			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-ca57_cmu2";
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0xa000000>;
+			clock-output-names = "bm1000-cluster2-cmu0";
 			#clock-cells = <0>;
 			clocks = <&osc25>;
-			cmu-id = <0xa000000>;
-			max = <1500000000>;
-			min = <500000000>;
 			clock-frequency = <1500000000>;
+			min = <500000000>;
+			max = <1500000000>;
 		};
 
 		cmu0_cluster3: clock-controller@26000000 {
-			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-ca57_cmu3";
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0x26000000>;
+			clock-output-names = "bm1000-cluster3-cmu0";
 			#clock-cells = <0>;
 			clocks = <&osc25>;
-			cmu-id = <0x26000000>;
-			max = <1500000000>;
-			min = <500000000>;
 			clock-frequency = <1500000000>;
+			min = <500000000>;
+			max = <1500000000>;
 		};
 
 		cmu0_avlsp: clock-controller@20000000 {
 			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			#clock-cells = <1>;
-			clock-output-names = "baikal-avlsp_cmu0";
-			clock-names =
-				"gpio",         // <0>
-				"uart1",        // <1>
-				"uart2",        // <2>
-				"apb",          // <3>
-				"spi",          // <4>
-				"espi",         // <5>
-				"i2c1",         // <6>
-				"i2c2",         // <7>
-				"timer1",       // <8>
-				"timer2",       // <9>
-				"timer3",       // <10>
-				"timer4",       // <11>
-				"dmac",         // <12>
-				"smbus1",       // <13>
-				"smbus2",       // <14>
-				"hda_sys_clk",  // <15>
-				"hda_clk48",    // <16>
-				"mshc_axi",     // <17>
-				"mshc_ahb",     // <18>
-				"mshc_tx_x2",   // <19>
-				"mshc_b",       // <20>
-				"mshc_tm",      // <21>
-				"mshc_cqetm",   // <22>
-				"hwa_clu",      // <23>
-				"hwa_clu_hf",   // <24>
-				"hwa_axi",      // <25>
-				"vdu_axi",      // <26>
-				"smmu";         // <27>
-			clock-indices =
-				<0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>, <8>, <9>, <10>,
-				<11>, <12>, <13>, <14>, <15>, <16>, <17>, <18>, <19>,
-				<20>, <21>, <22>, <23>, <24>, <25>, <26>, <27>;
-			clocks = <&osc25>;
 			cmu-id = <0x20000000>;
-			max = <2100000000>;
-			min = <800000>;
+			clock-output-names = "bm1000-avlsp-cmu0";
+			#clock-cells = <1>;
+			clocks = <&osc25>;
 			clock-frequency = <1200000000>;
+			min = <800000>;
+			max = <2100000000>;
+			clock-names = "gpio",
+				      "uart1",
+				      "uart2",
+				      "apb",
+				      "spi",
+				      "espi",
+				      "i2c1",
+				      "i2c2",
+				      "timer1",
+				      "timer2",
+				      "timer3",
+				      "timer4",
+				      "dmac",
+				      "smbus1",
+				      "smbus2",
+				      "hda_sys_clk",
+				      "hda_clk48",
+				      "mshc_axi",
+				      "mshc_ahb",
+				      "mshc_tx_x2",
+				      "mshc_b",
+				      "mshc_tm",
+				      "mshc_cqetm",
+				      "hwa_clu",
+				      "hwa_clu_hf",
+				      "hwa_axi",
+				      "vdu_axi",
+				      "smmu";
+			clock-indices =	<0>, <1>, <2>, <3>, <4>, <5>, <6>,
+					<7>, <8>, <9>, <10>, <11>, <12>, <13>,
+					<14>, <15>, <16>, <17>, <18>, <19>, <20>,
+					<21>, <22>, <23>, <24>, <25>, <26>, <27>;
 		};
 
 		cmu1_avlsp: clock-controller@20010000 {
 			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-avlsp_cmu1";
+			cmu-id = <0x20010000>;
+			clock-output-names = "bm1000-avlsp-cmu1";
 			#clock-cells = <0>;
 			clocks = <&osc27>;
-			cmu-id = <0x20010000>;
-			max = <2100000000>;
-			min = <13500000>;
 			clock-frequency = <1039500000>;
+			min = <13500000>;
+			max = <2100000000>;
 		};
 
 		cmu0_mali: clock-controller@2a000000 {
-			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-mali-cmu";
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0x2a000000>;
+			clock-output-names = "bm1000-mali-cmu0";
 			#clock-cells = <0>;
 			clocks = <&osc25>;
-			clock-names = "aclk";
-			cmu-id = <0x2a000000>;
-			max = <800000000>;
-			min = <400000000>;
 			clock-frequency = <750000000>;
+			min = <400000000>;
+			max = <800000000>;
+			clock-names = "aclk";
+		};
+
+		cmu0_usb: clock-controller@2c000000 {
+			compatible = "baikal,bm1000-cmu";
+			cmu-id = <0x2c000000>;
+			clock-output-names = "bm1000-usb-cmu0";
+			#clock-cells = <1>;
+			clocks = <&osc25>;
+			clock-frequency = <800000000>;
+			min = <100000000>;
+			max = <800000000>;
+			clock-names = "sata_ref_alt_clk",
+				      "sata_aclk_u0",
+				      "sata_aclk_u1",
+				      "usb2_phy0_ref_clk",
+				      "usb2_phy1_ref_clk",
+				      "usb2_aclk",
+				      "usb2_clk_sofitp",
+				      "usb3_phy0_ref_clk",
+				      "usb3_phy1_ref_clk",
+				      "usb3_phy2_ref_clk",
+				      "usb3_phy3_ref_clk",
+				      "usb3_aclk",
+				      "usb3_clk_sofitp",
+				      "usb3_clk_suspend",
+				      "smmu_aclk",
+				      "dmac_aclk",
+				      "gic_aclk";
+			clock-indices =	<0>, <1>, <2>, <3>, <4>, <5>,
+					<6>, <7>, <8>, <9>, <10>, <11>,
+					<12>, <13>, <14>, <15>, <16>;
 		};
 
 		cmu0_xgbe: clock-controller@30000000 {
 			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-xgbe-cmu0";
+			cmu-id = <0x30000000>;
+			clock-output-names = "bm1000-xgbe-cmu0";
 			#clock-cells = <1>;
 			clocks = <&osc25>;
-			clock-names = "csr50mhz", "gmac0_aclk", "gmac0_ptp", "gmac0_tx2", "gmac1_aclk", "gmac1_ptp", "gmac1_tx2", "hdmi_aclk", "isfr";
-			clock-indices = <0>, <8>, <9>, <10>, <11>, <12>, <13>, <15>, <17>;
-			cmu-id = <0x30000000>;
-			max = <1250000000>;
-			min = <50000000>;
 			clock-frequency = <1250000000>;
+			min = <50000000>;
+			max = <1250000000>;
+			clock-names = "csr50mhz",
+				      "gmac0_aclk",
+				      "gmac0_ptp",
+				      "gmac0_tx2",
+				      "gmac1_aclk",
+				      "gmac1_ptp",
+				      "gmac1_tx2",
+				      "hdmi_aclk",
+				      "isfr";
+			clock-indices = <0>, <8>, <9>, <10>, <11>, <12>, <13>, <15>, <17>;
 		};
 
 		cmu1_xgbe: clock-controller@30010000 {
 			compatible = "baikal,bm1000-cmu", "baikal,cmu";
-			clock-output-names = "baikal-xgbe-cmu1";
+			cmu-id = <0x30010000>;
+			clock-output-names = "bm1000-xgbe-cmu1";
 			#clock-cells = <1>;
 			clocks = <&osc27>;
-			clock-indices = <0>;
-			clock-names = "pixelclk";
-			cmu-id = <0x30010000>;
-			max = <600000000>;
-			min = <13500000>;
 			clock-frequency = <25250000>;
+			min = <13500000>;
+			max = <600000000>;
+			clock-names = "pixelclk";
+			clock-indices = <0>;
+		};
+
+		pcie_gpr: syscon@2050000 {
+			compatible = "baikal,bm1000-pcie-gpr", "syscon";
+			reg = <0x0 0x2050000 0x0 0x100>;
 		};
 
 		pcie_lcru: lcru@2000000 {
@@ -554,14 +582,14 @@
 		pcie0: pcie@2200000 { /* PCIe x4 #0 */
 			device_type = "pci";
 			compatible = "baikal,bm1000-pcie", "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02200000 0x0 0x1000>,
-			      <0x0 0x40100000 0x0 0xff00000>;
+			reg = <0x00000000 0x02200000 0x0 0x1000>,
+			      <0x00000040 0x00000000 0x0 0x10000000>;
 			reg-names = "dbi", "config";
 			bus-range = <0x0 0xff>;
 			interrupts = <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 427 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "aer", "msi", "pme";
+				     <GIC_SPI 427 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "aer", "pme", "msi";
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 0>;
 			#address-cells = <3>;
@@ -579,20 +607,20 @@
 		pcie1: pcie@2210000 { /* PCIe x4 #1 */
 			device_type = "pci";
 			compatible = "baikal,bm1000-pcie", "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02210000 0x0 0x1000>,
-			      <0x0 0x50100000 0x0 0xff00000>;
+			reg = <0x00000000 0x02210000 0x0 0x1000>,
+			      <0x00000050 0x00000000 0x0 0x10000000>;
 			reg-names = "dbi", "config";
 			bus-range = <0x0 0xff>;
 			interrupts = <GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 403 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "aer", "msi", "pme";
+				     <GIC_SPI 403 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "aer", "pme", "msi";
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			dma-coherent;
-			ranges = <0x81000000 0x0 0x00100000 0x0 0x50000000 0x0 0x100000>, /* I/O */
+			ranges = <0x81000000 0x0 0x00000000 0x0 0x50000000 0x0 0x100000>, /* I/O */
 				 <0x82000000 0x0 0x40000000 0x5 0x00000000 0x0 0x40000000>; /* 32b non-prefetchable memory */
 			num-lanes = <4>;
 			num-viewport = <4>;
@@ -604,20 +632,20 @@
 		pcie2: pcie@2220000 { /* PCIe x8 */
 			device_type = "pci";
 			compatible = "baikal,bm1000-pcie", "baikal,pcie-m", "snps,dw-pcie";
-			reg = <0x0 0x02220000 0x0 0x1000>,
-			      <0x0 0x60100000 0x0 0xff00000>;
+			reg = <0x00000000 0x02220000 0x0 0x1000>,
+			      <0x00000060 0x00000000 0x0 0x10000000>;
 			reg-names = "dbi", "config";
 			bus-range = <0x0 0xff>;
 			interrupts = <GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 379 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "aer", "msi", "pme";
+				     <GIC_SPI 379 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "aer", "pme", "msi";
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 2>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			dma-coherent;
-			ranges = <0x81000000 0x0 0x00200000 0x0 0x60000000 0x0 0x100000>, /* I/O */
+			ranges = <0x81000000 0x0 0x00000000 0x0 0x60000000 0x0 0x100000>, /* I/O */
 				 <0x82000000 0x0 0x80000000 0x6 0x00000000 0x0 0x80000000>; /* 32b non-prefetchable memory */
 			num-lanes = <8>;
 			num-viewport = <4>;
@@ -693,10 +721,12 @@
 				     <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>, /* rx_or */
 				     <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>, /* tx_emp */
 				     <GIC_SPI 107 IRQ_TYPE_LEVEL_HIGH>; /* tx_or */
-			/*dmas = <&lsdma 0 1 0>,*/
-			/*       <&lsdma 1 0 1>;*/
-			/*dma-names = "tx", "rx";*/
-			/*#sound-dai-cells = <0>;*/
+			/*
+			 * dmas = <&lsdma 0 1 0>,
+			 *        <&lsdma 1 0 1>;
+			 * dma-names = "tx", "rx";
+			 * #sound-dai-cells = <0>;
+			 */
 			status = "disabled";
 		};
 
@@ -708,7 +738,7 @@
 			reg-io-width = <4>;
 			clocks = <&uart_clk>;
 			clock-names = "baudclk";
-			clock-frequency = <7361963>;
+			clock-frequency = <7372800>;
 			status = "disabled";
 		};
 
@@ -720,7 +750,7 @@
 			reg-io-width = <4>;
 			clocks = <&uart_clk>;
 			clock-names = "baudclk";
-			clock-frequency = <7361963>;
+			clock-frequency = <7372800>;
 			status = "disabled";
 		};
 
@@ -987,32 +1017,50 @@
 		usb2: dwc3@2c400000 {
 			compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
 			reg = <0x0 0x2c400000 0x0 0x100000>;
-			interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 236 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 245 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "dwc_usb2";
 			dr_mode = "host";
 			dma-coherent;
 			maximum-speed = "high-speed";
-			clocks = <&usb_clk>;
-			clock-names = "ref";
+			clocks = <&cmu0_usb 5>, <&cmu0_usb 6>;
+			clock-names = "bus_early", "ref";
+			phys = <&usb_phy 0>;
+			phy-names = "usb2-phy";
 		};
 
 		usb3: dwc3@2c500000 {
 			compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
 			reg = <0x0 0x2c500000 0x0 0x100000>;
-			interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 238 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 242 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 243 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 244 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 246 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "dwc_usb3";
 			dr_mode = "host";
 			dma-coherent;
-			clocks = <&usb_clk>;
-			clock-names = "ref";
+			clocks = <&cmu0_usb 11>, <&cmu0_usb 12>, <&cmu0_usb 13>;
+			clock-names = "bus_early", "ref", "suspend";
+			phys = <&usb_phy 1>, <&usb_phy 2>;
+			phy-names = "usb3-phy", "usb2-phy";
+		};
+
+		usb_phy: usb_phy {
+			compatible = "baikal,bm1000-usb-phy";
+			status = "okay";
+			clocks = <&cmu0_usb 3>, <&cmu0_usb 4>, <&cmu0_usb 7>,
+				 <&cmu0_usb 8>, <&cmu0_usb 9>, <&cmu0_usb 10>;
+			#phy-cells = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			usb-phy@0 {
+				reg = <0>;
+				enable;
+			};
+			usb-phy@1 {
+				reg = <1>;
+				enable;
+			};
+			usb-phy@2 {
+				reg = <2>;
+				enable;
+			};
 		};
 
 		sata0: sata@2c600000 {
@@ -1037,9 +1085,9 @@
 			status = "disabled";
 		};
 
-		dmac_m2m: dma-controller@2c620000 {
+		dmac_m2m: dma-controller@2c630000 {
 			compatible = "arm,pl330", "arm,primecell";
-			reg = <0x0 0x2c620000 0 0x1000>;
+			reg = <0x0 0x2c630000 0 0x10000>;
 			#dma-cells = <1>;
 			#dma-channels = <8>;
 			#dma-requests = <32>;
@@ -1100,7 +1148,7 @@
 				     <GIC_SPI 307 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 308 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 309 IRQ_TYPE_LEVEL_HIGH>;
-			fsl,num-rx-queues=<3>;
+			fsl,num-rx-queues = <3>;
 			clocks = <&soc_xgbeclk>, <&soc_xgbeclk>, <&soc_xgbeclk>;
 			clock-names = "dma_clk", "ptp_clk", "xgbe_clk";
 			mac-address = [ 00 00 00 00 00 00 ];
@@ -1132,7 +1180,7 @@
 				     <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 325 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 326 IRQ_TYPE_LEVEL_HIGH>;
-			fsl,num-rx-queues=<3>;
+			fsl,num-rx-queues = <3>;
 			clocks = <&soc_xgbeclk>, <&soc_xgbeclk>, <&soc_xgbeclk>;
 			clock-names = "dma_clk", "ptp_clk", "xgbe_clk";
 			mac-address = [ 00 00 00 00 00 00 ];
@@ -1243,7 +1291,7 @@
 		};
 
 		pvt_cluster0: pvt@28200000 {
-			compatible = "baikal,bm1000-pvt", "baikal,pvt";
+			compatible = "baikal,bm1000-pvt";
 			reg = <0x0 0x28200000 0x0 0x1000>;
 			interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
 			pvt_id = <0>;
@@ -1251,7 +1299,7 @@
 		};
 
 		pvt_cluster1: pvt@c200000 {
-			compatible = "baikal,bm1000-pvt", "baikal,pvt";
+			compatible = "baikal,bm1000-pvt";
 			reg = <0x0 0xc200000 0x0 0x1000>;
 			interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>;
 			pvt_id = <1>;
@@ -1259,7 +1307,7 @@
 		};
 
 		pvt_cluster2: pvt@a200000 {
-			compatible = "baikal,bm1000-pvt", "baikal,pvt";
+			compatible = "baikal,bm1000-pvt";
 			reg = <0x0 0xa200000 0x0 0x1000>;
 			interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
 			pvt_id = <2>;
@@ -1267,7 +1315,7 @@
 		};
 
 		pvt_cluster3: pvt@26200000 {
-			compatible = "baikal,bm1000-pvt", "baikal,pvt";
+			compatible = "baikal,bm1000-pvt";
 			reg = <0x0 0x26200000 0x0 0x1000>;
 			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
 			pvt_id = <3>;
@@ -1275,7 +1323,7 @@
 		};
 
 		pvt_mali: pvt@2a060000 {
-			compatible = "baikal,bm1000-pvt", "baikal,pvt";
+			compatible = "baikal,bm1000-pvt";
 			reg = <0x0 0x2a060000 0x0 0x1000>;
 			interrupts = <GIC_SPI 221 IRQ_TYPE_LEVEL_HIGH>;
 			pvt_id = <4>;

@@ -227,8 +227,6 @@ err_remove_config_dt:
 static const struct of_device_id dwmac_baikal_match[] = {
 	{ .compatible = "baikal,bm1000-gmac" },
 	{ .compatible = "baikal,bs1000-gmac" },
-	{ .compatible = "be,dwmac-3.710"},
-	{ .compatible = "be,dwmac"},
 	{ }
 };
 MODULE_DEVICE_TABLE(of, dwmac_baikal_match);

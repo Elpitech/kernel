@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for DBS-OV compatible boards:
+ *   - DBS-OV vA0
+ *
+ * Copyright (C) 2022 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bs1000-dbs.dtsi"
+
+/ {
+	model = "Baikal Electronics DBS-OV";
+	compatible = "baikal,dbs-ov", "baikal,bs1000";
+};
+
+&pcie0_p0 {
+	num-lanes = <16>;
+	status = "okay";
+};
+
+&pcie0_p0_ep {
+	num-lanes = <16>;
+};
+
+&pcie1_p0 {
+	num-lanes = <16>;
+	status = "okay";
+};
+
+&pcie1_p0_ep {
+	num-lanes = <16>;
+};
+
+&pcie2_p0 {
+	num-lanes = <16>;
+	status = "okay";
+};
+
+&pcie2_p0_ep {
+	num-lanes = <16>;
+};
+
+&pcie3_p0 {
+	num-lanes = <8>;
+	status = "okay";
+};
+
+&pcie3_p2 {
+	num-lanes = <4>;
+	status = "okay";
+};
+
+&pcie3_p3 {
+	num-lanes = <4>;
+	status = "okay";
+};
+
+&pcie4_p0 {
+	num-lanes = <8>;
+	status = "okay";
+};
+
+&pcie4_p2 {
+	num-lanes = <4>;
+	status = "okay";
+};
+
+&pcie4_p3 {
+	num-lanes = <4>;
+	status = "okay";
+};

@@ -848,12 +848,6 @@ static int pvt_remove(struct platform_device *pdev)
 static const struct of_device_id pvt_dt_match[] = {
 	{ .compatible = "baikal,bm1000-pvt", .data = (void *)bm1000 },
 	{ .compatible = "baikal,bs1000-pvt", .data = (void *)bs1000 },
-
-	/*
-	 * TODO: "baikal,pvt" is a legacy alias for "baikal,bm1000-pvt".
-	 *	  Use "baikal,bm1000-pvt" for future development.
-	 */
-	{ .compatible = "baikal,pvt",	     .data = (void *)bm1000 },
 	{ }
 };
 

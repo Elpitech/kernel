@@ -496,12 +496,12 @@
 			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -514,6 +514,7 @@
 			reg-names = "dbi", "apb", "addr_space";
 			num-ib-windows = <4>;
 			num-ob-windows = <4>;
+			num-lanes = <8>;
 			status = "disabled";
 		};
 
@@ -528,12 +529,12 @@
 			interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x741 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x742 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -549,12 +550,12 @@
 			interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x781 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x782 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -567,6 +568,7 @@
 			reg-names = "dbi", "apb", "addr_space";
 			num-ib-windows = <4>;
 			num-ob-windows = <4>;
+			num-lanes = <8>;
 			status = "disabled";
 		};
 
@@ -581,12 +583,12 @@
 			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x7c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x7c2 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -602,12 +604,12 @@
 			interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x501 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -620,6 +622,7 @@
 			reg-names = "dbi", "apb", "addr_space";
 			num-ib-windows = <4>;
 			num-ob-windows = <4>;
+			num-lanes = <8>;
 			status = "disabled";
 		};
 
@@ -634,12 +637,12 @@
 			interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x541 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x542 0x00000000 0x0 0x40000000>;
+			num-lanes = <8>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -655,12 +658,12 @@
 			interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 253 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x401 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x402 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -676,12 +679,12 @@
 			interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 254 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x441 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x442 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -697,12 +700,12 @@
 			interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 255 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x481 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x482 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -718,12 +721,12 @@
 			interrupts = <GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 256 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x4c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x4c2 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -739,12 +742,12 @@
 			interrupts = <GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x601 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x602 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -760,12 +763,12 @@
 			interrupts = <GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 323 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x641 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x642 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -781,12 +784,12 @@
 			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x681 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x682 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};
@@ -802,12 +805,12 @@
 			interrupts = <GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 325 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			#address-cells = <3>;
 			#size-cells = <2>;
 			ranges = <0x81000000 0x0 0x00000000 0x6c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x6c2 0x00000000 0x0 0x40000000>;
+			num-lanes = <4>;
 			num-viewport = <4>;
 			status = "disabled";
 		};

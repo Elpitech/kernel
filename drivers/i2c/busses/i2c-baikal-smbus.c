@@ -467,13 +467,6 @@ static int baikal_smbus_remove(struct platform_device *pdev)
 
 static const struct of_device_id baikal_smbus_match[] = {
 	{ .compatible = "baikal,bm1000-smbus" },
-
-	/*
-	 * TODO: "be,smbus" is legacy. Correct prefix is "baikal":
-	 * https://www.kernel.org/doc/Documentation/devicetree/bindings/vendor-prefixes.yaml
-	 * Use "baikal,b*-smbus" for future development.
-	 */
-	{ .compatible = "be,smbus" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, baikal_smbus_match);

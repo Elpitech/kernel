@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Device tree source for Elpitech ET113 board
- * Copyright (C) 2022 Elpitech
+ * Device tree include file for DBS-compatible boards
+ * Copyright (C) 2021-2022 Baikal Electronics, JSC
  */
 
-/dts-v1/;
-
 #include "bs1000.dtsi"
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 / {
-	model = "Elpitech ET113";
-	compatible = "baikal,bs1000";
-
 	aliases {
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
@@ -24,30 +17,21 @@
 
 &ehci {
 	status = "okay";
-	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
 };
 
 &gmac0 {
 	status = "okay";
-	snps,reset-gpios = <&portb 4 GPIO_ACTIVE_LOW>;
-	snps,reset-delays-us = <10>, <10000>, <50000>;
 	phy-handle = <&ethphy0>;
 	phy-mode = "rgmii-rxid";
 };
 
 &gmac1 {
 	status = "okay";
-	snps,reset-gpios = <&portb 5 GPIO_ACTIVE_LOW>;
-	snps,reset-delays-us = <10>, <10000>, <50000>;
 	phy-handle = <&ethphy1>;
 	phy-mode = "rgmii-rxid";
 };
 
 &gpio32 {
-	status = "okay";
-};
-
-&gpio16 {
 	status = "okay";
 };
 
@@ -63,115 +47,38 @@
 	status = "okay";
 };
 
-&i2c5 {
-	status = "okay";
-};
-
-&i2c6 {
-	status = "okay";
-	clock-frequency = <100000>;
-
-	max98089: codec@10 {
-		compatible = "maxim,max98089";
-		reg = <0x10>;
-	};
-
-	rtc@54 {
-		compatible = "nxp,pcf2129", "nxp,pcf2127";
-		reg = <0x54>;
-	};
-};
-
 &mdio0 {
 	ethphy0: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x3>;
-		realtek,led-mode = <RTL8211F_LED_MODE_B>;
-		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+		reg = <0x1>;
 	};
 };
 
 &mdio1 {
 	ethphy1: ethernet-phy@1 {
 		compatible = "ethernet-phy-ieee802.3-c22";
-		reg = <0x3>;
-		realtek,led-mode = <RTL8211F_LED_MODE_B>;
-		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+		reg = <0x1>;
 	};
+};
+
+&mux {
+	status = "okay";
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
+	status = "okay";
 };
 
 &ohci {
 	status = "okay";
-	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
-};
-
-&pcie0_p0 {
-	status = "okay";
-	num-lanes = <16>;
-	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
-};
-
-&pcie1_p0 {
-	status = "okay";
-	num-lanes = <16>;
-	reset-gpios = <&porta 25 GPIO_ACTIVE_LOW>;
-};
-
-&pcie2_p0 {
-	status = "okay";
-	num-lanes = <8>;
-	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
-};
-
-&pcie2_p1 {
-	status = "okay";
-	num-lanes = <8>;
-	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
-};
-
-&pcie3_p0 {
-	status = "okay";
-	num-lanes = <4>;
-	reset-gpios = <&porta 15 GPIO_ACTIVE_LOW>;
-	max-link-speed = <2>;
-};
-
-&pcie3_p1 {
-	status = "okay";
-	num-lanes = <4>;
-	reset-gpios = <&portc 6 GPIO_ACTIVE_LOW>;
-};
-
-&pcie3_p2 {
-	status = "okay";
-	num-lanes = <4>;
-	reset-gpios = <&porta 18 GPIO_ACTIVE_LOW>;
-};
-
-&pcie3_p3 {
-	status = "okay";
-	num-lanes = <4>;
-	reset-gpios = <&portc 1 GPIO_ACTIVE_LOW>;
-};
-
-&pcie4_p0 {
-	status = "okay";
-	num-lanes = <8>;
-	reset-gpios = <&porta 17 GPIO_ACTIVE_LOW>;
-};
-
-&pcie4_p2 {
-	status = "okay";
-	num-lanes = <1>;
-	reset-gpios = <&porta 31 GPIO_ACTIVE_LOW>;
-};
-
-&pcie4_p3 {
-	status = "okay";
-	num-lanes = <1>;
-	reset-gpios = <&porta 21 GPIO_ACTIVE_LOW>;
 };
 
 &pvt_cluster0 {
@@ -278,6 +185,7 @@
 		spi-max-frequency = <10000000>;
 		spi-tx-bus-width = <1>;
 		spi-rx-bus-width = <1>;
+		spi-cs-high;
 		status = "okay";
 
 		partitions {
@@ -332,23 +240,10 @@
 	status = "okay";
 };
 
+&uart_s {
+	status = "okay";
+};
+
 &wdt {
-	status = "okay";
-};
-
-&mux {
-	status = "okay";
-	uart-smbus-enabled;
-};
-
-&mux0 {
-	status = "okay";
-};
-
-&mux1 {
-	status = "okay";
-};
-
-&mux2 {
 	status = "okay";
 };
