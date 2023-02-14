@@ -38,22 +38,6 @@ struct baikal_pcie_rc {
 
 #define LINK_RETRAIN_TIMEOUT HZ
 
-/* Baikal (DesignWare) specific registers. */
-#define PCIE_COHERENCE_CONTROL_3_OFF	(0x8e8) /* to set cache coherence register. */
-
-/* Error registers in capabilities config space block */
-#define PCI_DEV_CTRL_STAT		0x78
-#define PCI_ROOT_CTRL_CAP		0x8c
-#define PCI_UNCORR_ERR_STAT		0x104
-#define PCI_UNCORR_ERR_MASK		0x10c
-#define PCI_CORR_ERR_STAT		0x110
-#define PCI_CORR_ERR_MASK		0x114
-#define PCI_ROOT_ERR_CMD		0x12c
-#define PCI_ROOT_ERR_STAT		0x130
-#define PCI_ROOT_ERR_SRC_ID		0x134
-
-#define PCIE_LINK_CAPABILITIES_REG		(0x7c)	/* Link Capabilities Register. */
-
 #define PCIE_LINK_CONTROL_LINK_STATUS_REG	(0x80)	/* Link Control and Status Register. */
 /* LINK_CONTROL_LINK_STATUS_REG */
 #define PCIE_CAP_LINK_SPEED_SHIFT		16
@@ -286,7 +270,7 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
 	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
 	struct resource_entry *tmp, *entry = NULL;
-	u32 lcru_reg, class_reg, reg;
+	u32 lcru_reg, class_reg;
 	phys_addr_t cfg_base, cfg_end;
 	u32 cfg_size;
 
@@ -371,20 +355,16 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	// class PCI_PCI_BRIDGE=0x604, prog-if=1
 	dw_pcie_writel_dbi(pcie, PCI_CLASS_REVISION, class_reg);
 
+	/* Hide MSI and MSI-X capabilities */
+	dw_pcie_writeb_dbi(pcie, 0x41, 0x70); /* point to next cap - skip MSI */
+	dw_pcie_writeb_dbi(pcie, 0x71, 0x00); /* end of caps - skip MSI-X */
+
 	dw_pcie_dbi_ro_wr_dis(pcie);
 
 	pp->bridge->child_ops = &baikal_child_pcie_ops;
 
 	dw_pcie_setup_rc(pp);
 	baikal_pcie_establish_link(pcie); // This call waits for training completion
-
-	dw_pcie_writel_dbi(pcie, PCI_ROOT_ERR_CMD, 7); // enable AER
-	reg = dw_pcie_readl_dbi(pcie, PCI_DEV_CTRL_STAT);
-	reg |= 0xf; // enable error reporting
-	dw_pcie_writel_dbi(pcie, PCI_DEV_CTRL_STAT, reg);
-	reg = dw_pcie_readl_dbi(pcie, PCI_ROOT_CTRL_CAP);
-	reg |= 0xf; // enable error reporting
-	dw_pcie_writel_dbi(pcie, PCI_ROOT_CTRL_CAP, reg);
 
 	return 0;
 }
@@ -420,46 +400,6 @@ static const struct dw_pcie_ops baikal_pcie_ops = {
 	.link_up = baikal_pcie_link_up,
 };
 
-DEFINE_RATELIMIT_STATE(pcie_err_printk_ratelimit, 300 * HZ, 10);
-
-static irqreturn_t baikal_pcie_aer_irq_handler(int irq, void *arg)
-{
-	struct baikal_pcie_rc *rc = arg;
-	struct dw_pcie *pcie = rc->pcie;
-	struct device *dev = pcie->dev;
-	u32 ue_st, ce_st, r_st, dev_st;
-
-	ue_st = dw_pcie_readl_dbi(pcie, PCI_UNCORR_ERR_STAT);
-	ce_st = dw_pcie_readl_dbi(pcie, PCI_CORR_ERR_STAT);
-	r_st = dw_pcie_readl_dbi(pcie, PCI_ROOT_ERR_STAT);
-	dev_st = dw_pcie_readl_dbi(pcie, PCI_DEV_CTRL_STAT);
-
-	if (__ratelimit(&pcie_err_printk_ratelimit)) {
-		if (r_st & 0x7c) {
-			if (r_st & 0x58)
-				dev_err(dev, "%sFatal Error: %x\n",
-					(r_st & 0x8) ? "Multiple " : "", ue_st);
-			else
-				dev_err(dev, "%sNon-Fatal Error: %x\n",
-					(r_st & 8) ? "Multiple " : "", ue_st);
-		}
-
-		if (r_st & 3)
-			dev_err(dev, "%sCorrectable Error: %x\n",
-				(r_st & 2) ? "Multiple " : "", ce_st);
-
-		if (dev_st & 0xf0000)
-			dev_err(dev, "Device Status Errors: %x\n", dev_st >> 16);
-	}
-
-	dw_pcie_writel_dbi(pcie, PCI_UNCORR_ERR_STAT, ue_st);
-	dw_pcie_writel_dbi(pcie, PCI_CORR_ERR_STAT, ce_st);
-	dw_pcie_writel_dbi(pcie, PCI_ROOT_ERR_STAT, r_st);
-	dw_pcie_writel_dbi(pcie, PCI_DEV_CTRL_STAT, dev_st);
-
-	return IRQ_HANDLED;
-}
-
 static int baikal_add_pcie_port(struct baikal_pcie_rc *rc,
 				struct platform_device *pdev)
 {
@@ -467,7 +407,6 @@ static int baikal_add_pcie_port(struct baikal_pcie_rc *rc,
 	struct pcie_port *pp = &pcie->pp;
 	struct device *dev = &pdev->dev;
 	struct resource *res;
-	int irq;
 	int ret;
 
 	pcie->dev = &pdev->dev;
@@ -481,20 +420,6 @@ static int baikal_add_pcie_port(struct baikal_pcie_rc *rc,
 	} else {
 		dev_err(dev, "missing *dbi* reg space\n");
 		return -EINVAL;
-	}
-
-	irq = platform_get_irq(pdev, 0);
-	if (irq < 0) {
-		dev_err(dev, "missing IRQ resource: %d\n", irq);
-		return irq;
-	}
-
-	ret = devm_request_irq(dev, irq, baikal_pcie_aer_irq_handler,
-			       IRQF_SHARED, "bm1000-pcie-aer", rc);
-	if (ret < 0) {
-		dev_err(dev, "failed to request error IRQ %d\n",
-			irq);
-		return ret;
 	}
 
 	pp->ops = &baikal_pcie_host_ops;
@@ -802,47 +727,6 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	return 0;
 }
 
-static int baikal_pcie_get_irq_acpi(struct acpi_device *adev,
-				    struct acpi_device *child,
-				    struct pcie_port *pp)
-{
-	struct device *dev = &adev->dev;
-	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
-	struct resource res;
-	int ret;
-
-	memset(&res, 0, sizeof(res));
-
-	ret = acpi_irq_get(child->handle, 0, &res);
-	if (ret) {
-		dev_err(dev, "failed to get irq %d\n", 0);
-		return ret;
-	}
-
-	if (res.flags & IORESOURCE_BITS) {
-		struct irq_data *irqd;
-
-		irqd = irq_get_irq_data(res.start);
-		if (!irqd) {
-			return -ENXIO;
-		}
-
-		irqd_set_trigger_type(irqd, res.flags & IORESOURCE_BITS);
-	}
-
-	pp->irq = res.start;
-
-	ret = devm_request_irq(dev, pp->irq, baikal_pcie_aer_irq_handler,
-			       IRQF_SHARED, "bm1000-pcie-aer", rc);
-	if (ret) {
-		dev_err(dev, "failed to request irq %d\n", pp->irq);
-		return ret;
-	}
-
-	return 0;
-}
-
 static struct acpi_device *baikal_lcru;
 static struct regmap *baikal_regmap;
 
@@ -1014,12 +898,6 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 	ret = baikal_pcie_get_res_acpi(adev, &child, pp);
 	if (ret) {
 		dev_err(dev, "failed to get resource info\n");
-		return ret;
-	}
-
-	ret = baikal_pcie_get_irq_acpi(adev, child, pp);
-	if (ret) {
-		dev_err(dev, "failed to get irq info\n");
 		return ret;
 	}
 

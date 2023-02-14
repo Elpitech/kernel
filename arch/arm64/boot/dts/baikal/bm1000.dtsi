@@ -590,6 +590,7 @@
 				     <GIC_SPI 427 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 429 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "aer", "pme", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 0>;
 			#address-cells = <3>;
@@ -615,6 +616,7 @@
 				     <GIC_SPI 403 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "aer", "pme", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 1>;
 			#address-cells = <3>;
@@ -640,6 +642,7 @@
 				     <GIC_SPI 379 IRQ_TYPE_LEVEL_HIGH>,
 				     <GIC_SPI 381 IRQ_TYPE_LEVEL_HIGH>;
 			interrupt-names = "aer", "pme", "msi";
+			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 378 IRQ_TYPE_LEVEL_HIGH>;
 			#interrupt-cells = <1>;
 			baikal,pcie-lcru = <&pcie_lcru 2>;
 			#address-cells = <3>;

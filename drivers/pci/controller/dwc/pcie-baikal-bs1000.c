@@ -28,28 +28,6 @@ struct baikal_pcie_of_data {
 
 #define to_baikal_pcie(x)	dev_get_drvdata((x)->dev)
 
-#define PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG		0x78
-#define PCIE_CAP_CORR_ERR_REPORT_EN			BIT(0)
-#define PCIE_CAP_NON_FATAL_ERR_REPORT_EN		BIT(1)
-#define PCIE_CAP_FATAL_ERR_REPORT_EN			BIT(2)
-#define PCIE_CAP_UNSUPPORT_REQ_REP_EN			BIT(3)
-
-#define PCIE_ROOT_CONTROL_ROOT_CAPABILITIES_REG		0x8c
-#define PCIE_CAP_SYS_ERR_ON_CORR_ERR_EN			BIT(0)
-#define PCIE_CAP_SYS_ERR_ON_NON_FATAL_ERR_EN		BIT(1)
-#define PCIE_CAP_SYS_ERR_ON_FATAL_ERR_EN		BIT(2)
-#define PCIE_CAP_PME_INT_EN				BIT(3)
-
-#define PCIE_UNCORR_ERR_STATUS_REG			0x104
-#define PCIE_CORR_ERR_STATUS_REG			0x110
-
-#define PCIE_ROOT_ERR_CMD_REG				0x12c
-#define PCIE_CORR_ERR_REPORTING_EN			BIT(0)
-#define PCIE_NON_FATAL_ERR_REPORTING_EN			BIT(1)
-#define PCIE_FATAL_ERR_REPORTING_EN			BIT(2)
-
-#define PCIE_ROOT_ERR_STATUS_REG			0x130
-
 #define PCIE_ATU_MIN_SIZE				0x10000		/* 64K */
 #define PCIE_ATU_REGION_INDEX3				0x3
 #define PCIE_ATU_CR2_CFG_SHIFT	BIT(28)
@@ -224,28 +202,10 @@ skip_atu:
 	reg = dw_pcie_readl_dbi(pcie, PCI_CLASS_REVISION);
 	reg = (reg & 0xffff00ff) | (1 << 8);
 	dw_pcie_writel_dbi(pcie, PCI_CLASS_REVISION, reg);
+	/* Hide MSI and MSI-X capabilities */
+	dw_pcie_writeb_dbi(pcie, 0x41, 0x70); /* point to next cap - skip MSI */
+	dw_pcie_writeb_dbi(pcie, 0x71, 0x00); /* end of caps - skip MSI-X */
 	dw_pcie_dbi_ro_wr_dis(pcie);
-
-	/* Enable error reporting */
-	reg = dw_pcie_readl_dbi(pcie, PCIE_ROOT_ERR_CMD_REG);
-	reg |= PCIE_CORR_ERR_REPORTING_EN      |
-	       PCIE_NON_FATAL_ERR_REPORTING_EN |
-	       PCIE_FATAL_ERR_REPORTING_EN;
-	dw_pcie_writel_dbi(pcie, PCIE_ROOT_ERR_CMD_REG, reg);
-
-	reg = dw_pcie_readl_dbi(pcie, PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG);
-	reg |= PCIE_CAP_CORR_ERR_REPORT_EN	|
-	       PCIE_CAP_NON_FATAL_ERR_REPORT_EN	|
-	       PCIE_CAP_FATAL_ERR_REPORT_EN	|
-	       PCIE_CAP_UNSUPPORT_REQ_REP_EN;
-	dw_pcie_writel_dbi(pcie, PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG, reg);
-
-	reg = dw_pcie_readl_dbi(pcie, PCIE_ROOT_CONTROL_ROOT_CAPABILITIES_REG);
-	reg |= PCIE_CAP_SYS_ERR_ON_CORR_ERR_EN	    |
-	       PCIE_CAP_SYS_ERR_ON_NON_FATAL_ERR_EN |
-	       PCIE_CAP_SYS_ERR_ON_FATAL_ERR_EN	    |
-	       PCIE_CAP_PME_INT_EN;
-	dw_pcie_writel_dbi(pcie, PCIE_ROOT_CONTROL_ROOT_CAPABILITIES_REG, reg);
 
 	if (IS_ENABLED(CONFIG_PCI_MSI)) {
 		struct baikal_pcie *bp = to_baikal_pcie(pcie);
@@ -273,43 +233,11 @@ static const struct dw_pcie_host_ops baikal_pcie_host_its_msi_ops = {
 static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
 {
 	struct baikal_pcie *bp = arg;
-	struct dw_pcie *pcie = bp->pci;
-	struct device *dev = pcie->dev;
-
-	u32 apb_pe_err_status;
 	u32 apb_pe_int_status;
-	u32 corr_err_status;
-	u32 dev_ctrl_dev_status;
-	u32 root_err_status;
-	u32 uncorr_err_status;
 
-	apb_pe_err_status   = readl(bp->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
+	/* clear interrupt status */
 	apb_pe_int_status   = readl(bp->apb_base + BS1000_PCIE_APB_PE_INT_STS);
-	uncorr_err_status   = dw_pcie_readl_dbi(pcie,
-					 PCIE_UNCORR_ERR_STATUS_REG);
-	corr_err_status	    = dw_pcie_readl_dbi(pcie,
-					 PCIE_CORR_ERR_STATUS_REG);
-	root_err_status	    = dw_pcie_readl_dbi(pcie,
-					 PCIE_ROOT_ERR_STATUS_REG);
-	dev_ctrl_dev_status = dw_pcie_readl_dbi(pcie,
-					 PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG);
-
-	writel(apb_pe_err_status, bp->apb_base + BS1000_PCIE_APB_PE_ERR_STS);
 	writel(apb_pe_int_status, bp->apb_base + BS1000_PCIE_APB_PE_INT_STS);
-	dw_pcie_writel_dbi(pcie,
-		    PCIE_UNCORR_ERR_STATUS_REG, uncorr_err_status);
-	dw_pcie_writel_dbi(pcie,
-		    PCIE_CORR_ERR_STATUS_REG, corr_err_status);
-	dw_pcie_writel_dbi(pcie,
-		    PCIE_ROOT_ERR_STATUS_REG, root_err_status);
-	dw_pcie_writel_dbi(pcie,
-		    PCIE_DEVICE_CONTROL_DEVICE_STATUS_REG, dev_ctrl_dev_status);
-
-	dev_err(dev,
-		"DevErr:0x%x RootErr:0x%x UncorrErr:0x%x CorrErr:0x%x ApbErr:0x%x ApbInt:0x%x\n",
-		(dev_ctrl_dev_status & 0xf0000) >> 16,
-		root_err_status, uncorr_err_status, corr_err_status,
-		apb_pe_err_status, apb_pe_int_status);
 
 	return IRQ_HANDLED;
 }
