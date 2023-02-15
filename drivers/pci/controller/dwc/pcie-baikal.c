@@ -29,9 +29,6 @@ struct baikal_pcie_rc {
 	struct regmap *lcru;
 	struct gpio_desc *reset_gpio;
 	char reset_name[32];
-	u32 cfg_busdev;
-	u32 max_bus;
-	bool ecam;
 };
 
 #define to_baikal_pcie_rc(x)	dev_get_drvdata((x)->dev)
@@ -204,66 +201,48 @@ static int baikal_pcie_establish_link(struct dw_pcie *pcie)
 	return ret;
 }
 
-static int baikal_pcie_access_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-		u32 devfn, int where, int size, u32 *val, bool write)
+static void __iomem *bm1000_pcie_map_bus(struct pci_bus *bus,
+				     unsigned int devfn, int where)
 {
-	int ret;
-	u32 busdev;
-	void __iomem *va_cfg_base;
+	struct pcie_port *pp = bus->sysdata;
 	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pci);
 
-	if (bus->number > rc->max_bus) {
-		if (!write)
-			*val = 0xffffffff;
-		return PCIBIOS_DEVICE_NOT_FOUND;
+	if (!baikal_pcie_link_up(pci)) {
+		return NULL;
 	}
-	
-	if (rc->ecam) {
-		va_cfg_base = pp->va_cfg0_base +
-			((bus->number - 1) << PCIE_ECAM_BUS_SHIFT) +
-			(devfn << PCIE_ECAM_DEVFN_SHIFT);
+
+	if (bus->number == 1 && PCI_SLOT(devfn) > 0) {
+		return NULL;
 	} else {
-		busdev = PCIE_ATU_BUS(bus->number) |
-			 PCIE_ATU_DEV(PCI_SLOT(devfn)) |
-			 PCIE_ATU_FUNC(PCI_FUNC(devfn));
-		if (busdev != rc->cfg_busdev) {
-			dw_pcie_prog_outbound_atu(pci, PCIE_ATU_REGION_INDEX3,
-						  PCIE_ATU_TYPE_CFG1, pp->cfg0_base,
-						  busdev, PCIE_ATU_MIN_SIZE);
-			rc->cfg_busdev = busdev;
-		}
-		va_cfg_base = pp->va_cfg0_base;
+		return pp->va_cfg0_base +
+			(bus->number << PCIE_ECAM_BUS_SHIFT) +
+			(devfn << PCIE_ECAM_DEVFN_SHIFT) +
+			where;
 	}
-
-	if (write)
-		ret = dw_pcie_write(va_cfg_base + where, size, *val);
-	else
-		ret = dw_pcie_read(va_cfg_base + where, size, val);
-
-	return ret;
-}
-
-static int baikal_pcie_rd_other_conf(struct pci_bus *bus,
-		u32 devfn, int where, int size, u32 *val)
-{
-	struct pcie_port *pp = bus->sysdata;
-	return baikal_pcie_access_other_conf(pp, bus, devfn, where, size, val,
-			false);
-}
-
-static int baikal_pcie_wr_other_conf(struct pci_bus *bus,
-		u32 devfn, int where, int size, u32 val)
-{
-	struct pcie_port *pp = bus->sysdata;
-	return baikal_pcie_access_other_conf(pp, bus, devfn, where, size, &val,
-			true);
 }
 
 static struct pci_ops baikal_child_pcie_ops = {
-	.read = baikal_pcie_rd_other_conf,
-	.write = baikal_pcie_wr_other_conf,
+	.map_bus	= bm1000_pcie_map_bus,
+	.read		= pci_generic_config_read,
+	.write		= pci_generic_config_write
 };
+
+static void bm_prog_outbound_atu(struct dw_pcie *pcie, int index, int type,
+				 u64 cpu_addr, u64 pci_addr, u32 size, u32 cr2)
+{
+	u64 limit_addr = cpu_addr + size - 1;
+
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
+			   PCIE_ATU_REGION_OUTBOUND | index);
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_BASE,
+			   lower_32_bits(cpu_addr));
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_BASE, upper_32_bits(cpu_addr));
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_LIMIT, lower_32_bits(limit_addr));
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_TARGET, lower_32_bits(pci_addr));
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_TARGET, upper_32_bits(pci_addr));
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_CR1, type);
+	dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2, PCIE_ATU_ENABLE | cr2);
+}
 
 static int baikal_pcie_host_init(struct pcie_port *pp)
 {
@@ -271,8 +250,24 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	struct baikal_pcie_rc *rc = to_baikal_pcie_rc(pcie);
 	struct resource_entry *tmp, *entry = NULL;
 	u32 lcru_reg, class_reg;
-	phys_addr_t cfg_base, cfg_end;
-	u32 cfg_size;
+
+	/* Check, if we can set up ECAM */
+	if (pp->cfg0_base & PCIE_ECAM_MASK ||
+	    pp->cfg0_size < PCIE_ECAM_SIZE) {
+		dev_warn(pcie->dev, "No ECAM due to config region size/alignment!\n");
+		goto skip_atu;
+	}
+	/* CFG0 for bus 1 */
+	bm_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX0,
+			     PCIE_ATU_TYPE_CFG0,
+			     pp->cfg0_base + (1 << PCIE_ECAM_BUS_SHIFT),
+			     0, PCIE_ATU_MIN_SIZE, PCIE_ATU_CR2_CFG_SHIFT);
+	/* CFG1 for bus > 1 */
+	bm_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX1,
+			     PCIE_ATU_TYPE_CFG1,
+			     pp->cfg0_base + (2 << PCIE_ECAM_BUS_SHIFT),
+			     0, PCIE_ECAM_SIZE - (2 << PCIE_ECAM_BUS_SHIFT),
+			     PCIE_ATU_CR2_CFG_SHIFT);
 
 	/* Configure MEM and I/O ATU regions */
 	/* Get last memory resource entry */
@@ -280,67 +275,17 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 		if (resource_type(tmp->res) == IORESOURCE_MEM)
 			entry = tmp;
 
-	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX0,
+	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX2,
 			PCIE_ATU_TYPE_MEM, entry->res->start,
 			entry->res->start - entry->offset,
 			resource_size(entry->res));
-	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX1,
+	dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX3,
 			PCIE_ATU_TYPE_IO, pp->io_base,
 			pp->io_bus_addr, pp->io_size);
 
-	/* Check, if we can set up ECAM */
-	cfg_base = pp->cfg0_base;
-	cfg_size = pp->cfg0_size;
-	cfg_end = cfg_base + cfg_size;
-	cfg_base = (cfg_base & ~PCIE_ECAM_MASK) + (0x1 << PCIE_ECAM_BUS_SHIFT);
-	if (cfg_base < pp->cfg0_base)
-		cfg_base += PCIE_ECAM_SIZE;
-	if (cfg_base + (4 << PCIE_ECAM_BUS_SHIFT) > cfg_end) {
-		dev_info(pcie->dev, "Not enough space for ECAM\n");
-		rc->max_bus = 255;
-		dw_pcie_prog_outbound_atu(pcie, PCIE_ATU_REGION_INDEX2,
-			PCIE_ATU_TYPE_CFG0, pp->cfg0_base,
-			PCIE_ATU_BUS(1), PCIE_ATU_MIN_SIZE);
-	} else {
-		if (cfg_end >= cfg_base + 0x0ff00000)
-			cfg_size = 0x0ff00000;
-		else
-			cfg_size = (cfg_end - cfg_base) & PCIE_ECAM_BUS_MASK;
-		pp->va_cfg0_base = ioremap(cfg_base, cfg_size);
-		/* set up region 2 for bus 1 */
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
-				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX2);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_BASE,
-				lower_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_BASE,
-				upper_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LIMIT,
-				lower_32_bits(cfg_base) + PCIE_ATU_MIN_SIZE - 1);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_TARGET, 0);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_TARGET, 0);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG0);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2,
-				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
-		/* set up region 3 for higher busses */
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_VIEWPORT,
-				PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX3);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_BASE,
-				lower_32_bits(cfg_base + (1 << PCIE_ECAM_BUS_SHIFT)));
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_BASE,
-				upper_32_bits(cfg_base));
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LIMIT,
-				lower_32_bits(cfg_base) + cfg_size - 1);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_LOWER_TARGET, 0);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_UPPER_TARGET, 0);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR1, PCIE_ATU_TYPE_CFG1);
-		dw_pcie_writel_dbi(pcie, PCIE_ATU_CR2,
-				PCIE_ATU_ENABLE | PCIE_ATU_CR2_CFG_SHIFT);
-		rc->ecam = true;
-		rc->max_bus = cfg_size >> PCIE_ECAM_BUS_SHIFT;
-		dev_info(pcie->dev, "ECAM configured. Max bus %u\n",
-			 rc->max_bus);
-	}
+	pp->bridge->child_ops = &baikal_child_pcie_ops;
 
+skip_atu:
 	// Set class
 	regmap_read(rc->lcru,
 		    BAIKAL_LCRU_PCIE_GEN_CTL(rc->rc_num), &lcru_reg);
@@ -360,8 +305,6 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	dw_pcie_writeb_dbi(pcie, 0x71, 0x00); /* end of caps - skip MSI-X */
 
 	dw_pcie_dbi_ro_wr_dis(pcie);
-
-	pp->bridge->child_ops = &baikal_child_pcie_ops;
 
 	dw_pcie_setup_rc(pp);
 	baikal_pcie_establish_link(pcie); // This call waits for training completion
