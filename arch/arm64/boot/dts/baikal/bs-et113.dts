@@ -17,6 +17,7 @@
 	aliases {
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
+		fru = &fru;
 	};
 
 	chosen { };
@@ -76,6 +77,11 @@
 		reg = <0x10>;
 	};
 
+	fru: eeprom@53 {
+		compatible = "atmel,24c02";
+		reg = <0x53>;
+	};
+
 	rtc@54 {
 		compatible = "nxp,pcf2129", "nxp,pcf2127";
 		reg = <0x54>;
@@ -111,12 +117,14 @@
 	status = "okay";
 	num-lanes = <16>;
 	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
+	max-link-speed = <3>;
 };
 
 &pcie1_p0 {
 	status = "okay";
 	num-lanes = <16>;
 	reset-gpios = <&porta 25 GPIO_ACTIVE_LOW>;
+	max-link-speed = <3>;
 };
 
 &pcie2_p0 {

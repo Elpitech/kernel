@@ -21,6 +21,7 @@
 	aliases {
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
+		fru = &fru;
 	};
 
 	chosen { };
@@ -265,7 +266,7 @@
 		reg = <0x51>;
 	};
 
-	eeprom@53 {
+	fru: eeprom@53 {
 		compatible = "atmel,24c32";
 		pagesize = <32>;
 		reg = <0x53>;
