@@ -117,13 +117,13 @@
 			uart1_clk: uart1_clk {
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
-				clock-frequency = <8000000>;
+				clock-frequency = <100000000>;
 				clock-output-names = "uart1_clk";
 			};
 			uart2_clk: uart2_clk {
 				compatible = "fixed-clock";
 				#clock-cells = <0>;
-				clock-frequency = <8000000>;
+				clock-frequency = <100000000>;
 				clock-output-names = "uart2_clk";
 			};
 			uart_clk: uart_clk {
