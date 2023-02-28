@@ -30,13 +30,11 @@ struct baikal_pcie_of_data {
 
 #define PCIE_ATU_MIN_SIZE				0x10000		/* 64K */
 #define PCIE_ATU_REGION_INDEX3				0x3
-#define PCIE_ATU_CR2_CFG_SHIFT	BIT(28)
+#define PCIE_ATU_CR2_CFG_SHIFT				BIT(28)
 #define PCIE_ECAM_SIZE					0x10000000	/* 256M */
 #define PCIE_ECAM_MASK					0x0fffffffULL
 #define PCIE_ECAM_BUS_SHIFT				20
 #define PCIE_ECAM_DEVFN_SHIFT				12
-
-#define PCIE_IATU_REGION_CTRL_2_REG_SHIFT_MODE		BIT(28)
 
 #define BS1000_PCIE_APB_PE_GEN_CTRL3			0x58
 #define BS1000_PCIE_APB_PE_GEN_CTRL3_LTTSM_EN		BIT(0)
@@ -56,6 +54,8 @@ struct baikal_pcie_of_data {
 #define BS1000_PCIE1_P1_DBI_BASE			0x3d400000
 #define BS1000_PCIE2_P0_DBI_BASE			0x45000000
 #define BS1000_PCIE2_P1_DBI_BASE			0x45400000
+
+#define BS1000_DEFAULT_NUM_VECTORS			256
 
 static u64 baikal_pcie_cpu_addr_fixup(struct dw_pcie *pcie, u64 cpu_addr)
 {
@@ -221,6 +221,11 @@ static int baikal_pcie_msi_host_init(struct pcie_port *pp)
 	return 0;
 }
 
+static void baikal_pcie_set_num_vectors(struct pcie_port *pp)
+{
+	pp->num_vectors = BS1000_DEFAULT_NUM_VECTORS;
+}
+
 static const struct dw_pcie_host_ops baikal_pcie_host_ops = {
 	.host_init = baikal_pcie_host_init
 };
@@ -228,6 +233,7 @@ static const struct dw_pcie_host_ops baikal_pcie_host_ops = {
 static const struct dw_pcie_host_ops baikal_pcie_host_its_msi_ops = {
 	.host_init = baikal_pcie_host_init,
 	.msi_host_init = baikal_pcie_msi_host_init,
+	.set_num_vectors = baikal_pcie_set_num_vectors,
 };
 
 static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
