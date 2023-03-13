@@ -142,8 +142,6 @@ static void bs_prog_outbound_atu(struct dw_pcie *pcie, int index, int type,
 
 }
 
-static void baikal_pcie_setup_rc_acpi(struct pcie_port *pp);
-
 static int baikal_pcie_host_init(struct pcie_port *pp)
 {
 	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
@@ -191,11 +189,7 @@ static int baikal_pcie_host_init(struct pcie_port *pp)
 	pp->bridge->child_ops = &baikal_s_child_pcie_ops;
 
 skip_atu:
-	if (acpi_disabled) {
-		dw_pcie_setup_rc(pp);
-	} else {
-		baikal_pcie_setup_rc_acpi(pp);
-	}
+	dw_pcie_setup_rc(pp);
 
 	/* Set prog-if 01 [subtractive decode] */
 	dw_pcie_dbi_ro_wr_en(pcie);
@@ -575,103 +569,6 @@ static struct platform_driver baikal_pcie_bs1000_driver = {
 module_platform_driver(baikal_pcie_bs1000_driver);
 
 #ifdef CONFIG_ACPI
-static void baikal_pcie_setup_rc_acpi(struct pcie_port *pp)
-{
-	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
-	acpi_status status;
-	u64 lanes;
-	u32 val;
-
-	/*
-	 * Enable DBI read-only registers for writing/updating configuration.
-	 * Write permission gets disabled towards the end of this function.
-	 */
-	dw_pcie_dbi_ro_wr_en(pci);
-
-	status = acpi_evaluate_integer(to_acpi_device(pci->dev)->handle,
-				       "NUML", NULL, &lanes);
-	if (ACPI_FAILURE(status)) {
-		dev_dbg(pci->dev, "failed to get num-lanes\n");
-	} else {
-		/* Set the number of lanes */
-		val = dw_pcie_readl_dbi(pci, PCIE_PORT_LINK_CONTROL);
-		val &= ~PORT_LINK_MODE_MASK;
-		switch (lanes) {
-		case 1:
-			val |= PORT_LINK_MODE_1_LANES;
-			break;
-		case 2:
-			val |= PORT_LINK_MODE_2_LANES;
-			break;
-		case 4:
-			val |= PORT_LINK_MODE_4_LANES;
-			break;
-		case 8:
-			val |= PORT_LINK_MODE_8_LANES;
-			break;
-		default:
-			dev_err(pci->dev, "NUML %llu: invalid value\n", lanes);
-			goto skip_lanes;
-		}
-
-		dw_pcie_writel_dbi(pci, PCIE_PORT_LINK_CONTROL, val);
-
-		/* Set link width speed control register */
-		val = dw_pcie_readl_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL);
-		val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
-		switch (lanes) {
-		case 1:
-			val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
-			break;
-		case 2:
-			val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
-			break;
-		case 4:
-			val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
-			break;
-		case 8:
-			val |= PORT_LOGIC_LINK_WIDTH_8_LANES;
-			break;
-		}
-		dw_pcie_writel_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL, val);
-	}
-
-skip_lanes:
-	/* Setup RC BARs */
-	dw_pcie_writel_dbi(pci, PCI_BASE_ADDRESS_0, 0x00000004);
-	dw_pcie_writel_dbi(pci, PCI_BASE_ADDRESS_1, 0x00000000);
-
-	/* Setup interrupt pins */
-	val = dw_pcie_readl_dbi(pci, PCI_INTERRUPT_LINE);
-	val &= 0xffff00ff;
-	val |= 0x00000100;
-	dw_pcie_writel_dbi(pci, PCI_INTERRUPT_LINE, val);
-
-	/* Setup bus numbers */
-	val = dw_pcie_readl_dbi(pci, PCI_PRIMARY_BUS);
-	val &= 0xff000000;
-	val |= 0x00ff0100;
-	dw_pcie_writel_dbi(pci, PCI_PRIMARY_BUS, val);
-
-	/* Setup command register */
-	val = dw_pcie_readl_dbi(pci, PCI_COMMAND);
-	val &= 0xffff0000;
-	val |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
-		PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
-	dw_pcie_writel_dbi(pci, PCI_COMMAND, val);
-
-	dw_pcie_writel_dbi(pci, PCI_BASE_ADDRESS_0, 0);
-
-	/* Program correct class for RC */
-	dw_pcie_writew_dbi(pci, PCI_CLASS_DEVICE, PCI_CLASS_BRIDGE_PCI);
-
-	val = dw_pcie_readl_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL);
-	val |= PORT_LOGIC_SPEED_CHANGE;
-	dw_pcie_writel_dbi(pci, PCIE_LINK_WIDTH_SPEED_CONTROL, val);
-
-	dw_pcie_dbi_ro_wr_dis(pci);
-}
-
 static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 				    struct acpi_device **child,
 				    struct pcie_port *pp)
@@ -720,16 +617,6 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	/* DBI */
 	pos = pos->next;
 	entry = list_entry(pos, struct resource_entry, node);
-	if (entry->res->start == 0x39000000 ||
-	    entry->res->start == 0x39400000 ||
-	    entry->res->start == 0x3d000000 ||
-	    entry->res->start == 0x3d400000 ||
-	    entry->res->start == 0x45000000 ||
-	    entry->res->start == 0x45400000) {
-		bp->cpu_addr_mask = 0x7fffffffff;
-	} else {
-		bp->cpu_addr_mask = 0xffffffffff;
-	}
 
 	pcie->dbi_base = devm_ioremap_resource(dev, entry->res);
 	if (IS_ERR(pcie->dbi_base)) {
@@ -800,46 +687,6 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	return 0;
 }
 
-static int baikal_pcie_get_irq_acpi(struct acpi_device *adev,
-				    struct acpi_device *child,
-				    struct pcie_port *pp)
-{
-	struct dw_pcie *pcie = to_dw_pcie_from_pp(pp);
-	struct baikal_pcie *bp = to_baikal_pcie(pcie);
-	struct device *dev = &adev->dev;
-	struct resource res;
-	int ret;
-
-	memset(&res, 0, sizeof(res));
-
-	ret = acpi_irq_get(child->handle, 0, &res);
-	if (ret) {
-		dev_err(dev, "failed to get irq %d\n", 0);
-		return ret;
-	}
-
-	if (res.flags & IORESOURCE_BITS) {
-		struct irq_data *irqd;
-
-		irqd = irq_get_irq_data(res.start);
-		if (!irqd) {
-			return -ENXIO;
-		}
-
-		irqd_set_trigger_type(irqd, res.flags & IORESOURCE_BITS);
-	}
-
-	pp->irq = res.start;
-	ret = devm_request_irq(dev, pp->irq, baikal_pcie_intr_irq_handler,
-			       IRQF_SHARED, "bs1000-pcie-intr", bp);
-	if (ret) {
-		dev_err(dev, "failed to request IRQ %d\n", pp->irq);
-		return ret;
-	}
-
-	return 0;
-}
-
 static struct device_type baikal_pcie_acpi_device_type = {
 	.name =         "baikal_pcie_acpi",
 #if defined(CONFIG_PM) && defined(CONFIG_PM_SLEEP)
@@ -854,8 +701,6 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 	struct baikal_pcie *bp;
 	struct dw_pcie *pcie;
 	struct pcie_port *pp;
-	acpi_status status = AE_OK;
-	u64 num_viewport;
 	int ret;
 
 	pcie = devm_kzalloc(dev, sizeof(*pcie), GFP_KERNEL);
@@ -882,12 +727,6 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 		return ret;
 	}
 
-	ret = baikal_pcie_get_irq_acpi(adev, child, pp);
-	if (ret) {
-		dev_err(dev, "failed to get irq info\n");
-		return ret;
-	}
-
 	pp->ops = &baikal_pcie_host_ops;
 
 	raw_spin_lock_init(&pp->lock);
@@ -898,27 +737,7 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 		return -ENOMEM;
 	}
 
-	status = acpi_evaluate_integer(adev->handle, "NUMV", NULL,
-				       &num_viewport);
-	if (ACPI_FAILURE(status)) {
-		dev_err(dev, "failed to get num-viewport\n");
-		return -EINVAL;
-	}
-	pcie->num_viewport = num_viewport;
-
-	ret = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
-	if (ret) {
-		dev_err(dev, "failed to enable DMA\n");
-		return ret;
-	}
-
 	pcie->dev->type = &baikal_pcie_acpi_device_type;
-
-	ret = baikal_pcie_host_init(pp);
-	if (ret) {
-		dev_err(dev, "failed to initialize host\n");
-		return ret;
-	}
 
 	return 0;
 }
@@ -927,35 +746,13 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus,
 					 unsigned int devfn, int where)
 {
 	struct pci_config_window *cfg = bus->sysdata;
-	struct baikal_pcie *bp = cfg->priv;
-	unsigned int devfn_shift = cfg->ops->bus_shift - 8;
-	unsigned int busn = bus->number;
-	void __iomem *base;
 
-	if (bus->number != cfg->busr.start &&
-	    !baikal_pcie_link_up(bp->pci)) {
+	if (bus->number == cfg->busr.start &&
+	    PCI_SLOT(devfn) > 0) {
 		return NULL;
 	}
 
-	if (bus->number == cfg->busr.start) {
-		/*
-		 * The DW PCIe core doesn't filter out transactions to other
-		 * devices/functions on the root bus num, so we do this here.
-		 */
-		if (PCI_SLOT(devfn) > 0) {
-			return NULL;
-		} else {
-			return bp->pci->dbi_base + where;
-		}
-	}
-
-	if (busn < cfg->busr.start || busn > cfg->busr.end) {
-		return NULL;
-	}
-
-	busn -= cfg->busr.start;
-	base = cfg->win + (busn << cfg->ops->bus_shift);
-	return base + (devfn << devfn_shift) + where;
+	return pci_ecam_map_bus(bus, devfn, where);
 }
 
 const struct pci_ecam_ops baikal_s_pcie_ecam_ops = {
@@ -967,10 +764,6 @@ const struct pci_ecam_ops baikal_s_pcie_ecam_ops = {
 		.write		= pci_generic_config_write
 	}
 };
-#else /* CONFIG_ACPI */
-static inline void baikal_acpi_pcie_setup_rc(struct pcie_port *pp)
-{
-}
 #endif
 
 MODULE_DESCRIPTION("Baikal BE-S1000 PCIe host controller driver");

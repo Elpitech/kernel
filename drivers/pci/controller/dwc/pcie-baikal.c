@@ -631,17 +631,6 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 		return ret;
 	}
 
-	if (ret > 0) { //vvv: debug
-		pos = list.next;
-		entry = list_entry(pos, struct resource_entry, node);
-		dev_info(dev, "Res0: %pR\n", entry->res);
-		if(ret > 1) {
-			pos = pos->next;
-			entry = list_entry(pos, struct resource_entry, node);
-			dev_info(dev, "Res1: %pR\n", entry->res);
-		}
-	}
-
 	if (ret != 2) {
 		dev_err(dev, "invalid number of MEM resources present in RES0._CRS (%i, need 2)\n", ret);
 		return -EINVAL;
@@ -649,6 +638,7 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 
 	/* ECAM (not used) */
 	pos = list.next;
+	pos = pos->next;
 	entry = list_entry(pos, struct resource_entry, node);
 
 	/* DBI */
@@ -668,127 +658,6 @@ static int baikal_pcie_get_res_acpi(struct acpi_device *adev,
 	acpi_dev_free_resource_list(&list);
 
 	return 0;
-}
-
-static struct acpi_device *baikal_lcru;
-static struct regmap *baikal_regmap;
-
-static const struct regmap_config baikal_pcie_syscon_regmap_config = {
-	.reg_bits = 32,
-	.val_bits = 32,
-	.reg_stride = 4
-};
-
-static struct regmap *baikal_get_regmap(struct acpi_device *adev)
-{
-	struct device *dev = &adev->dev;
-	struct list_head list, *pos;
-	struct resource *res;
-	void __iomem *base;
-	int ret;
-	struct regmap *regmap = NULL;
-	struct regmap_config config = baikal_pcie_syscon_regmap_config;
-	unsigned long flags = IORESOURCE_MEM;
-
-	INIT_LIST_HEAD(&list);
-	ret = acpi_dev_get_resources(adev, &list,
-				     acpi_dev_filter_resource_type_cb,
-				     (void *) flags);
-	if (ret < 0) {
-		dev_err(dev, "failed to parse _CRS method, error code %d\n", ret);
-		return NULL;
-	}
-
-	if (ret != 1) {
-		dev_err(dev, "invalid number of MEM resources present in _CRS (%i, need 1)\n", ret);
-		goto ret;
-	}
-
-	pos = list.next;
-	res = list_entry(pos, struct resource_entry, node)->res;
-
-	base = devm_ioremap(dev, res->start, resource_size(res));
-	if (!base) {
-		dev_err(dev, "error with ioremap\n");
-		goto ret;
-	}
-
-	config.max_register = resource_size(res) - 4;
-
-	regmap = devm_regmap_init_mmio(dev, base, &config);
-	if (IS_ERR(regmap)) {
-		dev_err(dev, "regmap init failed\n");
-		devm_iounmap(dev, base);
-		goto ret;
-	}
-
-	dev_dbg(dev, "regmap %pR registered\n", res);
-
-	baikal_lcru = adev;
-	baikal_regmap = regmap;
-
-ret:
-	acpi_dev_free_resource_list(&list);
-	return regmap;
-}
-
-static struct regmap *baikal_pcie_get_lcru_acpi(struct acpi_device *adev,
-						struct baikal_pcie_rc *rc)
-{
-	struct device *dev = &adev->dev;
-	struct acpi_device *lcru;
-	struct regmap *regmap = NULL;
-	union acpi_object *package = NULL;
-	union acpi_object *element = NULL;
-	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-	acpi_status status = AE_OK;
-	int ret;
-
-	status = acpi_evaluate_object_typed(adev->handle, "LCRU", NULL,
-					    &buffer, ACPI_TYPE_PACKAGE);
-	if (ACPI_FAILURE(status)) {
-		dev_err(dev, "failed to get LCRU data\n");
-		return ERR_PTR(-ENODEV);
-	}
-
-	package = buffer.pointer;
-
-	if (package->package.count != 2) {
-		dev_err(dev, "invalid LCRU data\n");
-		goto ret;
-	}
-
-	element = &(package->package.elements[0]);
-
-	if (element->type != ACPI_TYPE_LOCAL_REFERENCE ||
-	    !element->reference.handle) {
-		dev_err(dev, "invalid LCRU reference\n");
-		goto ret;
-	}
-
-	ret = acpi_bus_get_device(element->reference.handle, &lcru);
-	if (ret) {
-		dev_err(dev, "failed to process LCRU reference\n");
-		goto ret;
-	}
-
-	element = &(package->package.elements[1]);
-
-	if (element->type != ACPI_TYPE_INTEGER) {
-		dev_err(dev, "failed to get LCRU index\n");
-		goto ret;
-	}
-
-	rc->rc_num = element->integer.value;
-	if (baikal_regmap && lcru == baikal_lcru) {
-		regmap = baikal_regmap;
-	} else {
-		regmap = baikal_get_regmap(lcru);
-	}
-
-ret:
-	acpi_os_free(buffer.pointer);
-	return regmap;
 }
 
 static int baikal_pcie_init(struct pci_config_window *cfg)
@@ -815,26 +684,12 @@ static int baikal_pcie_init(struct pci_config_window *cfg)
 		return -ENOMEM;
 	}
 
-	dev_dbg(dev, "baikal_pcie_init: window %pR\n", &cfg->res); //vvv
-
 	rc->pcie = pcie;
 	cfg->priv = rc;
 	pp = &pcie->pp;
 	pp->cfg0_base = cfg->res.start;
 	pp->cfg0_size = resource_size(&cfg->res);
 	dev_set_drvdata(dev, rc);
-
-	rc->lcru = baikal_pcie_get_lcru_acpi(adev, rc);
-
-	if (IS_ERR_OR_NULL(rc->lcru)) {
-		dev_err(dev, "No LCRU specified\n");
-		return -EINVAL;
-	}
-
-	if (rc->rc_num > 2) {
-		dev_err(dev, "incorrect LCRU index\n");
-		return -EINVAL;
-        }
 
 	/* TODO: gpio */
 
@@ -874,12 +729,6 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus, unsigned int devfn
 					 int where)
 {
 	struct pci_config_window *cfg = bus->sysdata;
-	struct baikal_pcie_rc *priv = cfg->priv;
-
-	if (bus->number != cfg->busr.start &&
-	    !baikal_pcie_link_up(priv->pcie)) {
-		return NULL;
-	}
 
 	if (bus->number == cfg->busr.start &&
 	    PCI_SLOT(devfn) > 0) {
