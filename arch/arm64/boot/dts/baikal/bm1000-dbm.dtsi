@@ -1,0 +1,419 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics DBM boards
+ * Copyright (C) 2019-2023 Baikal Electronics, JSC
+ */
+
+#include <dt-bindings/input/input.h>
+#include "bm1000.dtsi"
+
+/ {
+	aliases {
+		ethernet0	= &gmac0;
+		ethernet1	= &gmac1;
+		mdio-gpio0	= &mdio_gpio;
+	};
+
+	chosen { };
+
+	buttons-backlight {
+		compatible = "gpio-keys";
+		autorepeat;
+		button-brightness-down {
+			label = "Brightness Down Button";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-up {
+			label = "Brightness Up Button";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-toggle {
+			label = "Brightness Toggle Button";
+			linux,code = <KEY_BRIGHTNESS_TOGGLE>;
+			gpios = <&porta 31 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+	};
+
+	panel {
+		/* Change status to "okay" to make use of LVDS LCD panel */
+		status = "disabled";
+		compatible = "panel-lvds";
+		width-mm = <223>;
+		height-mm = <125>;
+		data-mapping = "vesa-24";
+		panel-timing {
+			/* 1920x1080 @ 60 Hz
+			   Replace values below with actual panel timings */
+			clock-frequency = <148500000>;
+			hactive = <1920>;
+			vactive = <1080>;
+			hsync-len = <44>;
+			hfront-porch = <88>;
+			hback-porch = <148>;
+			vsync-len = <5>;
+			vfront-porch = <4>;
+			vback-porch = <36>;
+		};
+		port {
+			panel_in: endpoint@0 {
+				remote-endpoint = <&vdu_lvds_out>;
+			};
+		};
+	};
+
+	soc {
+		mdio_gpio: mdio {
+			compatible = "baikal,mdio-gpio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			mdc-pin = <&porta 28 GPIO_ACTIVE_HIGH>;
+			mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
+			rst-pin = <&porta 30 GPIO_ACTIVE_LOW>;
+			clocks = <&gpio_clk>;
+			clock-names = "gpioclk";
+			status = "okay";
+
+			ethphy2: ethernet-phy@c {
+				compatible = "ethernet-phy-ieee802.3-c45";
+				reg = <0xc>;
+				phy-mode = "xgmii";
+				mv,line-mode = "KR";
+				mv,host-mode = "KX4";
+			};
+
+			ethphy3: ethernet-phy@e {
+				compatible = "ethernet-phy-ieee802.3-c45";
+				reg = <0xe>;
+				phy-mode = "xgmii";
+				mv,line-mode = "KR";
+				mv,host-mode = "KX4";
+			};
+		};
+	};
+
+	sound {
+		compatible = "baikal,snd-soc-baikal";
+		baikal,cpu-dai = <&i2s>;
+		baikal,audio-codec = <&tlv320aic3x>;
+		baikal,dai-name = "tlv320aic3x";
+		baikal,codec-name = "tlv320aic3x-hifi";
+		baikal,stream-name = "tlv320aic3x hifi";
+	};
+
+	sfp-xgmac0 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c1>;
+	};
+
+	sfp-xgmac1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c1>;
+	};
+};
+
+&dmac_lsp {
+	status = "okay";
+};
+
+&dmac_m2m {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
+&gpio32 {
+	status = "okay";
+};
+
+&hda {
+	status = "okay";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+
+	tlv320aic3x: tlv320aic3x@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3x";
+		reg = <0x18>;
+		reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		ai3x-micbias-vg = <1>;
+		ai3x-ocmv = <1>;
+	};
+};
+
+&i2s {
+	status = "okay";
+	sound-dai = <&tlv320aic3x>;
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+#if 0
+&mmc {
+	/* emmc */
+	no-sdio;
+	no-sd;
+	non-removable;
+	bus-width = <8>;
+	max-frequency = <200000000>;
+	status = "okay";
+}
+#else
+&mmc {
+	/* sd */
+	no-mmc;
+	no-sdio;
+	disable-wp;
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	status = "okay";
+};
+#endif
+
+&pcie0 {
+	status = "okay";
+
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0xf4>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pcie1 {
+	status = "okay";
+
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0x64>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pcie2 {
+	status = "okay";
+
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0x34>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pvt_cluster0 {
+	status = "okay";
+};
+
+&pvt_cluster1 {
+	status = "okay";
+};
+
+&pvt_cluster2 {
+	status = "okay";
+};
+
+&pvt_cluster3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+	cs-gpios = <&porta 24 GPIO_ACTIVE_LOW>, /* SS0 XP8 - DD53 normal flash */
+		   <&porta 25 GPIO_ACTIVE_LOW>, /* SS1 XP9 */
+		   <&porta 26 GPIO_ACTIVE_LOW>, /* SS2 XP10 */
+		   <&porta 27 GPIO_ACTIVE_LOW>; /* SS3 XP11 */
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "bl1";
+				reg = <0x000000 0x40000>;
+			};
+
+			partition@40000 {
+				label = "dtb";
+				reg = <0x040000 0x40000>;
+			};
+
+			partition@80000 {
+				label = "uefi-vars";
+				reg = <0x080000 0xc0000>;
+			};
+
+			partition@140000 {
+				label = "fip";
+				reg = <0x140000 0x6c0000>;
+			};
+		};
+	};
+};
+
+&spi1 {
+	num-cs = <8>;
+	cs-gpios = <&porta 0 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	espi_test0@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>; /* CS #0 */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-cpha;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdu0 {
+	/* 'lvds-lanes' property is mandatory to enable LVDS. Valid values are 1, 2 or 4.
+	   It is also mandatory to provide actual values for 'enable-gpios' property.
+	   Also make sure that panel's 'status' (see above) is "okay". */
+	status = "okay";
+	enable-gpios = <&porta 16 GPIO_ACTIVE_LOW>;
+	lvds-lanes = <2>;
+	backlight {
+		min-brightness-level = <10>;
+		default-brightness-level = <60>;
+		brightness-level-step = <2>;
+		pwm-frequency = <20000>;
+	};
+	ports {
+		port@1 {
+			reg = <1>;
+			vdu_lvds_out: endpoint@0 {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&xgmac0 {
+	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	ext-phy-handle = <&ethphy2>;
+};
+
+&xgmac1 {
+	status = "okay";
+	phy-mode = "xgmii";
+	be,pcs-mode = "KX4";
+	ext-phy-handle = <&ethphy3>;
+};

@@ -1,0 +1,160 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics QEMU-M virtual platform
+ * Copyright (C) 2018-2023 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bm1000.dtsi"
+
+/ {
+	model = "Baikal Electronics QEMU-M";
+	compatible = "baikal,qemu-m", "baikal,bm1000";
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
+	chosen { };
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x00000000 0x80000000 0x0 0x80000000>; /* 2 GiB */
+	};
+
+	/*
+	 * Device is necessary for UEFI to boot on QEMU,
+	 * need to replace it with something later.
+	 */
+	flash@0 {
+		compatible = "cfi-flash";
+		reg = <0x0 0x4000000 0x0 0x4000000>;
+		bank-width = <0x4>;
+	};
+
+	panel: panel {
+		compatible = "auo,b133htn01";		/* 1920x1080 */
+		/*compatible = "auo,b133xtn01;		/* 1366x768 */
+		/*compatible = "auo,b101aw03";		/* 1024x600 */
+		/*compatible = "innolux,g121x1-l03";	/* 1024x768 */
+		/*compatible = "auo,b101ean01";		/* 1280x800 */
+
+		port {
+			lcd_panel: endpoint {
+				remote-endpoint = <&vdu_pads>;
+			};
+		};
+	};
+
+	/*panel_hdmi: panel {
+		compatible = "edt,et057090dhu";
+
+		port {
+			lcd_hdmi_panel: endpoint {
+				remote-endpoint = <&vdu_hdmi_pads>;
+			};
+		};
+	};*/
+};
+
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mmc {
+	/* sd */
+	no-mmc;
+	no-sdio;
+	disable-wp;
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <6>;
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "bl1";
+				reg = <0x000000 0x40000>;
+			};
+
+			partition@40000 {
+				label = "dtb";
+				reg = <0x040000 0x40000>;
+			};
+
+			partition@80000 {
+				label = "uefi-vars";
+				reg = <0x080000 0xc0000>;
+			};
+
+			partition@140000 {
+				label = "fip";
+				reg = <0x140000 0x6c0000>;
+			};
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+	clocks = <&avlsp_cmu0 1>;
+	clock-names = "baudclk";
+};
+
+&vdu0 {
+	port {
+		vdu_pads: endpoint {
+			remote-endpoint = <&lcd_panel>;
+		};
+	};
+};

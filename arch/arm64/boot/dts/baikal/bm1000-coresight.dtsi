@@ -1,0 +1,518 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree include file for BE-M1000 SoC Coresight subsystem 
+ * Copyright (C) 2023 Baikal Electronics, JSC
+ */
+
+#include <dt-bindings/arm/coresight-cti-dt.h>
+
+#define CA57_DEBUG(cl, c, base, n)						\
+	debug##c: debug@##base##10000 {						\
+		compatible = "arm,coresight-cpu-debug", "arm,primecell";	\
+		reg = <0x0 0x##base##10000 0x0 0x1000>;				\
+		clocks = <&cs_pclk>;						\
+		clock-names = "apb_pclk";					\
+		cpu = <&cpu##c>;						\
+	};									\
+										\
+	etm##c: etm@##base##40000 {						\
+		compatible = "arm,coresight-etm4x", "arm,primecell";		\
+		reg = <0x0 0x##base##40000 0x0 0x1000>;				\
+		clocks = <&cs_pclk>, <&cs_atclk>;				\
+		clock-names = "apb_pclk", "atclk";				\
+		cpu = <&cpu##c>;						\
+										\
+		out-ports {							\
+			port {							\
+				etm##c##_out_port: endpoint {			\
+					remote-endpoint =			\
+						<&funnel##cl##_in_port##n>;	\
+				};						\
+			};							\
+		};								\
+	};									\
+										\
+	cti##cl##_##n: cti@##base##20000 {					\
+		compatible = "arm,coresight-cti-v8-arch", "arm,coresight-cti",	\
+			     "arm,primecell";					\
+		reg = <0x0 0x##base##20000 0x0 0x1000>;				\
+		clocks = <&cs_pclk>;						\
+		clock-names = "apb_pclk";					\
+										\
+		cpu = <&cpu##c>;						\
+		arm,cs-dev-assoc = <&etm##c>;					\
+	}
+
+#define CA57_CS(cl, c0, c1, cs_base, debug0_base, debug1_base)			\
+	CA57_DEBUG(cl,c0,debug0_base,0);					\
+	CA57_DEBUG(cl,c1,debug1_base,1);					\
+										\
+	funnel##cl: funnel##cl {						\
+		/*								\
+		 * non-configurable replicators don't show up on the		\
+		 * AMBA bus.  As such no need to add "arm,primecell".		\
+		 */								\
+		compatible = "arm,coresight-static-funnel";			\
+										\
+		out-ports {							\
+			port {							\
+				funnel##cl##_out_port: endpoint {		\
+					remote-endpoint =			\
+						<&etf##cl##_in_port>;		\
+				};						\
+			};							\
+		};								\
+										\
+		in-ports {							\
+			#address-cells = <1>;					\
+			#size-cells = <0>;					\
+										\
+			port@0 {						\
+				reg = <0>;					\
+				funnel##cl##_in_port0: endpoint {		\
+					remote-endpoint =			\
+						<&etm##c0##_out_port>;		\
+				};						\
+			};							\
+										\
+			port@1 {						\
+				reg = <1>;					\
+				funnel##cl##_in_port1: endpoint {		\
+					remote-endpoint =			\
+						<&etm##c1##_out_port>;		\
+				};						\
+			};							\
+		};								\
+	};									\
+										\
+	etf##cl: etf@##cs_base { /*  ETF 512B */				\
+		compatible = "arm,coresight-tmc", "arm,primecell";		\
+		reg = <0x0 0x##cs_base 0x0 0x1000>;				\
+		clocks = <&cs_pclk>, <&cs_atclk>;				\
+		clock-names = "apb_pclk", "atclk";				\
+										\
+		out-ports {							\
+			port {							\
+				etf##cl##_out_port: endpoint {			\
+					remote-endpoint =			\
+						<&funnel_in_port##cl>;		\
+				};						\
+			};							\
+		};								\
+										\
+		in-ports {							\
+			port {							\
+				etf##cl##_in_port: endpoint {			\
+					remote-endpoint =			\
+						<&funnel##cl##_out_port>;	\
+				};						\
+			};							\
+		};								\
+	}
+
+/ {
+	clocks {
+		cs_pclk: cs_pclk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <250000000>;
+			clock-output-names = "cs_pclk";
+		};
+
+		cs_atclk: cs_atclk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <250000000>;
+			clock-output-names = "cs_atclk";
+		};
+	};
+
+	soc {
+		/* CA57 MM's */
+
+		CA57_CS(0,0,1,5009000,52,53);
+		CA57_CS(1,2,3,500a000,54,55);
+		CA57_CS(2,4,5,500b000,56,57);
+		CA57_CS(3,6,7,500c000,58,59);
+
+		/* Coresight MM */
+
+		tpiu: tpiu@500e000 {
+			compatible = "arm,coresight-tpiu", "arm,primecell";
+			reg = <0x0 0x500e000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			in-ports {
+				port {
+					tpiu_in_port: endpoint {
+						remote-endpoint =
+							<&etb_out_port>;
+					};
+				};
+			};
+		};
+
+		etb: etb@5007000 {
+			compatible = "arm,coresight-tmc", "arm,primecell";
+			reg = <0x0 0x5007000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				port {
+					etb_out_port: endpoint {
+						remote-endpoint =
+							<&tpiu_in_port>;
+					};
+				};
+			};
+
+			in-ports {
+				port {
+					etb_in_port: endpoint {
+						remote-endpoint =
+							<&replicator_out_port1>;
+					};
+				};
+			};
+		};
+
+		etr: etr@5008000 {
+			compatible = "arm,coresight-tmc", "arm,primecell";
+			reg = <0x0 0x5008000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			in-ports {
+				port {
+					etr_in_port: endpoint {
+						remote-endpoint =
+							<&replicator_out_port0>;
+					};
+				};
+			};
+		};
+
+		replicator: replicator@5010000 {
+			compatible = "arm,coresight-dynamic-replicator", "arm,primecell";
+			reg = <0x0 0x5010000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				/* replicator output ports */
+				port@0 {
+					reg = <0>;
+					replicator_out_port0: endpoint {
+						remote-endpoint =
+							<&etr_in_port>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					replicator_out_port1: endpoint {
+						remote-endpoint =
+							<&etb_in_port>;
+					};
+				};
+			};
+
+			in-ports {
+				port {
+					replicator_in_port: endpoint {
+						remote-endpoint =
+							<&etf_out_port>;
+					};
+				};
+			};
+		};
+
+		etf: etf@500d000 { /*  ETF 2048B */
+			compatible = "arm,coresight-tmc", "arm,primecell";
+			reg = <0x0 0x500d000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				port {
+					etf_out_port: endpoint {
+						remote-endpoint =
+							<&replicator_in_port>;
+					};
+				};
+			};
+
+			in-ports {
+				port {
+					etf_in_port: endpoint {
+						remote-endpoint =
+							<&funnel_out_port>;
+					};
+				};
+			};
+		};
+
+		funnel: funnel@5011000 {
+			compatible = "arm,coresight-dynamic-funnel", "arm,primecell";
+			reg = <0x0 0x5011000 0x0 0x1000>;
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				port {
+					funnel_out_port: endpoint {
+						remote-endpoint =
+							<&etf_in_port>;
+					};
+				};
+			};
+
+			in-ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					funnel_in_port0: endpoint {
+						remote-endpoint =
+							<&etf0_out_port>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					funnel_in_port1: endpoint {
+						remote-endpoint =
+							<&etf1_out_port>;
+					};
+				};
+
+				port@2 {
+					reg = <2>;
+					funnel_in_port2: endpoint {
+						remote-endpoint =
+							<&etf2_out_port>;
+					};
+				};
+
+				port@3 {
+					reg = <3>;
+					funnel_in_port3: endpoint {
+						remote-endpoint =
+							<&etf3_out_port>;
+					};
+				};
+
+				port@4 {
+					reg = <4>;
+					funnel_in_port4: endpoint {
+						remote-endpoint =
+							<&stm0_out_port>;
+					};
+				};
+
+#if 0 /* disable stm1 port due to coresight-stm driver doesn't initialize stm
+	 node without stimulus area */
+				port@05 {
+					reg = <5>;
+					funnel_in_port5: endpoint {
+						remote-endpoint =
+							<&stm1_out_port>;
+					};
+				};
+#endif
+			};
+		};
+
+		stm0: stm@5001000 {
+			compatible = "arm,coresight-stm", "arm,primecell";
+			reg = <0x0 0x5001000 0x0 0x1000>,
+			      <0x0 0x7000000 0x0 0x1000000>;
+			reg-names = "stm-base", "stm-stimulus-base";
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				port {
+					stm0_out_port: endpoint {
+						remote-endpoint =
+							<&funnel_in_port4>;
+					};
+				};
+			};
+		};
+
+#if 0 /* disable stm1 node due to coresight-stm driver doesn't initialize stm
+	 node without stimulus area */
+		stm1: stm@5002000 {
+			compatible = "arm,coresight-stm", "arm,primecell";
+			reg = <0x0 0x5002000 0x0 0x1000>;
+			reg-names = "stm-base";
+			clocks = <&cs_pclk>, <&cs_atclk>;
+			clock-names = "apb_pclk", "atclk";
+
+			out-ports {
+				port {
+					stm1_out_port: endpoint {
+						remote-endpoint =
+							<&funnel_in_port1>;
+					};
+				};
+			};
+		};
+#endif
+
+		cti0: cti@5004000 {
+			compatible = "arm,coresight-cti", "arm,primecell";
+			reg = <0x0 0x5004000 0x0 0x1000>;
+			clocks = <&cs_pclk>;
+			clock-names = "apb_pclk";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			trig-conns@0 {
+				reg = <0>;
+				arm,trig-in-sigs = <0>;
+				arm,trig-conn-name = "ccn_dbgwatchtrig";
+			};
+
+			trig-conns@1 {
+				reg = <1>;
+				arm,trig-in-sigs = <2 3 4 5>;
+				arm,trig-in-types = <STM_TOUT_SPTE STM_TOUT_SW
+						     STM_TOUT_HETE STM_ASYNCOUT>;
+				arm,trig-out-sigs = <6 7>;
+				arm,trig-out-types = <STM_HWEVENT STM_HWEVENT>;
+				arm,cs-dev-assoc = <&stm0>;
+			};
+
+			trig-conns@3 {
+				reg = <3>;
+				arm,trig-out-sigs = <0 1>;
+				arm,trig-out-types = <GEN_HALTREQ
+						      GEN_RESTARTREQ>;
+				arm,trig-conn-name = "cctr";
+			};
+
+			trig-conns@4 {
+				reg = <4>;
+				arm,trig-out-sigs = <2>;
+				arm,trig-conn-name = "ccn_pmusnapshot";
+			};
+
+			trig-conns@5 {
+				reg = <5>;
+				arm,trig-out-sigs = <3 4>;
+				arm,trig-out-types = <GEN_INTREQ GEN_INTREQ>;
+				arm,trig-conn-name = "gic_cs_ppii";
+			};
+
+#if 0 /* disable stm1 events due to coresight-stm driver doesn't initialize stm
+	 node without stimulus area */
+			trig-conns@6 {
+				reg = <6>;
+				arm,trig-in-sigs = <6 7>;
+				arm,trig-in-types = <STM_TOUT_HETE STM_ASYNCOUT>;
+				arm,cs-dev-assoc = <&stm1>;
+			};
+#endif
+		};
+
+		cti1: cti@5005000 {
+			compatible = "arm,coresight-cti", "arm,primecell";
+			reg = <0x0 0x5005000 0x0 0x1000>;
+			clocks = <&cs_pclk>;
+			clock-names = "apb_pclk";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			trig-conns@0 {
+				reg = <0>;
+				arm,trig-in-sigs = <0 1>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <0 1>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etf0>;
+			};
+
+			trig-conns@1 {
+				reg = <1>;
+				arm,trig-in-sigs = <2 3>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <2 3>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etf1>;
+			};
+
+			trig-conns@2 {
+				reg = <2>;
+				arm,trig-in-sigs = <4 5>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <4 5>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etf2>;
+			};
+
+			trig-conns@3 {
+				reg = <3>;
+				arm,trig-in-sigs = <6 7>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <6 7>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etf3>;
+			};
+		};
+		
+
+		cti2: cti@5006000 {
+			compatible = "arm,coresight-cti", "arm,primecell";
+			reg = <0x0 0x5006000 0x0 0x1000>;
+			clocks = <&cs_pclk>;
+			clock-names = "apb_pclk";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			trig-conns@0 {
+				reg = <0>;
+				arm,trig-in-sigs = <0 1>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <0 1>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etr>;
+			};
+
+			trig-conns@1 {
+				reg = <1>;
+				arm,trig-in-sigs = <2 3>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <2 3>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etb>;
+			};
+
+			trig-conns@2 {
+				reg = <2>;
+				arm,trig-in-sigs = <4 5>;
+				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL>;
+				arm,trig-out-sigs = <4 5>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&etf>;
+			};
+
+			trig-conns@3 {
+				reg = <3>;
+				arm,trig-out-sigs = <6 7>;
+				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
+				arm,cs-dev-assoc = <&tpiu>;
+			};
+		};
+	};
+};

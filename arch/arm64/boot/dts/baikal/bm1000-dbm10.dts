@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics DBM 1.0 board
+ * Copyright (C) 2022 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bm1000-dbm.dtsi"
+
+/ {
+	model = "Baikal Electronics DBM 1.0";
+	compatible = "baikal,dbm10", "baikal,bm1000";
+};
+
+&i2c1 {
+	rtc@56 {
+		compatible = "abracon,abeoz9";
+		reg = <0x56>;
+	};
+};
