@@ -89,7 +89,7 @@ static void baikal_gmac_fix_mac_speed(void *priv, unsigned int speed)
 	case SPEED_10:
 		tx2_clk_freq = 5000000;
 		if (gmac->has_aux_div2) {
-			tx2_clk_freq = 5000000;
+			tx2_clk_freq = 10000000;
 			arm_smccc_smc(BAIKAL_SMC_GMAC_DIV2_ENABLE,
 				      gmac->base, 0, 0, 0, 0, 0, 0, &res);
 		}
