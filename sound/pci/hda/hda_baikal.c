@@ -626,6 +626,7 @@ static const struct hda_controller_ops hda_baikal_ops = {
 };
 
 static const struct of_device_id hda_baikal_match[] = {
+	{ .compatible = "baikal,bm1000-hda" },
 	{ .compatible = "be,cw-hda" },
 	{},
 };
