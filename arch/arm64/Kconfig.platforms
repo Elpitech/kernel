@@ -33,6 +33,19 @@ config ARCH_APPLE
 	  This enables support for Apple's in-house ARM SoC family, starting
 	  with the Apple M1.
 
+config ARCH_BAIKAL
+	bool "Baikal Electronics SoC family"
+	select GPIOLIB
+	select GPIO_DWAPB
+	select STMMAC_ETH
+	select SPI_DESIGNWARE
+	select SPI_DW_MMIO
+	select DW_APB_TIMER
+	select DW_APB_TIMER_OF
+	select PCI
+	help
+	  This enables support for Baikal Electronics SoC family
+
 menuconfig ARCH_BCM
 	bool "Broadcom SoC Support"
 
