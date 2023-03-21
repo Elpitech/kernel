@@ -394,7 +394,7 @@
 		ranges;
 
 		cmu0_cluster0: clock-controller@28000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0x28000000>;
 			clock-output-names = "bm1000-cluster0-cmu0";
 			#clock-cells = <0>;
@@ -405,7 +405,7 @@
 		};
 
 		cmu0_cluster1: clock-controller@c000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0xc000000>;
 			clock-output-names = "bm1000-cluster1-cmu0";
 			#clock-cells = <0>;
@@ -416,7 +416,7 @@
 		};
 
 		cmu0_cluster2: clock-controller@a000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0xa000000>;
 			clock-output-names = "bm1000-cluster2-cmu0";
 			#clock-cells = <0>;
@@ -427,7 +427,7 @@
 		};
 
 		cmu0_cluster3: clock-controller@26000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0x26000000>;
 			clock-output-names = "bm1000-cluster3-cmu0";
 			#clock-cells = <0>;
@@ -492,7 +492,7 @@
 		};
 
 		cmu0_mali: clock-controller@2a000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0x2a000000>;
 			clock-output-names = "bm1000-mali-cmu0";
 			#clock-cells = <0>;
@@ -504,7 +504,7 @@
 		};
 
 		cmu0_usb: clock-controller@2c000000 {
-			compatible = "baikal,bm1000-cmu";
+			compatible = "baikal,bm1000-cmu", "baikal,cmu";
 			cmu-id = <0x2c000000>;
 			clock-output-names = "bm1000-usb-cmu0";
 			#clock-cells = <1>;
