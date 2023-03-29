@@ -221,13 +221,13 @@ static void baikal_pcie_set_num_vectors(struct pcie_port *pp)
 }
 
 static const struct dw_pcie_host_ops baikal_pcie_host_ops = {
-	.host_init = baikal_pcie_host_init
+	.host_init = baikal_pcie_host_init,
+	.set_num_vectors = baikal_pcie_set_num_vectors,
 };
 
 static const struct dw_pcie_host_ops baikal_pcie_host_its_msi_ops = {
 	.host_init = baikal_pcie_host_init,
 	.msi_host_init = baikal_pcie_msi_host_init,
-	.set_num_vectors = baikal_pcie_set_num_vectors,
 };
 
 static irqreturn_t baikal_pcie_intr_irq_handler(int irq, void *arg)
