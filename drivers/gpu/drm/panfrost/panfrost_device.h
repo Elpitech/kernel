@@ -120,6 +120,7 @@ struct panfrost_device {
 	struct shrinker shrinker;
 
 	struct panfrost_devfreq pfdevfreq;
+	u64 core_mask;
 };
 
 struct panfrost_mmu {

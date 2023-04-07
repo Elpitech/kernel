@@ -335,18 +335,18 @@ void panfrost_gpu_power_on(struct panfrost_device *pfdev)
 			      hweight64(core_mask),
 			      hweight64(pfdev->features.shader_present));
 	}
-	gpu_write(pfdev, L2_PWRON_LO, pfdev->features.l2_present & core_mask);
+	pfdev->core_mask = core_mask;
+
+	/* Just turn on everything for now */
+	gpu_write(pfdev, L2_PWRON_LO, pfdev->features.l2_present);
 	ret = readl_relaxed_poll_timeout(pfdev->iomem + L2_READY_LO,
-		val, val == (pfdev->features.l2_present & core_mask),
-		100, 20000);
+		val, val == pfdev->features.l2_present, 100, 20000);
 	if (ret)
 		dev_err(pfdev->dev, "error powering up gpu L2");
 
-	gpu_write(pfdev, SHADER_PWRON_LO,
-		  pfdev->features.shader_present & core_mask);
+	gpu_write(pfdev, SHADER_PWRON_LO, pfdev->features.shader_present);
 	ret = readl_relaxed_poll_timeout(pfdev->iomem + SHADER_READY_LO,
-		val, val == (pfdev->features.shader_present & core_mask),
-		100, 20000);
+		val, val == pfdev->features.shader_present, 100, 20000);
 	if (ret)
 		dev_err(pfdev->dev, "error powering up gpu shader");
 
