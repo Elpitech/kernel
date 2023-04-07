@@ -1027,8 +1027,10 @@
 			maximum-speed = "high-speed";
 			clocks = <&cmu0_usb 5>, <&cmu0_usb 6>;
 			clock-names = "bus_early", "ref";
+#if 0
 			phys = <&usb_phy 0>;
 			phy-names = "usb2-phy";
+#endif
 		};
 
 		usb3: dwc3@2c500000 {
@@ -1040,8 +1042,10 @@
 			dma-coherent;
 			clocks = <&cmu0_usb 11>, <&cmu0_usb 12>, <&cmu0_usb 13>;
 			clock-names = "bus_early", "ref", "suspend";
+#if 0
 			phys = <&usb_phy 1>, <&usb_phy 2>;
 			phy-names = "usb3-phy", "usb2-phy";
+#endif
 		};
 
 		usb_phy: usb_phy {
