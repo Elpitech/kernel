@@ -452,6 +452,9 @@ config I2C_AXXIA
 	  255 bytes in length. Any attempt to to a larger transfer will return
 	  an error.
 
+config I2C_BAIKAL_SMBUS
+	tristate "Baikal-M SoC SMBus interface"
+
 config I2C_BCM2835
 	tristate "Broadcom BCM2835 I2C controller"
 	depends on ARCH_BCM2835 || ARCH_BRCMSTB || COMPILE_TEST
