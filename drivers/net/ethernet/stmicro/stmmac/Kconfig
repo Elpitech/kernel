@@ -66,6 +66,14 @@ config DWMAC_ANARION
 
 	  This selects the Anarion SoC glue layer support for the stmmac driver.
 
+config DWMAC_BAIKAL
+	tristate "Baikal Electronics DWMAC support"
+	depends on OF
+	help
+	  Support for Baikal Electronics DWMAC Ethernet.
+
+	  This selects the Baikal SoC glue layer support for the stmmac driver.
+
 config DWMAC_INGENIC
 	tristate "Ingenic MAC support"
 	default MACH_INGENIC
