@@ -12,6 +12,7 @@
 #include <linux/phy.h>
 #include <linux/module.h>
 #include <linux/delay.h>
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
 
 #define RTL821x_PHYSR				0x11
 #define RTL821x_PHYSR_DUPLEX			BIT(13)
@@ -52,6 +53,7 @@
 						 RTL8201F_ISR_DUPLEX | \
 						 RTL8201F_ISR_LINK)
 #define RTL8201F_IER				0x13
+#define RTL8211F_LCR_MASK			0xef7b
 
 #define RTL8366RB_POWER_SAVE			0x15
 #define RTL8366RB_POWER_SAVE_ON			BIT(12)
@@ -339,8 +341,49 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 {
 	struct rtl821x_priv *priv = phydev->priv;
 	struct device *dev = &phydev->mdio.dev;
+	const struct device_node *of_node = dev->of_node;
 	u16 val_txdly, val_rxdly;
+	u16 val = 0;
 	int ret;
+
+	/* Default LED configuration values from RTL8211F datasheet */
+	u32 led_mode = RTL8211F_LED_MODE_A;
+	u32 led0_ctrl = RTL8211F_LINK10_ACT;
+	u32 led1_ctrl = RTL8211F_LINK100_ACT;
+	u32 led2_ctrl = RTL8211F_LINK1000_ACT;
+	static const uint8_t lcr_values[] = {
+		0x1b, 0x0b, 0x13, 0x03, 0x19, 0x09, 0x11,
+		0x01, 0x1a, 0x0a, 0x12, 0x02, 0x18, 0x08
+	};
+
+	of_property_read_u32(of_node, "realtek,led-mode", &led_mode);
+	of_property_read_u32(of_node, "realtek,led0-control", &led0_ctrl);
+	of_property_read_u32(of_node, "realtek,led1-control", &led1_ctrl);
+	of_property_read_u32(of_node, "realtek,led2-control", &led2_ctrl);
+
+	if (led_mode == RTL8211F_LED_MODE_B)
+		val |= (1 << 15);
+
+	if (led0_ctrl <= RTL8211F_LINK1000)
+		val |= lcr_values[led0_ctrl];
+
+	if (led1_ctrl <= RTL8211F_LINK1000)
+		val |= (lcr_values[led1_ctrl] << 5);
+
+	if (led2_ctrl <= RTL8211F_LINK1000)
+		val |= (lcr_values[led2_ctrl] << 10);
+
+	ret = phy_modify_paged_changed(phydev, 0xd04, 0x10,
+	                               RTL8211F_LCR_MASK, val);
+	if (ret < 0) {
+		dev_err(dev, "Failed to update the LED control register\n");
+		return ret;
+	} else if (ret) {
+		dev_dbg(dev, "Updating LED control register to %x\n", val);
+	} else {
+		dev_dbg(dev, "LED control was already set to %x by pin-strappings\n",
+		        val);
+	}
 
 	ret = phy_modify_paged_changed(phydev, 0xa43, RTL8211F_PHYCR1,
 				       RTL8211F_ALDPS_PLL_OFF | RTL8211F_ALDPS_ENABLE | RTL8211F_ALDPS_XTAL_OFF,
