@@ -154,7 +154,7 @@
 		};
 
 		avlsp_cmu1_div7: avlsp_cmu1_div7 {
-			compatible = "allwinner,sun4i-a10-pll3-2x-clk", "fixed-factor-clock";
+			compatible = "baikal,fixed-factor", "allwinner,sun4i-a10-pll3-2x-clk", "fixed-factor-clock";
 			#clock-cells = <0>;
 			clocks = <&avlsp_cmu1>;
 			clock-div = <7>;

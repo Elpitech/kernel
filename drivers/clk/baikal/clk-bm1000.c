@@ -377,6 +377,48 @@ static void __init baikal_clk_init(struct device_node *node)
 	of_clk_add_provider(node, of_clk_src_simple_get, clk);
 }
 
+static void __init baikal_clk_fixed_factor_init(struct device_node *node)
+{
+	struct clk_hw *hw;
+	const char *clk_name = node->name;
+	const char *parent_name;
+	u32 div, mult;
+	int ret;
+
+	if (of_property_read_u32(node, "clock-div", &div)) {
+		pr_err("%s Fixed factor clock <%pOFn> must have a clock-div property\n",
+			__func__, node);
+		return;
+	}
+
+	if (of_property_read_u32(node, "clock-mult", &mult)) {
+		pr_err("%s Fixed factor clock <%pOFn> must have a clock-mult property\n",
+			__func__, node);
+		return;
+	}
+
+	of_property_read_string(node, "clock-output-names", &clk_name);
+	parent_name = of_clk_get_parent_name(node, 0);
+
+	hw = clk_hw_register_fixed_factor(NULL, clk_name, parent_name,
+					  CLK_SET_RATE_PARENT, mult, div);
+	if (IS_ERR(hw)) {
+		pr_err("%s: Failed to register clk_hw (%ld)\n", __func__, PTR_ERR(hw));
+		/*
+		 * Clear OF_POPULATED flag so that clock registration can be
+		 * attempted again from probe function.
+		 */
+		of_node_clear_flag(node, OF_POPULATED);
+		return;
+	}
+
+	ret = of_clk_add_hw_provider(node, of_clk_hw_simple_get, hw);
+	if (ret) {
+		clk_hw_unregister_fixed_factor(hw);
+		return;
+	}
+}
+
 #ifdef CONFIG_ACPI
 const char *baikal_acpi_clk_osc25_str[] = { "baikal_osc25" };
 const char *baikal_acpi_clk_osc27_str[] = { "baikal_osc27" };
@@ -711,3 +753,4 @@ device_initcall(baikal_acpi_clk_driver_init);
 
 CLK_OF_DECLARE(bm1000_cmu, "baikal,bm1000-cmu", baikal_clk_init);
 CLK_OF_DECLARE(bm1000_cmu_compat, "baikal,cmu", baikal_clk_init);
+CLK_OF_DECLARE(bm1000_fixed_factor, "baikal,fixed-factor", baikal_clk_fixed_factor_init);
