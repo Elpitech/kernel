@@ -4,14 +4,15 @@ stages:
   - build
 
 variables:
-  GIT_DEPTH: 200
+  GIT_DEPTH: 100
 
 .build_kernel_template: &build_kernel_dfn
   stage: build
   script:
-    - rm -f ../linux-*
-    - make ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- ${DEFCONFIG}
-    - make ARCH=arm64 CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- bindeb-pkg -j $(nproc)
+    - rm -f linux-*.deb linux-*.buildinfo linux-*.changes
+    - rm -rf ./build
+    - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- ${DEFCONFIG}
+    - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- bindeb-pkg -j $(nproc)
     - |
       BRANCH=""
       if [ "$CI_COMMIT_BRANCH" != "$CI_DEFAULT_BRANCH" ]; then
@@ -26,8 +27,8 @@ variables:
       GIT_TAG=$(git describe --tags --no-abbrev)
       FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${BOARD}-${BRANCH}-${VERSION}.tar"
       echo "Full path: ${FULL_PATH}"
-      tar cf - --exclude='*-dbg_*' ../linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
-    - rm -f ../linux-*
+      tar cf - --exclude='*-dbg_*' linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
+    - rm -f linux-*.deb linux-*.buildinfo linux-*.changes
 
 bm1000:
   variables:
