@@ -397,6 +397,7 @@ static int hda_baikal_create(struct snd_card *card,
 	chip->bus.core.aligned_mmio = 1;
 	chip->bus.core.response_irq_broken = 1;
 	chip->bus.core.baikal_codec_addr_quirk = 1;
+	chip->bus.core.codec_mask = 1; // force non-zero mask
 
 	/* force polling mode, because RIRB interrupts don't working */
 	if (of_property_read_bool(hda->dev->of_node, "force-polling-mode"))
