@@ -8,6 +8,8 @@ variables:
 
 .build_kernel_template: &build_kernel_dfn
   stage: build
+  tags:
+    - kubernetes-lrg
   script:
     - rm -f linux-*.deb linux-*.buildinfo linux-*.changes
     - rm -rf ./build
