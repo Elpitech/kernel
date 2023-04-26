@@ -1,4 +1,4 @@
-image: $CI_REGISTRY/baikal-m/spi_builder:1.1
+image: $CI_REGISTRY/lpt/containers/mc-builder:main
 
 stages:
   - build
