@@ -1,4 +1,4 @@
-image: $CI_REGISTRY/lpt/containers/mc-builder:main
+image: $CI_REGISTRY/elpitech/lpt/containers/mc-builder:0-0-3
 
 stages:
   - build
