@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Baikal-M ET121 device tree
+ * Baikal-M ET151 device tree
  */
-
-/dts-v1/;
 
 #include "bm1000.dtsi"
 #include <dt-bindings/net/realtek-phy-rtl8211f.h>
@@ -16,73 +14,21 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
-	model = "Elpitech ET121-1.0 mITX board";
-
 	aliases {
-		ethernet0 = &gmac0;
-		ethernet1 = &gmac1;
+		ethernet0 = &gmac1;
 		fru = &fru;
 	};
 
 	chosen { };
-
-	panel {
-		compatible = "panel-lvds";
-		width-mm = <223>;
-		height-mm = <125>;
-		data-mapping = "vesa-24";
-		enable-gpios = <&porta 3 GPIO_ACTIVE_HIGH>;
-		panel-timing {
-		// 1920x1080 @60Hz
-			clock-frequency = <148500000>;
-			hactive = <1920>;
-			vactive = <1080>;
-			hsync-len = <44>;
-			hfront-porch = <88>;
-			hback-porch = <148>;
-			vsync-len = <5>;
-			vfront-porch = <4>;
-			vback-porch = <36>;
-		};
-		port {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			panel0_lvds0: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&vdu_lvds0_pads>;
-			};
-			panel0_lvds1: endpoint@1 {
-				reg = <1>;
-				remote-endpoint = <&vdu_lvds1_pads>;
-			};
-		};
-	};
 
 	gpio-keys {
 		compatible = "gpio-keys";
 		pwr {
 			label = "PWR Button";
 			linux,code = <116>;
-			gpios = <&porta 16 GPIO_ACTIVE_LOW>;
+			gpios = <&porta 10 GPIO_ACTIVE_LOW>;
 			wakeup-source;
 			wakeup-event-action = <EV_ACT_DEASSERTED>;
-		};
-	};
-};
-
-&vdu0 {
-	status = "okay";
-	num-lanes = <2>;
-	port {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		vdu_lvds0_pads: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&panel0_lvds0>;
-		};
-		vdu_lvds1_pads: endpoint@1 {
-			reg = <1>;
-			remote-endpoint = <&panel0_lvds1>;
 		};
 	};
 };
@@ -109,28 +55,9 @@
 	status = "okay";
 };
 
-&gmac0 {
-	status = "okay";
-	snps,reset-gpios = <&porta 8 GPIO_ACTIVE_LOW>;
-	snps,reset-delays-us = <10>, <10000>, <50000>;
-	clk_csr = <0x3>;
-	phy-mode = "rgmii-rxid";
-	phy-handle = <&gmac0_phy>;
-};
-
-&mdio0 {
-	gmac0_phy: ethernet-phy@3 {
-		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
-		reg = <0x3>;
-		realtek,led-mode = <RTL8211F_LED_MODE_B>;
-		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-		realtek,led1-control = <RTL8211F_LINK10_ACT>;
-	};
-};
-
 &gmac1 {
 	status = "okay";
-	snps,reset-gpios = <&porta 9 GPIO_ACTIVE_LOW>;
+	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
 	snps,reset-delays-us = <10>, <10000>, <50000>;
 	clk_csr = <0x3>;
 	phy-mode = "rgmii-rxid";
@@ -161,30 +88,25 @@
 
 &usb2 {
 	status = "okay";
-	reset-gpios = <&porta 7 GPIO_ACTIVE_LOW>;
 };
 
 &usb3 {
 	status = "okay";
 };
 
-&pcie_lcru {
-	status = "okay";
-};
-
 &pcie0 {
 	status = "okay";
-	reset-gpios = <&porta 28 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
 };
 
 &pcie1 {
 	status = "okay";
-	reset-gpios = <&porta 19 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
 };
 
 &pcie2 {
 	status = "okay";
-	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+	reset-gpios = <&porta 3 GPIO_ACTIVE_LOW>;
 };
 
 &timer1 {
@@ -225,6 +147,7 @@
 
 &i2c0 {
 	status = "okay";
+	clock-frequency = <100000>;
 
 	rtc@51 {
 		compatible = "nxp,pcf2129", "nxp,pcf2127";
@@ -278,18 +201,38 @@
 	};
 };
 
+&porta {
+	pcieclk {
+		line_name = "pcie-x8-clock";
+		gpio-hog;
+		gpios = <1 GPIO_ACTIVE_LOW>;
+		output-high;
+	};
+};
+
 &hda {
 	status = "okay";
 	patch-data = "[codec]\n\
 0x111d76d5 0x00000100 0\n\
 [model]\n\
-et121\n\
+et151\n\
 [pincfg]\n\
-0x0a 0x02a1001f\n\
-0x0b 0x02210010\n\
-0x0c 0x01a19020\n\
-0x0e 0x01014021\n\
-0x0f 0x01813040\n\
+0x0a 0x0221401f\n\
+0x0b 0x012b1010\n\
+0x0c 0x01ab1020\n\
+0x0e 0x02a19021\n\
+0x0f 0x70819040\n\
 0x11 0x70a3014e\n\
-0x1f 0x70451160\n";
+0x1f 0x70451160\n\
+[verb]\n\
+0x0b 0x707 0xc0\n\
+0x0b 0x701 0x01\n\
+0x0e 0x707 0x20\n\
+0x11 0x707 0x00\n\
+0x1f 0x707 0x00\n\
+0x17 0x701 0x03\n\
+0x1b 0x360 0x17\n\
+0x1b 0x350 0x17\n\
+0x1b 0x361 0x17\n\
+0x1b 0x351 0x17\n";
 };
