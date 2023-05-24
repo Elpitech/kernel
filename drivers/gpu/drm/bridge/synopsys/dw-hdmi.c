@@ -387,6 +387,20 @@ static int dw_hdmi_i2c_read(struct dw_hdmi *hdmi,
 				    HDMI_I2CM_OPERATION);
 
 		ret = dw_hdmi_i2c_wait(hdmi);
+		if (ret == -EAGAIN) {
+			dev_dbg(hdmi->dev, "Read timeout! Clearing i2c bus..\n");
+			hdmi_writeb(hdmi, HDMI_I2CM_OPERATION_CLEAR,
+				    HDMI_I2CM_OPERATION);
+			dw_hdmi_i2c_wait(hdmi);
+			if (i2c->is_segment)
+				hdmi_writeb(hdmi, HDMI_I2CM_OPERATION_READ_EXT,
+					    HDMI_I2CM_OPERATION);
+			else
+				hdmi_writeb(hdmi, HDMI_I2CM_OPERATION_READ,
+					    HDMI_I2CM_OPERATION);
+
+			ret = dw_hdmi_i2c_wait(hdmi);
+		}
 		if (ret)
 			return ret;
 
