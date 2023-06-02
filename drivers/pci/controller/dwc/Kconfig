@@ -80,6 +80,34 @@ config PCIE_DW_PLAT_EP
 	  order to enable device-specific features PCI_DW_PLAT_EP must be
 	  selected.
 
+config PCIE_BAIKAL
+	bool
+
+config PCIE_BAIKAL_HOST
+	bool "Baikal SoC PCIe controller - Host Mode"
+	depends on ARCH_BAIKAL
+	depends on OF && HAS_IOMEM
+	depends on PCI_MSI_IRQ_DOMAIN
+	select PCIE_DW_HOST
+	select PCIE_BAIKAL
+	select PCI_QUIRKS if ACPI
+	help
+	  Enables support for the PCIe controller in Baikal SoCs to work in
+	  host mode. This is the most common use case and it is supported
+	  by all versions of PCIe controller in Baikal SoCs.
+	  This uses the DesignWare core.
+
+config PCIE_BAIKAL_EP
+	bool "Baikal SoCs PCIe controller - Endpoint Mode"
+	depends on PCI_ENDPOINT
+	select PCIE_DW_EP
+	select PCIE_BAIKAL
+	help
+	  Enables support for the PCIe controller in Baikal SoCs to work in
+	  endpoint (device) mode. This is supported by newer versions of PCIe
+	  controller in Baikal SoCs.
+	  This uses the DesignWare core.
+
 config PCI_EXYNOS
 	tristate "Samsung Exynos PCIe controller"
 	depends on ARCH_EXYNOS || COMPILE_TEST
