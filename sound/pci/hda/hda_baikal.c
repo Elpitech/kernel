@@ -380,6 +380,7 @@ static int hda_baikal_create(struct snd_card *card,
 	INIT_WORK(&hda->irq_pending_work, azx_irq_pending_work);
 
 	chip->codec_probe_mask = 0x3; /* two codecs */
+	chip->jackpoll_interval = 100; /* 100ms */
 
 	chip->single_cmd = false;
 	chip->snoop = true;
