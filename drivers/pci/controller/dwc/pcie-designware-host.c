@@ -436,6 +436,10 @@ int dw_pcie_host_init(struct dw_pcie_rp *pp)
 	bridge->ops = &dw_pcie_ops;
 	bridge->child_ops = &dw_child_pcie_ops;
 
+	dw_pcie_version_detect(pci);
+
+	dw_pcie_iatu_detect(pci);
+
 	if (pp->ops->host_init) {
 		ret = pp->ops->host_init(pp);
 		if (ret)
@@ -469,10 +473,6 @@ int dw_pcie_host_init(struct dw_pcie_rp *pp)
 				goto err_deinit_host;
 		}
 	}
-
-	dw_pcie_version_detect(pci);
-
-	dw_pcie_iatu_detect(pci);
 
 	ret = dw_pcie_setup_rc(pp);
 	if (ret)
