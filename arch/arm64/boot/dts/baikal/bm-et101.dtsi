@@ -18,6 +18,7 @@
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
 		fru = &fru;
+		m2-pcie = &pcie0;
 	};
 
 	chosen { };

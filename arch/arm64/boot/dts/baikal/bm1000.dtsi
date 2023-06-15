@@ -602,6 +602,7 @@
 			num-viewport = <4>;
 			msi-parent = <&its 0x0>;
 			msi-map = <0x0 &its 0x0 0x10000>;
+			max-link-speed = <3>;
 			status = "disabled";
 		};
 
@@ -628,6 +629,7 @@
 			num-viewport = <4>;
 			msi-parent = <&its 0x0>;
 			msi-map = <0x0 &its 0x10000 0x10000>;
+			max-link-speed = <3>;
 			status = "disabled";
 		};
 
@@ -654,6 +656,7 @@
 			num-viewport = <4>;
 			msi-parent = <&its 2>;
 			msi-map = <0x0 &its 0x20000 0x10000>;
+			max-link-speed = <3>;
 			status = "disabled";
 		};
 

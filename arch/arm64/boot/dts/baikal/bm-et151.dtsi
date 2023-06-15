@@ -17,6 +17,7 @@
 	aliases {
 		ethernet0 = &gmac1;
 		fru = &fru;
+		m2-pcie = &pcie0;
 	};
 
 	chosen { };
