@@ -47,6 +47,7 @@
 &vdu0 {
 	status = "okay";
 	num-lanes = <2>;
+	lvds-lanes = <2>;
 	port {
 		#address-cells = <1>;
 		#size-cells = <0>;
