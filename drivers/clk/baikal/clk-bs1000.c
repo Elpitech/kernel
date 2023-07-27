@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2021-2022 Baikal Electronics, JSC
+ * Copyright (C) 2021-2023 Baikal Electronics, JSC
  * Author: Ekaterina Skachko <ekaterina.skachko@baikalelectronics.ru>
  */
 
@@ -17,24 +17,25 @@
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
 
-#define BAIKAL_SMC_CLK			(0x82000000 + 0x400)
-#define BAIKAL_SMC_CLK_ROUND		(BAIKAL_SMC_CLK + 0)
-#define BAIKAL_SMC_CLK_SET		(BAIKAL_SMC_CLK + 1)
-#define BAIKAL_SMC_CLK_GET		(BAIKAL_SMC_CLK + 2)
-#define BAIKAL_SMC_CLK_ENABLE		(BAIKAL_SMC_CLK + 3)
-#define BAIKAL_SMC_CLK_DISABLE		(BAIKAL_SMC_CLK + 4)
-#define BAIKAL_SMC_CLK_IS_ENABLED	(BAIKAL_SMC_CLK + 5)
+#define BAIKAL_SMC_CLK_ROUND		0x82000400
+#define BAIKAL_SMC_CLK_SET		0x82000401
+#define BAIKAL_SMC_CLK_GET		0x82000402
+#define BAIKAL_SMC_CLK_ENABLE		0x82000403
+#define BAIKAL_SMC_CLK_DISABLE		0x82000404
+#define BAIKAL_SMC_CLK_IS_ENABLED	0x82000405
 
 struct baikal_clk {
-	struct clk_hw hw;
-	uint32_t base;
+	struct clk_hw	hw;
+	u32		base;
 };
+
 #define to_baikal_clk(_hw) container_of(_hw, struct baikal_clk, hw)
 
 static int baikal_clk_enable(struct clk_hw *hw)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_ENABLE, clk->base, 0, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
@@ -43,6 +44,7 @@ static void baikal_clk_disable(struct clk_hw *hw)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_DISABLE, clk->base, 0, 0, 0, 0, 0, 0, &res);
 }
 
@@ -50,44 +52,48 @@ static int baikal_clk_is_enabled(struct clk_hw *hw)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_IS_ENABLED, clk->base, 0, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
 
 static unsigned long baikal_clk_recalc_rate(struct clk_hw *hw,
-						unsigned long parent_rate)
+					    unsigned long parent_rate)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_GET, clk->base, 0, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
 
 static int baikal_clk_set_rate(struct clk_hw *hw, unsigned long rate,
-					unsigned long parent_rate)
+			       unsigned long parent_rate)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_SET, clk->base, rate, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
 
 static long baikal_clk_round_rate(struct clk_hw *hw, unsigned long rate,
-					unsigned long *prate)
+				  unsigned long *prate)
 {
 	struct baikal_clk *clk = to_baikal_clk(hw);
 	struct arm_smccc_res res;
+
 	arm_smccc_smc(BAIKAL_SMC_CLK_ROUND, clk->base, rate, 0, 0, 0, 0, 0, &res);
 	return res.a0;
 }
 
 static const struct clk_ops baikal_clk_ops = {
-	.enable      = baikal_clk_enable,
+	.enable	     = baikal_clk_enable,
 	.disable     = baikal_clk_disable,
 	.is_enabled  = baikal_clk_is_enabled,
 	.recalc_rate = baikal_clk_recalc_rate,
 	.set_rate    = baikal_clk_set_rate,
-	.round_rate  = baikal_clk_round_rate
+	.round_rate  = baikal_clk_round_rate,
 };
 
 static int baikal_clk_probe(struct platform_device *pdev)
@@ -105,52 +111,48 @@ static int baikal_clk_probe(struct platform_device *pdev)
 	int clk_name_cnt;
 	int clk_cnt;
 	int i;
-	uint32_t base;
+	u32 base;
 	struct clk *clk;
 	int ret;
 	int multi;
 
-	// base
 	ret = of_property_read_u32(node, "reg", &base);
-	if (ret) {
+	if (ret)
 		base = 0;
-	}
 
-	// cnt
 	clk_index_cnt = of_property_count_u32_elems(node, "clock-indices");
-	clk_name_cnt = of_property_count_strings (node, "clock-output-names");
+	clk_name_cnt = of_property_count_strings(node, "clock-output-names");
 	clk_cnt = clk_index_cnt > clk_name_cnt ? clk_index_cnt : clk_name_cnt;
-	if (clk_cnt < 1) {
+	if (clk_cnt < 1)
 		clk_cnt = 1;
-	}
+
 	multi = clk_cnt > 1;
 
 	if (multi) {
 		clk_index_max = clk_cnt - 1;
 		of_property_for_each_u32(node, "clock-indices", prop, p, clk_index) {
-			if (clk_index_max < clk_index) {
+			if (clk_index_max < clk_index)
 				clk_index_max = clk_index;
-			}
 		}
+
 		clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
-		clk_data->clks = kcalloc(clk_index_max + 1, sizeof(struct clk*), GFP_KERNEL);
+		clk_data->clks = kcalloc(clk_index_max + 1, sizeof(struct clk *), GFP_KERNEL);
 		clk_data->clk_num = clk_index_max + 1;
 	}
 
 	for (i = 0; i < clk_cnt; i++) {
-
-		ret = of_property_read_u32_index (node, "clock-indices", i, &clk_index);
-		if (ret) {
+		ret = of_property_read_u32_index(node, "clock-indices", i, &clk_index);
+		if (ret)
 			clk_index = i;
-		}
-		ret = of_property_read_string_index (node, "clock-output-names", i, &clk_name);
+
+		ret = of_property_read_string_index(node, "clock-output-names", i, &clk_name);
 		if (ret) {
 			if (multi)
 				init.name = kasprintf(GFP_KERNEL, "%s.%d", node->name, clk_index);
 			else
-				init.name = kasprintf(GFP_KERNEL, "%s",    node->name);
+				init.name = kasprintf(GFP_KERNEL, "%s",	   node->name);
 		} else {
-				init.name = kasprintf(GFP_KERNEL, "%s.%s", node->name, clk_name);
+			init.name = kasprintf(GFP_KERNEL, "%s.%s", node->name, clk_name);
 		}
 
 		init.ops = &baikal_clk_ops;
@@ -165,18 +167,16 @@ static int baikal_clk_probe(struct platform_device *pdev)
 		clk = clk_register(NULL, &cmu->hw);
 		if (!IS_ERR(clk)) {
 			clk_register_clkdev(clk, init.name, NULL);
-			if (multi) {
+			if (multi)
 				clk_data->clks[clk_index] = clk;
-			}
 		}
 	}
 
-	// add
-	if (multi) {
+	if (multi)
 		ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get, clk_data);
-	} else {
+	else
 		ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_simple_get, clk);
-	}
+
 	return ret;
 }
 
@@ -214,9 +214,8 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 	const char *cmu_name;
 
 	cmu = devm_kzalloc(dev, sizeof(*cmu), GFP_KERNEL);
-	if (!cmu) {
+	if (!cmu)
 		return -ENOMEM;
-	}
 
 	status = acpi_evaluate_object_typed(adev->handle, "PROP", NULL, &buffer, ACPI_TYPE_PACKAGE);
 	if (ACPI_FAILURE(status)) {
@@ -231,7 +230,7 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 		goto ret;
 	}
 
-	element = &(package->package.elements[0]);
+	element = &package->package.elements[0];
 	if (element->type != ACPI_TYPE_INTEGER) {
 		dev_err(dev, "failed to get CMU id\n");
 		ret = -EINVAL;
@@ -240,7 +239,7 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 
 	cmu->base = element->integer.value;
 
-	element = &(package->package.elements[1]);
+	element = &package->package.elements[1];
 	if (element->type != ACPI_TYPE_STRING) {
 		dev_err(dev, "failed to get CMU clock name\n");
 		ret = -EINVAL;
@@ -269,9 +268,8 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 	cmu->hw.init = &init;
 
 	clk_data = devm_kzalloc(dev, sizeof(*clk_data), GFP_KERNEL);
-	if (!clk_data) {
+	if (!clk_data)
 		return -ENOMEM;
-	}
 
 	clk_data->cmu_clk = clk_register(NULL, &cmu->hw);
 	if (IS_ERR(clk_data->cmu_clk)) {
@@ -330,11 +328,11 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 		ref_dev = NULL;
 		size = 0;
 
-		element = &(package->package.elements[4 * i]);
+		element = &package->package.elements[4 * i];
 		if (element->type == ACPI_TYPE_LOCAL_REFERENCE && element->reference.handle)
 			ref_dev = acpi_fetch_acpi_dev(element->reference.handle);
 
-		element = &(package->package.elements[4 * i + 1]);
+		element = &package->package.elements[4 * i + 1];
 		if (element->type == ACPI_TYPE_STRING) {
 			if (ref_dev)
 				size = strlen(dev_name(&ref_dev->dev)) + 1;
@@ -345,15 +343,16 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 					memcpy(str, dev_name(&ref_dev->dev), size - 1);
 					str[size - 1] = '_';
 					memcpy(str + size, element->string.pointer, element->string.length);
-				} else
+				} else {
 					memcpy(str, element->string.pointer, element->string.length);
+				}
 			}
-	        } else {
+		} else {
 			dev_err(dev, "failed to process clock device name #%i\n", i);
 			continue;
 		}
 
-		element = &(package->package.elements[4 * i + 2]);
+		element = &package->package.elements[4 * i + 2];
 		if (element->type == ACPI_TYPE_INTEGER) {
 			index = element->integer.value;
 		} else {
@@ -361,13 +360,14 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 			continue;
 		}
 
-		element = &(package->package.elements[4 * i + 3]);
+		element = &package->package.elements[4 * i + 3];
 		if (element->type == ACPI_TYPE_STRING) {
 			str2 = devm_kzalloc(dev, element->string.length + 1, GFP_KERNEL);
 			if (str2)
 				memcpy(str2, element->string.pointer, element->string.length);
-	        } else
+		} else {
 			str2 = NULL;
+		}
 
 		init_ch[i].parent_names = &cmu_name;
 		init_ch[i].num_parents = 1;
@@ -389,6 +389,7 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 			clk_data->clk_l[i] = clkdev_create(clk_data->clk[i], str2, "%s", dev_name(&ref_dev->dev));
 		else
 			clk_data->clk_l[i] = clkdev_create(clk_data->clk[i], str2, NULL);
+
 		if (!clk_data->clk_l[i]) {
 			dev_err(dev, "failed to register CMU channel clock lookup #%i\n", i);
 			clk_unregister(clk_data->clk[i]);
@@ -402,11 +403,13 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 ret:
 	if (buffer.pointer)
 		acpi_os_free(buffer.pointer);
+
 	if (clk_data) {
 		clk_disable_unprepare(clk_data->cmu_clk);
 		clkdev_drop(clk_data->cmu_clk_l);
 		clk_unregister(clk_data->cmu_clk);
 	}
+
 	return ret;
 }
 
