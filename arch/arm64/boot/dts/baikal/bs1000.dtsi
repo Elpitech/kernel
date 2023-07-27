@@ -302,8 +302,8 @@
 			i2c-sda-hold-time-ns = <500>;
 			clock-frequency = <400000>;
 			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 23>; // "lsp_smbus_i2c1"
-			clock-names = "soc_i2cclk";
+			// clocks = <&cmu_sc_1 23>; // "lsp_smbus_i2c2"
+			clock-names = "ref";
 			status = "disabled";
 		};
 
@@ -316,8 +316,8 @@
 			i2c-sda-hold-time-ns = <500>;
 			clock-frequency = <400000>;
 			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 24>; // "lsp_smbus_i2c2"
-			clock-names = "soc_i2cclk";
+			// clocks = <&cmu_sc_1 24>; // "lsp_smbus_i2c3"
+			clock-names = "ref";
 			status = "disabled";
 		};
 
@@ -330,8 +330,8 @@
 			i2c-sda-hold-time-ns = <500>;
 			clock-frequency = <400000>;
 			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 25>; // "lsp_smbus_i2c3"
-			clock-names = "soc_i2cclk";
+			// clocks = <&cmu_sc_1 25>; // "lsp_smbus_i2c4"
+			clock-names = "ref";
 			status = "disabled";
 		};
 
@@ -505,6 +505,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its0 0x0 0x10000>;
 			status = "disabled";
 		};
 
@@ -537,6 +538,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x741 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x742 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its0 0x10000 0x10000>;
 			status = "disabled";
 		};
 
@@ -558,6 +560,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x781 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x782 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its2 0x0 0x10000>;
 			status = "disabled";
 		};
 
@@ -590,6 +593,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x7c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x7c2 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its2 0x10000 0x10000>;
 			status = "disabled";
 		};
 
@@ -611,6 +615,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x501 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its4 0x0 0x10000>;
 			status = "disabled";
 		};
 
@@ -643,6 +648,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x541 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x542 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its4 0x10000 0x10000>;
 			status = "disabled";
 		};
 
@@ -664,6 +670,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x401 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x402 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its6 0x0 0x10000>;
 			status = "disabled";
 		};
 
@@ -685,6 +692,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x441 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x442 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its7 0x10000 0x10000>;
 			status = "disabled";
 		};
 
@@ -706,6 +714,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x481 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x482 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its8 0x20000 0x10000>;
 			status = "disabled";
 		};
 
@@ -727,6 +736,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x4c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x4c2 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its9 0x30000 0x10000>;
 			status = "disabled";
 		};
 
@@ -748,6 +758,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x601 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x602 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its11 0x0 0x10000>;
 			status = "disabled";
 		};
 
@@ -769,6 +780,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x641 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x642 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its12 0x10000 0x10000>;
 			status = "disabled";
 		};
 
@@ -790,6 +802,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x681 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x682 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its13 0x20000 0x10000>;
 			status = "disabled";
 		};
 
@@ -811,6 +824,7 @@
 			ranges = <0x81000000 0x0 0x00000000 0x6c1 0x00000000 0x0 0x100000>,
 				 <0x82000000 0x0 0x40000000 0x6c2 0x00000000 0x0 0x40000000>;
 			num-viewport = <4>;
+			msi-map = <0x0 &its14 0x30000 0x10000>;
 			status = "disabled";
 		};
 
@@ -1122,8 +1136,8 @@
 				i2c-sda-hold-time-ns = <500>;
 				clock-frequency = <400000>;
 				clocks = <&i2c_clk>;
-				// clocks = <&cmu_sc_1 26>; // "lsp_smbus_i2c4"
-				clock-names = "soc_i2cclk";
+				// clocks = <&cmu_sc_1 26>; // "lsp_smbus_i2c5"
+				clock-names = "ref";
 			};
 
 			i2c6: i2c@cd0000 {
@@ -1135,8 +1149,8 @@
 				i2c-sda-hold-time-ns = <500>;
 				clock-frequency = <400000>;
 				clocks = <&i2c_clk>;
-				// clocks = <&cmu_sc_1 27>; // "lsp_smbus_i2c5"
-				clock-names = "soc_i2cclk";
+				// clocks = <&cmu_sc_1 27>; // "lsp_smbus_i2c6"
+				clock-names = "ref";
 			};
 
 			uart_s: serial@e00000 {
@@ -1147,7 +1161,7 @@
 				reg-io-width = <4>;
 				clocks = <&uart_clk>, <&apb_clk>;
 				// clocks = <&cmu_sc_1 17>, <&cmu_sc_1 15>; // "lsp_uart", "lsp_apb"
-				clock-names = "uartclk", "apb_pclk";
+				clock-names = "baudclk", "apb_pclk";
 			};
 		};
 
