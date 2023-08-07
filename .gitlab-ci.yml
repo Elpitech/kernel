@@ -16,18 +16,12 @@ variables:
     - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- ${DEFCONFIG}
     - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- bindeb-pkg -j $(nproc)
     - |
-      BRANCH=""
-      if [ "$CI_COMMIT_BRANCH" != "$CI_DEFAULT_BRANCH" ]; then
-        if [ -n "${CI_COMMIT_BRANCH}" ]; then
-          BRANCH="${CI_COMMIT_BRANCH}"
-        fi
-      fi
       VERSION=$(git describe --tags)
       echo "Uploading version ${VERSION}"
-      echo "          branch ${BRANCH}"
-      echo "          board ${BOARD}"
+      echo "          branch ${CI_COMMIT_BRANCH}"
+      echo "          board ${CPU_TYPE}"
       GIT_TAG=$(git describe --tags --no-abbrev)
-      FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${BOARD}-${BRANCH}-${VERSION}.tar"
+      FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${CPU_TYPE}-${CI_COMMIT_BRANCH}-${VERSION}.tar"
       echo "Full path: ${FULL_PATH}"
       tar cf - --exclude='*-dbg_*' linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
     - rm -f linux-*.deb linux-*.buildinfo linux-*.changes
@@ -35,11 +29,11 @@ variables:
 bm1000:
   variables:
     DEFCONFIG: bm1000_defconfig
-    BOARD: "bm1000"
+    CPU_TYPE: "bm1000"
   <<: *build_kernel_dfn
 
 bs1000:
   variables:
     DEFCONFIG: bs1000_defconfig
-    BOARD: "bs1000"
+    CPU_TYPE: "bs1000"
   <<: *build_kernel_dfn
