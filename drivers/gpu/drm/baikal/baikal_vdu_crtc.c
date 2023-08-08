@@ -156,6 +156,14 @@ void baikal_vdu_wait_off(struct baikal_vdu_private *priv)
 		dev_err(priv->drm->dev, "Timeout waiting VDU off!\n");
 }
 
+static enum drm_mode_status baikal_vdu_mode_valid(struct drm_crtc *crtc,
+						  const struct drm_display_mode *mode)
+{
+	if (mode->hdisplay > 2560 || mode->vdisplay > 1440)
+		return MODE_BAD;
+	return MODE_OK;
+}
+
 static int baikal_vdu_crtc_atomic_check(struct drm_crtc *crtc,
 				   struct drm_crtc_state *state)
 {
@@ -440,6 +448,7 @@ const struct drm_crtc_funcs crtc_funcs = {
 const struct drm_crtc_helper_funcs crtc_helper_funcs = {
 	.mode_fixup = baikal_vdu_crtc_mode_fixup,
 	.mode_set_nofb = baikal_vdu_crtc_helper_mode_set_nofb,
+	.mode_valid = baikal_vdu_mode_valid,
 	.atomic_check = baikal_vdu_crtc_atomic_check,
 	.atomic_flush = baikal_vdu_crtc_helper_atomic_flush,
 	.disable = baikal_vdu_crtc_helper_disable,
