@@ -382,6 +382,7 @@ config DRM_TI_TPD12S015
 config DRM_STDP4028
 	tristate "MegaChips STDP4028 DP bridge"
 	depends on OF
+	select DRM_KMS_HELPER
 	help
 	  MegaChips STDP4028 DP bridge driver
 
