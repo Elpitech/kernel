@@ -21,7 +21,7 @@ variables:
       echo "          branch ${CI_COMMIT_BRANCH}"
       echo "          board ${CPU_TYPE}"
       GIT_TAG=$(git describe --tags --no-abbrev)
-      FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/linux-${CPU_TYPE}-${CI_COMMIT_BRANCH}-${VERSION}.tar"
+      FULL_PATH="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel/${GIT_TAG}/${CPU_TYPE}-${CI_COMMIT_BRANCH}-${VERSION}.tar"
       echo "Full path: ${FULL_PATH}"
       tar cf - --exclude='*-dbg_*' linux-*arm64.deb | curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file - ${FULL_PATH}
     - rm -f linux-*.deb linux-*.buildinfo linux-*.changes
