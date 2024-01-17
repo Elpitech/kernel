@@ -134,6 +134,7 @@ baikal_vdu_primary_plane_helper_funcs = {
 
 static const struct drm_plane_funcs baikal_vdu_primary_plane_funcs = {
 	.reset = drm_atomic_helper_plane_reset,
+	.update_plane = drm_atomic_helper_update_plane,
 	.destroy = drm_plane_cleanup,
 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
