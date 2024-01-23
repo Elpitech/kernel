@@ -301,7 +301,7 @@ static inline void bpf_long_memcpy(void *dst, const void *src, u32 size)
 
 	size /= sizeof(long);
 	while (size--)
-		*ldst++ = *lsrc++;
+		data_race(*ldst++ = *lsrc++);
 }
 
 /* copy everything but bpf_spin_lock, bpf_timer, and kptrs. There could be one of each. */
@@ -702,10 +702,14 @@ bpf_ctx_record_field_size(struct bpf_insn_access_aux *aux, u32 size)
 	aux->ctx_field_size = size;
 }
 
+static bool bpf_is_ldimm64(const struct bpf_insn *insn)
+{
+	return insn->code == (BPF_LD | BPF_IMM | BPF_DW);
+}
+
 static inline bool bpf_pseudo_func(const struct bpf_insn *insn)
 {
-	return insn->code == (BPF_LD | BPF_IMM | BPF_DW) &&
-	       insn->src_reg == BPF_PSEUDO_FUNC;
+	return bpf_is_ldimm64(insn) && insn->src_reg == BPF_PSEUDO_FUNC;
 }
 
 struct bpf_prog_ops {
@@ -825,6 +829,11 @@ struct btf_func_model {
  */
 #define BPF_TRAMP_F_SHARE_IPMODIFY	BIT(6)
 
+/* Indicate that current trampoline is in a tail call context. Then, it has to
+ * cache and restore tail_call_cnt to avoid infinite tail call loop.
+ */
+#define BPF_TRAMP_F_TAIL_CALL_CTX	BIT(7)
+
 /* Each call __bpf_prog_enter + call bpf_func + call __bpf_prog_exit is ~50
  * bytes on x86.
  */
@@ -862,22 +871,18 @@ int arch_prepare_bpf_trampoline(struct bpf_tramp_image *tr, void *image, void *i
 				const struct btf_func_model *m, u32 flags,
 				struct bpf_tramp_links *tlinks,
 				void *orig_call);
-/* these two functions are called from generated trampoline */
-u64 notrace __bpf_prog_enter(struct bpf_prog *prog, struct bpf_tramp_run_ctx *run_ctx);
-void notrace __bpf_prog_exit(struct bpf_prog *prog, u64 start, struct bpf_tramp_run_ctx *run_ctx);
-u64 notrace __bpf_prog_enter_sleepable(struct bpf_prog *prog, struct bpf_tramp_run_ctx *run_ctx);
-void notrace __bpf_prog_exit_sleepable(struct bpf_prog *prog, u64 start,
-				       struct bpf_tramp_run_ctx *run_ctx);
-u64 notrace __bpf_prog_enter_lsm_cgroup(struct bpf_prog *prog,
-					struct bpf_tramp_run_ctx *run_ctx);
-void notrace __bpf_prog_exit_lsm_cgroup(struct bpf_prog *prog, u64 start,
-					struct bpf_tramp_run_ctx *run_ctx);
-u64 notrace __bpf_prog_enter_struct_ops(struct bpf_prog *prog,
-					struct bpf_tramp_run_ctx *run_ctx);
-void notrace __bpf_prog_exit_struct_ops(struct bpf_prog *prog, u64 start,
-					struct bpf_tramp_run_ctx *run_ctx);
+u64 notrace __bpf_prog_enter_sleepable_recur(struct bpf_prog *prog,
+					     struct bpf_tramp_run_ctx *run_ctx);
+void notrace __bpf_prog_exit_sleepable_recur(struct bpf_prog *prog, u64 start,
+					     struct bpf_tramp_run_ctx *run_ctx);
 void notrace __bpf_tramp_enter(struct bpf_tramp_image *tr);
 void notrace __bpf_tramp_exit(struct bpf_tramp_image *tr);
+typedef u64 (*bpf_trampoline_enter_t)(struct bpf_prog *prog,
+				      struct bpf_tramp_run_ctx *run_ctx);
+typedef void (*bpf_trampoline_exit_t)(struct bpf_prog *prog, u64 start,
+				      struct bpf_tramp_run_ctx *run_ctx);
+bpf_trampoline_enter_t bpf_trampoline_enter(const struct bpf_prog *prog);
+bpf_trampoline_exit_t bpf_trampoline_exit(const struct bpf_prog *prog);
 
 struct bpf_ksym {
 	unsigned long		 start;
@@ -1069,7 +1074,7 @@ static inline int bpf_trampoline_unlink_prog(struct bpf_tramp_link *link,
 static inline struct bpf_trampoline *bpf_trampoline_get(u64 key,
 							struct bpf_attach_target_info *tgt_info)
 {
-	return ERR_PTR(-EOPNOTSUPP);
+	return NULL;
 }
 static inline void bpf_trampoline_put(struct bpf_trampoline *tr) {}
 #define DEFINE_BPF_DISPATCHER(name)
@@ -2684,6 +2689,9 @@ enum bpf_text_poke_type {
 
 int bpf_arch_text_poke(void *ip, enum bpf_text_poke_type t,
 		       void *addr1, void *addr2);
+
+void bpf_arch_poke_desc_update(struct bpf_jit_poke_descriptor *poke,
+			       struct bpf_prog *new, struct bpf_prog *old);
 
 void *bpf_arch_text_copy(void *dst, void *src, size_t len);
 int bpf_arch_text_invalidate(void *dst, size_t len);
