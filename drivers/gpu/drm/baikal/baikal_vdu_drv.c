@@ -132,7 +132,7 @@ static int vdu_modeset_init(struct drm_device *dev)
 		goto out_config;
 	}
 
-	drm_aperture_remove_framebuffers(false, dev->driver);
+	drm_aperture_remove_framebuffers(dev->driver);
 
 	dev->vblank_disable_immediate = true;
 
