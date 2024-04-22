@@ -76,6 +76,7 @@
 		usb2		= &usb2;
 		usb3		= &usb3;
 		vdu-lvds	= &vdu0;
+		hda	= &hda;
 	};
 
 	clocks {
