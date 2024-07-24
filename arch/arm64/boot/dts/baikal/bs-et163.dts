@@ -95,8 +95,8 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
 		realtek,led-mode = <RTL8211F_LED_MODE_B>;
-		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+		realtek,led0-control = <RTL8211F_LINK10_1000_ACT>;
+		realtek,led1-control = <RTL8211F_LINK100_1000>;
 	};
 };
 
@@ -105,8 +105,8 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0x3>;
 		realtek,led-mode = <RTL8211F_LED_MODE_B>;
-		realtek,led0-control = <RTL8211F_LINK10_100_1000>;
-		realtek,led1-control = <RTL8211F_LINK10_ACT>;
+		realtek,led0-control = <RTL8211F_LINK10_1000_ACT>;
+		realtek,led1-control = <RTL8211F_LINK100_1000>;
 	};
 };
 
