@@ -1,0 +1,276 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Elpitech ET171 board device tree
+ */
+
+/dts-v1/;
+
+#include "bm1000.dtsi"
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
+#include <dt-bindings/input/gpio-keys.h>
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+
+	model = "Elpitech ET151 mITX board";
+	compatible = "baikal,baikal-m";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	aliases {
+		ethernet0 = &gmac1;
+		fru = &fru;
+		m2-pcie = &pcie0;
+	};
+
+	chosen { };
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pwr {
+			label = "PWR Button";
+			linux,code = <116>;
+			gpios = <&porta 10 GPIO_ACTIVE_LOW>;
+			wakeup-source;
+			wakeup-event-action = <EV_ACT_DEASSERTED>;
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&gmac1 {
+	status = "okay";
+	snps,reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
+	clk_csr = <0x3>;
+	phy-mode = "rgmii-rxid";
+	phy-handle = <&gmac1_phy>;
+};
+
+&mdio1 {
+	gmac1_phy: ethernet-phy@3 {
+		compatible = "ethernet-phy-id001c.c916", "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_100_1000_ACT>;
+		realtek,led1-control = <RTL8211F_LINK1000>;
+		realtek,led2-control = <RTL8211F_LINK100>;
+	};
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};
+
+&gpio32 {
+	status = "okay";
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&pcie0 {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&pcie1 {
+	status = "okay";
+	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&pvt_cluster0 {
+	status = "okay";
+};
+
+&pvt_cluster1 {
+	status = "okay";
+};
+
+&pvt_cluster2 {
+	status = "okay";
+};
+
+&pvt_cluster3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	rtc@51 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x51>;
+	};
+
+	fru: eeprom@53 {
+		compatible = "atmel,24c32";
+		pagesize = <32>;
+		reg = <0x53>;
+	};
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi0 {
+	num-cs = <4>;
+
+	cs-gpios = <&porta 15 GPIO_ACTIVE_LOW>, <0>;
+	status = "okay";
+	flash0: flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <12500000>;
+		status = "okay";
+
+		/* Flash chip0 partitions */
+		mtd0@0 {
+			label = "bl1";
+			reg = <0x00000000 0x00040000>;
+			read-only;
+		};
+
+		mtd1@40000 {
+			label = "fip";
+			reg = <0x00040000 0x007c0000>;
+		};
+
+		mtd2@800000 {
+			label = "rescue";
+			reg = <0x00800000 0x01800000>;
+		};
+	};
+};
+
+&hda {
+	status = "okay";
+	patch-data = "[codec]\n\
+0x111d76d5 0x00000100 0\n\
+[model]\n\
+et151\n\
+[pincfg]\n\
+0x0a 0x012b101f\n\
+0x0b 0x02014010\n\
+0x0c 0x01ab1020\n\
+0x0e 0x02a19021\n\
+0x0f 0x70819040\n\
+0x11 0x70a3014e\n\
+0x1f 0x70451160\n\
+[verb]\n\
+0x0b 0x707 0xc0\n\
+0x0b 0x701 0x01\n\
+0x0e 0x707 0x20\n\
+0x11 0x707 0x00\n\
+0x1f 0x707 0x00\n\
+0x17 0x701 0x03\n\
+0x1b 0x360 0x17\n\
+0x1b 0x350 0x17\n\
+0x1b 0x361 0x17\n\
+0x1b 0x351 0x17\n";
+};
+
+&vdu0 {
+	status = "okay";
+	num-lanes = <2>;
+	lvds-lanes = <2>;
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		vdu_lvds0_pads: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&stdp_lvds_in0>;
+		};
+		vdu_lvds1_pads: endpoint@1 {
+			reg = <1>;
+			remote-endpoint = <&stdp_lvds_in1>;
+		};
+	};
+};
+
+&i2c0 {
+	stdp_bridge@73 {
+		compatible = "megachips,stdp4028-lvds-dp";
+		reg = <0x73>;
+		channels = <2>;
+		chan-cfg = <3>;
+		interrupt-parent = <&porta>;
+		interrupts = <29 IRQ_TYPE_LEVEL_HIGH>;
+		reset-gpios = <&porta 30 GPIO_ACTIVE_HIGH>;
+
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			stdp_lvds_in0: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&vdu_lvds0_pads>;
+			};
+			stdp_lvds_in1: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&vdu_lvds1_pads>;
+			};
+		};
+	};
+};
+
+&porta {
+	m2e_w_dis {
+		line_name = "M2M-W-DIS";
+		gpio-hog;
+		gpios = <28 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
