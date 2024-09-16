@@ -219,8 +219,8 @@ static int bs_pcie_setup_res(struct platform_device *pdev, struct dw_pcie *pci)
 
 	pp->irq = platform_get_irq_byname(pdev, "intr");
 	if (pp->irq < 0) {
-		dev_err(&pdev->dev, "failed to get \"intr\" IRQ\n");
-		return pp->irq;
+		dev_warn(&pdev->dev, "failed to get \"intr\" IRQ\n");
+		return 0;
 	}
 
 	ret = devm_request_irq(&pdev->dev, pp->irq, bs_pcie_intr_irq_handler,
