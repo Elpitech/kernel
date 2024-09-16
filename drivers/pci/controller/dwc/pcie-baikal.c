@@ -192,7 +192,18 @@ static int bs_pcie_setup_res(struct platform_device *pdev, struct dw_pcie *pci)
 	struct baikal_pcie *bp = to_baikal_pcie(pci);
 	struct dw_pcie_rp *pp = &pci->pp;
 
-	pci->atu_base = pci->dbi_base + DEFAULT_DBI_ATU_OFFSET;
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "atu");
+	if (res) {
+		devm_request_resource(&pdev->dev, &iomem_resource, res);
+		pci->atu_base = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(pci->atu_base)) {
+			dev_err(&pdev->dev, "error with ioremap\n");
+			return PTR_ERR(pci->atu_base);
+		}
+	} else {
+		pci->atu_base = pci->dbi_base + DEFAULT_DBI_ATU_OFFSET;
+	}
+
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "apb");
 	if (res) {
 		devm_request_resource(&pdev->dev, &iomem_resource, res);
