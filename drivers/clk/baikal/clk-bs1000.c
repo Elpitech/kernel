@@ -17,16 +17,16 @@
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
 
-#define BAIKAL_SMC_CLK_ROUND		0x82000400
-#define BAIKAL_SMC_CLK_SET		0x82000401
-#define BAIKAL_SMC_CLK_GET		0x82000402
-#define BAIKAL_SMC_CLK_ENABLE		0x82000403
-#define BAIKAL_SMC_CLK_DISABLE		0x82000404
-#define BAIKAL_SMC_CLK_IS_ENABLED	0x82000405
+#define BAIKAL_SMC_CLK_ROUND		0xC2000400
+#define BAIKAL_SMC_CLK_SET		0xC2000401
+#define BAIKAL_SMC_CLK_GET		0xC2000402
+#define BAIKAL_SMC_CLK_ENABLE		0xC2000403
+#define BAIKAL_SMC_CLK_DISABLE		0xC2000404
+#define BAIKAL_SMC_CLK_IS_ENABLED	0xC2000405
 
 struct baikal_clk {
 	struct clk_hw	hw;
-	u32		base;
+	u64		base;
 };
 
 #define to_baikal_clk(_hw) container_of(_hw, struct baikal_clk, hw)
@@ -111,12 +111,18 @@ static int baikal_clk_probe(struct platform_device *pdev)
 	int clk_name_cnt;
 	int clk_cnt;
 	int i;
-	u32 base;
+	u64 base;
+	u32 base32;
 	struct clk *clk;
 	int ret;
 	int multi;
 
-	ret = of_property_read_u32(node, "reg", &base);
+	ret = of_property_read_u64(node, "reg", &base);
+	if (ret) {
+		ret = of_property_read_u32(node, "reg", &base32);
+		if (!ret)
+			base = base32;
+	}
 	if (ret)
 		base = 0;
 
