@@ -25,3 +25,4 @@ dtb-$(CONFIG_ARCH_BAIKAL) += bm-em407.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bs-et113.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bs-et143.dtb
 dtb-$(CONFIG_ARCH_BAIKAL) += bs-et163.dtb
+dtb-$(CONFIG_ARCH_BAIKAL) += bs-et153-d.dtb

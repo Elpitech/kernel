@@ -7,56 +7,1107 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include "bs1000-clocks.dtsi"
 
-#define CA75_CLUSTER(group, a,b,c,d)			\
-	cluster##group:					\
-	cluster##group {				\
-		core0 {					\
-			cpu = <&cpu##a>;		\
-		};					\
-		core1 {					\
-			cpu = <&cpu##b>;		\
-		};					\
-		core2 {					\
-			cpu = <&cpu##c>;		\
-		};					\
-		core3 {					\
-			cpu = <&cpu##d>;		\
-		};					\
-		l3_##group: l3-cache##group {		\
-			compatible = "cache";		\
-			cache-size = <0x200000>;	\
-			cache-line-size = <64>;		\
-			cache-sets = <2048>;		\
-			cache-unified;			\
-			cache-level = <3>;		\
-			next-level-cache = <&l4>;	\
-		};					\
+#define CA75_CLUSTER(soc, group, a,b,c,d)				\
+	cluster##group {						\
+		core0 {							\
+			cpu = <&cpu##a>;				\
+		};							\
+		core1 {							\
+			cpu = <&cpu##b>;				\
+		};							\
+		core2 {							\
+			cpu = <&cpu##c>;				\
+		};							\
+		core3 {							\
+			cpu = <&cpu##d>;				\
+		};							\
+		soc##l3_##group: l3-cache {				\
+			compatible = "cache";				\
+			cache-size = <0x200000>;			\
+			cache-line-size = <64>;				\
+			cache-sets = <2048>;				\
+			cache-unified;					\
+			cache-level = <3>;				\
+			next-level-cache = <&soc##l4>;			\
+		};							\
 	}
 
-#define CA75_CPU(core, group, affinity)			\
-	cpu##core: cpu@##affinity {			\
-		device_type = "cpu";			\
-		compatible = "arm,cortex-a75";		\
-		reg = <0x0 0x##affinity>;		\
-		enable-method = "psci";			\
-		i-cache-size = <0x10000>;		\
-		i-cache-line-size = <64>;		\
-		i-cache-sets = <256>;			\
-		d-cache-size = <0x10000>;		\
-		d-cache-line-size = <64>;		\
-		d-cache-sets = <64>;			\
-		next-level-cache = <&l2_##core>;	\
-		operating-points-v2 = <&cpu_opp_table>;		\
-		clocks = <&cluster##group##_cmu1 (core%4)>;	\
-		l2_##core: l2-cache {				\
-			compatible = "cache";			\
-			cache-size = <0x80000>;			\
-			cache-line-size = <64>;			\
-			cache-sets = <1024>;			\
-			cache-unified;				\
-			cache-level = <2>;			\
-			next-level-cache = <&l3_##group>;	\
-		};						\
+#define CA75_CPU(soc, chip, group, core, affinity)				\
+	cpu##core: cpu@##chip##affinity {					\
+		device_type = "cpu";						\
+		compatible = "arm,cortex-a75";					\
+		reg = <0x0##chip 0x##affinity>;					\
+		enable-method = "psci";						\
+		i-cache-size = <0x10000>;					\
+		i-cache-line-size = <64>;					\
+		i-cache-sets = <256>;						\
+		d-cache-size = <0x10000>;					\
+		d-cache-line-size = <64>;					\
+		d-cache-sets = <64>;						\
+		next-level-cache = <&l2_##core>;				\
+		operating-points-v2 = <&cpu_opp_table>;				\
+		clocks = <&soc##ca75_##group##_cmu1 (core%4)>;			\
+		numa-node-id = <0x0##chip>;					\
+		l2_##core: l2-cache {						\
+			compatible = "cache";					\
+			cache-size = <0x80000>;					\
+			cache-line-size = <64>;					\
+			cache-sets = <1024>;					\
+			cache-unified;						\
+			cache-level = <2>;					\
+			next-level-cache = <&soc##l3_##group>;			\
+		};								\
+	}
+
+#define SOC(soc, chip, spi_base)									\
+	soc##sc_smmu: iommu@900000 {									\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x900000 0x0 0x60000>;							\
+		interrupts = <GIC_SPI (spi_base + 41) IRQ_TYPE_EDGE_RISING>,				\
+			     <GIC_SPI (spi_base + 42) IRQ_TYPE_EDGE_RISING>,				\
+			     <GIC_SPI (spi_base + 44) IRQ_TYPE_EDGE_RISING>,				\
+			     <GIC_SPI (spi_base + 46) IRQ_TYPE_EDGE_RISING>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		dma-coherent;										\
+		baikal,bs1000-bypass-gic;								\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ohci: usb@a00000 {										\
+		compatible = "generic-ohci";								\
+		reg = <0x0 0xa00000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 78) IRQ_TYPE_LEVEL_HIGH>;				\
+		dr_mode = "host";									\
+		dma-coherent;										\
+		clocks = <&soc##sc_cmu1 13>,								\
+			 <&soc##sc_cmu1 14>;								\
+		clock-names = "ohci_hclk", "ohci_clk48";						\
+		iommus = <&soc##sc_smmu 0x2>;								\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ehci: usb@a10000 {										\
+		compatible = "generic-ehci";								\
+		reg = <0x0 0xa10000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 82) IRQ_TYPE_LEVEL_HIGH>;				\
+		dr_mode = "host";									\
+		dma-coherent;										\
+		clocks = <&soc##sc_cmu1 13>;								\
+		clock-names = "ehci_hclk";								\
+		iommus = <&soc##sc_smmu 0xc>;								\
+		status = "disabled";									\
+	};												\
+													\
+	soc##gmac0: ethernet@a20000 {									\
+		compatible = "baikal,bs1000-gmac";							\
+		reg = <0x0 0xa20000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 76) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "macirq";								\
+		max-speed = <1000>;									\
+		clocks = <&soc##sc_cmu1 9>,								\
+			 <&soc##sc_cmu2 1>,								\
+			 <&soc##sc_cmu2 2>;								\
+		clock-names = "stmmaceth", "ptp_ref", "tx2_clk";					\
+		dma-coherent;										\
+		status = "disabled";									\
+													\
+		soc##mdio0: mdio {									\
+			compatible = "snps,dwmac-mdio";							\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+		};											\
+	};												\
+													\
+	soc##gmac1: ethernet@a30000 {									\
+		compatible = "baikal,bs1000-gmac";							\
+		reg = <0x0 0xa30000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 77) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "macirq";								\
+		max-speed = <1000>;									\
+		clocks = <&soc##sc_cmu1 11>,								\
+			 <&soc##sc_cmu2 3>,								\
+			 <&soc##sc_cmu2 4>;								\
+		clock-names = "stmmaceth", "ptp_ref", "tx2_clk";					\
+		dma-coherent;										\
+		status = "disabled";									\
+													\
+		soc##mdio1: mdio {									\
+			compatible = "snps,dwmac-mdio";							\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+		};											\
+	};												\
+													\
+	soc##uart_a1: serial@c00000 {									\
+		compatible = "arm,pl011", "arm,primecell";						\
+		reg = <0x0 0xc00000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 61) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&uart1_clk>, <&apb_clk>;							\
+		clock-names = "uartclk", "apb_pclk";							\
+		status = "disabled";									\
+	};												\
+													\
+	soc##uart_a2: serial@c10000 {									\
+		compatible = "arm,pl011", "arm,primecell";						\
+		reg = <0x0 0xc10000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 62) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&uart2_clk>, <&apb_clk>;							\
+		clock-names = "uartclk", "apb_pclk";							\
+		status = "disabled";									\
+	};												\
+													\
+	soc##qspi1: spi@c20000 {									\
+		compatible = "snps,dw-apb-ssi";								\
+		reg = <0x0 0xc20000 0x0 0x1000>;							\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
+		interrupts = <GIC_SPI (spi_base + 63) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&spi_clk>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##gpio32: gpio@c50000 {									\
+		compatible = "snps,dw-apb-gpio";							\
+		reg = <0x0 0xc50000 0x0 0x1000>;							\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
+		clocks = <&gpio_clk>;									\
+		status = "disabled";									\
+													\
+		soc##porta: gpio-controller@0 {								\
+			compatible = "snps,dw-apb-gpio-port";						\
+			gpio-controller;								\
+			#gpio-cells = <2>;								\
+			ngpios = <32>;									\
+			reg = <0>;									\
+			interrupt-controller;								\
+			#interrupt-cells = <2>;								\
+			interrupts = <GIC_SPI (spi_base + 54) IRQ_TYPE_LEVEL_HIGH>;			\
+		};											\
+	};												\
+													\
+	soc##i2c2: i2c@c90000 {										\
+		compatible = "snps,designware-i2c";							\
+		reg = <0x0 0xc90000 0x0 0x1000>;							\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
+		interrupts = <GIC_SPI (spi_base + 65) IRQ_TYPE_LEVEL_HIGH>;				\
+		i2c-sda-hold-time-ns = <500>;								\
+		clock-frequency = <400000>;								\
+		clocks = <&i2c_clk>;									\
+		clock-names = "ref";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##i2c3: i2c@ca0000 {										\
+		compatible = "snps,designware-i2c";							\
+		reg = <0x0 0xca0000 0x0 0x1000>;							\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
+		interrupts = <GIC_SPI (spi_base + 66) IRQ_TYPE_LEVEL_HIGH>;				\
+		i2c-sda-hold-time-ns = <500>;								\
+		clock-frequency = <400000>;								\
+		clocks = <&i2c_clk>;									\
+		clock-names = "ref";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##i2c4: i2c@cb0000 {										\
+		compatible = "snps,designware-i2c";							\
+		reg = <0x0 0xcb0000 0x0 0x1000>;							\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
+		interrupts = <GIC_SPI (spi_base + 67) IRQ_TYPE_LEVEL_HIGH>;				\
+		i2c-sda-hold-time-ns = <500>;								\
+		clock-frequency = <400000>;								\
+		clocks = <&i2c_clk>;									\
+		clock-names = "ref";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##wdt: watchdog@ce0000 {									\
+		compatible = "snps,dw-wdt";								\
+		reg = <0x0 0xce0000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 59) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&wdt_clk 0>;									\
+		clock-names = "tclk";									\
+		snps,watchdog-tops = <0x000000ff 0x000001ff 0x000003ff 0x000007ff			\
+				      0x0000ffff 0x0001ffff 0x0003ffff 0x0007ffff			\
+				      0x000fffff 0x001fffff 0x003fffff 0x007fffff			\
+				      0x00ffffff 0x01ffffff 0x03ffffff 0x07ffffff>;			\
+		status = "disabled";									\
+	};												\
+													\
+	soc##timer1: timer@cf0000 {									\
+		compatible = "snps,dw-apb-timer";							\
+		reg = <0x0 0xcf0000 0x0 0x14>;								\
+		interrupts = <GIC_SPI (spi_base + 55) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&timer1_clk>;									\
+		clock-names = "timer";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##timer2: timer@cf0014 {									\
+		compatible = "snps,dw-apb-timer";							\
+		reg = <0x0 0xcf0014 0x0 0x14>;								\
+		interrupts = <GIC_SPI (spi_base + 56) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&timer2_clk>;									\
+		clock-names = "timer";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##timer3: timer@cf0028 {									\
+		compatible = "snps,dw-apb-timer";							\
+		reg = <0x0 0xcf0028 0x0 0x14>;								\
+		interrupts = <GIC_SPI (spi_base + 57) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&timer3_clk>;									\
+		clock-names = "timer";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##timer4: timer@cf003c {									\
+		compatible = "snps,dw-apb-timer";							\
+		reg = <0x0 0xcf003c 0x0 0x14>;								\
+		interrupts = <GIC_SPI (spi_base + 58) IRQ_TYPE_LEVEL_HIGH>;				\
+		clocks = <&timer4_clk>;									\
+		clock-names = "timer";									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie0_smmu: iommu@38800000 {								\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x38800000 0x0 0x60000>;							\
+		interrupts = <GIC_SPI (spi_base + 150) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 151) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 153) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 155) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie0_p0: pcie@39000000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x39000000 0x0 0x400000>,							\
+		      <0x0 0x38d40000 0x0 0x100>,							\
+		      <0x700 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 145) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 147) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 145) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its0 0x0>;								\
+		msi-map = <0x0 &soc##its0 0x0 0x10000>;							\
+		iommu-map = <0x0 &soc##pcie0_smmu 0x0 0x10000>;						\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie0_p0_ep: pcie-ep@39000000 {								\
+		compatible = "baikal,bs1000-pcie-ep";							\
+		reg = <0x0 0x39000000 0x0 0x400000>,							\
+		      <0x0 0x38d40000 0x0 0x100>,							\
+		      <0x700 0x00000000 0x1 0x00000000>;						\
+		reg-names = "dbi", "apb", "addr_space";							\
+		interrupts = <GIC_SPI (spi_base + 129) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 130) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 131) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 132) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 133) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 134) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 135) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 136) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "dma0", "dma1", "dma2", "dma3",                                       \
+		                  "dma4", "dma5", "dma6", "dma7";                                       \
+		num-ib-windows = <4>;									\
+		num-ob-windows = <4>;									\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie0_p1: pcie@39400000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x39400000 0x0 0x400000>,							\
+		      <0x0 0x38d41000 0x0 0x100>,							\
+		      <0x740 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 146) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 148) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 146) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x741 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x742 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its0 0x10000>;							\
+		msi-map = <0x0 &soc##its0 0x10000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie0_smmu 0x10000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie1_smmu: iommu@3c800000 {								\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x3c800000 0x0 0x60000>;							\
+		interrupts = <GIC_SPI (spi_base + 193) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 194) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 196) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 198) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie1_p0: pcie@3d000000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x3d000000 0x0 0x400000>,							\
+		      <0x0 0x3cd40000 0x0 0x100>,							\
+		      <0x780 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 188) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 190) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 188) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x781 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x782 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its2 0x0>;								\
+		msi-map = <0x0 &soc##its2 0x0 0x10000>;							\
+		iommu-map = <0x0 &soc##pcie1_smmu 0x0 0x10000>;						\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie1_p0_ep: pcie-ep@3d000000 {								\
+		compatible = "baikal,bs1000-pcie-ep";							\
+		reg = <0x0 0x3d000000 0x0 0x400000>,							\
+		      <0x0 0x3cd40000 0x0 0x100>,							\
+		      <0x780 0x00000000 0x1 0x00000000>;						\
+		reg-names = "dbi", "apb", "addr_space";							\
+		interrupts = <GIC_SPI (spi_base + 172) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 173) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 174) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 175) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 176) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 177) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 178) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 179) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "dma0", "dma1", "dma2", "dma3",                                       \
+		                  "dma4", "dma5", "dma6", "dma7";                                       \
+		num-ib-windows = <4>;									\
+		num-ob-windows = <4>;									\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie1_p1: pcie@3d400000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x3d400000 0x0 0x400000>,							\
+		      <0x0 0x3cd41000 0x0 0x100>,							\
+		      <0x7c0 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 189) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 191) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 189) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x7c1 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x7c2 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its2 0x10000>;							\
+		msi-map = <0x0 &soc##its2 0x10000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie1_smmu 0x10000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie2_smmu: iommu@44800000 {								\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x44800000 0x0 0x60000>;							\
+		interrupts = <GIC_SPI (spi_base + 107) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 108) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 110) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 112) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie2_p0: pcie@45000000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x45000000 0x0 0x400000>,							\
+		      <0x0 0x44d40000 0x0 0x100>,							\
+		      <0x500 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 102) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 104) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 102) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x501 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its4 0x0>;								\
+		msi-map = <0x0 &soc##its4 0x0 0x10000>;							\
+		iommu-map = <0x0 &soc##pcie2_smmu 0x0 0x10000>;						\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie2_p0_ep: pcie-ep@45000000 {								\
+		compatible = "baikal,bs1000-pcie-ep";							\
+		reg = <0x0 0x45000000 0x0 0x400000>,							\
+		      <0x0 0x44d40000 0x0 0x100>,							\
+		      <0x500 0x00000000 0x1 0x00000000>;						\
+		reg-names = "dbi", "apb", "addr_space";							\
+		interrupts = <GIC_SPI (spi_base + 86) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 87) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 88) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 89) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 90) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 91) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 92) IRQ_TYPE_LEVEL_HIGH>,				\
+		             <GIC_SPI (spi_base + 93) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "dma0", "dma1", "dma2", "dma3",                                       \
+		                  "dma4", "dma5", "dma6", "dma7";                                       \
+		num-ib-windows = <4>;									\
+		num-ob-windows = <4>;									\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie2_p1: pcie@45400000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x45400000 0x0 0x400000>,							\
+		      <0x0 0x44d41000 0x0 0x100>,							\
+		      <0x540 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 103) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 105) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 103) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x541 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x542 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its4 0x10000>;							\
+		msi-map = <0x0 &soc##its4 0x10000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie2_smmu 0x10000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <39>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie3_smmu: iommu@48800000 {								\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x48800000 0x0 0xc0000>;							\
+		interrupts = <GIC_SPI (spi_base + 258) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 259) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 261) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 263) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie3_p0: pcie@49000000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x49000000 0x0 0x400000>,							\
+		      <0x0 0x48d40000 0x0 0x100>,							\
+		      <0x400 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 249) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 253) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 249) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x401 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x402 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its6 0x0>;								\
+		msi-map = <0x0 &soc##its6 0x0 0x10000>;							\
+		iommu-map = <0x0 &soc##pcie3_smmu 0x0 0x10000>;						\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie3_p1: pcie@49400000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x49400000 0x0 0x400000>,							\
+		      <0x0 0x48d41000 0x0 0x100>,							\
+		      <0x440 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 250) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 254) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 250) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x441 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x442 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its7 0x10000>;							\
+		msi-map = <0x0 &soc##its7 0x10000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie3_smmu 0x10000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie3_p2: pcie@49800000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x49800000 0x0 0x400000>,							\
+		      <0x0 0x48d42000 0x0 0x100>,							\
+		      <0x480 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 251) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 255) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 251) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x481 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x482 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its8 0x20000>;							\
+		msi-map = <0x0 &soc##its8 0x20000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie3_smmu 0x20000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie3_p3: pcie@49c00000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x49c00000 0x0 0x400000>,							\
+		      <0x0 0x48d43000 0x0 0x100>,							\
+		      <0x4c0 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 252) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 256) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 252) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x4c1 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x4c2 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its9 0x30000>;							\
+		msi-map = <0x0 &soc##its9 0x30000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie3_smmu 0x30000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie4_smmu: iommu@4c800000 {								\
+		compatible = "arm,smmu-v3";								\
+		reg = <0x0 0x4c800000 0x0 0xc0000>;							\
+		interrupts = <GIC_SPI (spi_base + 327) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 328) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 330) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 332) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "eventq", "priq", "cmdq-sync", "gerror";				\
+		#iommu-cells = <1>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie4_p0: pcie@4d000000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x4d000000 0x0 0x400000>,							\
+		      <0x0 0x4cd40000 0x0 0x100>,							\
+		      <0x600 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 318) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 322) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 318) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x601 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x602 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its11 0x0>;								\
+		msi-map = <0x0 &soc##its11 0x0 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie4_smmu 0x0 0x10000>;						\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie4_p1: pcie@4d400000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x4d400000 0x0 0x400000>,							\
+		      <0x0 0x4cd41000 0x0 0x100>,							\
+		      <0x640 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 319) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 323) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 319) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x641 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x642 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its12 0x10000>;							\
+		msi-map = <0x0 &soc##its12 0x10000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie4_smmu 0x10000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie4_p2: pcie@4d800000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x4d800000 0x0 0x400000>,							\
+		      <0x0 0x4cd42000 0x0 0x100>,							\
+		      <0x680 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 320) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 324) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 320) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x681 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x682 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its13 0x20000>;							\
+		msi-map = <0x0 &soc##its13 0x20000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie4_smmu 0x20000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pcie4_p3: pcie@4dc00000 {									\
+		compatible = "baikal,bs1000-pcie";							\
+		reg = <0x0 0x4dc00000 0x0 0x400000>,							\
+		      <0x0 0x4cd43000 0x0 0x100>,							\
+		      <0x6c0 0x00000000 0x0 0x10000000>;						\
+		reg-names = "dbi", "apb", "config";							\
+		device_type = "pci";									\
+		bus-range = <0x0 0xff>;									\
+		interrupts = <GIC_SPI (spi_base + 321) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 325) IRQ_TYPE_LEVEL_HIGH>;				\
+		interrupt-names = "intr", "msi";							\
+		interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI (spi_base + 321) IRQ_TYPE_LEVEL_HIGH>;	\
+		#interrupt-cells = <1>;									\
+		#address-cells = <3>;									\
+		#size-cells = <2>;									\
+		ranges = <0x81000000 0x0 0x00000000 0x6c1 0x00000000 0x0 0x100000>,			\
+			 <0x82000000 0x0 0x40000000 0x6c2 0x00000000 0x0 0x40000000>;			\
+		num-viewport = <4>;									\
+		msi-parent = <&soc##its14 0x30000>;							\
+		msi-map = <0x0 &soc##its14 0x30000 0x10000>;						\
+		iommu-map = <0x0 &soc##pcie4_smmu 0x30000 0x10000>;					\
+		numa-node-id = <chip>;									\
+		cpu-addr-bits = <40>;									\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr0: memory-controller@53000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x53000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 358) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 356) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 355) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 352) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 354) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 353) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr1: memory-controller@57000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x57000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 375) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 373) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 372) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 369) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 371) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 370) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr2: memory-controller@5b000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x5b000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 392) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 390) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 389) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 386) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 388) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 387) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr3: memory-controller@63000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x63000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 409) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 407) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 406) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 403) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 405) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 404) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr4: memory-controller@67000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x67000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 426) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 424) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 423) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 420) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 422) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 421) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##ddr5: memory-controller@6b000000 {								\
+		compatible = "baikal,bs1000-edac-mc";							\
+		reg = <0x0 0x6b000000 0x0 0x10000>;							\
+		interrupts = <GIC_SPI (spi_base + 443) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 441) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 440) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 437) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 439) IRQ_TYPE_LEVEL_HIGH>,				\
+			     <GIC_SPI (spi_base + 438) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##pvt_cluster0: pvt@04030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x4030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster1: pvt@8030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x8030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster2: pvt@c030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0xc030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster3: pvt@10030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x10030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster4: pvt@14030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x14030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster5: pvt@18030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x18030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster6: pvt@1c030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x1c030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster7: pvt@20030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x20030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster8: pvt@24030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x24030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster9: pvt@28030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x28030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster10: pvt@2c030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x2c030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_cluster11: pvt@30030000 {								\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x30030000 0x0 0x1000>;							\
+		status = "disabled";									\
+	};												\
+	soc##pvt_pcie0: pvt@38030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x38030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 163) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_pcie1: pvt@3c030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x3c030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 206) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_pcie2: pvt@44030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x44030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 120) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_pcie3: pvt@48030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x48030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 275) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_pcie4: pvt@4c030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x4c030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 344) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr0: pvt@50030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x50030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 363) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr1: pvt@54030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x54030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 380) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr2: pvt@58030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x58030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 397) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr3: pvt@60030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x60030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 414) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr4: pvt@64030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x64030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 431) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+	soc##pvt_ddr5: pvt@68030000 {									\
+		compatible = "baikal,bs1000-pvt";							\
+		reg = <0x0 0x68030000 0x0 0x1000>;							\
+		interrupts = <GIC_SPI (spi_base + 448) IRQ_TYPE_LEVEL_HIGH>;				\
+		status = "disabled";									\
+	};												\
+													\
+	soc##mux: mux-controller {									\
+		compatible = "baikal,bs1000-lsp-mux";							\
+		#address-cells = <2>;									\
+		#size-cells = <2>;									\
+		ranges;											\
+		#mux-control-cells = <1>;								\
+		numa-node-id = <chip>;									\
+		status = "disabled";									\
+													\
+		soc##qspi2: spi@c30000 {								\
+			compatible = "snps,dw-apb-ssi";							\
+			reg = <0x0 0xc30000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			interrupts = <GIC_SPI (spi_base + 64) IRQ_TYPE_LEVEL_HIGH>;			\
+			clocks = <&spi_clk>;								\
+		};											\
+													\
+		soc##espi: spi@c40000 {									\
+			compatible = "baikal,bs1000-espi";						\
+			reg = <0x0 0xc40000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			interrupts = <GIC_SPI (spi_base + 70) IRQ_TYPE_LEVEL_HIGH>;			\
+			clocks = <&spi_clk>;								\
+		};											\
+													\
+		soc##gpio16: gpio@c60000 {								\
+			compatible = "snps,dw-apb-gpio";						\
+			reg = <0x0 0xc60000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			clocks = <&gpio_clk>;								\
+													\
+			soc##portb: gpio-controller@0 {							\
+				compatible = "snps,dw-apb-gpio-port";					\
+				gpio-controller;							\
+				#gpio-cells = <2>;							\
+				ngpios = <16>;								\
+				reg = <0>;								\
+				interrupt-controller;							\
+				#interrupt-cells = <2>;							\
+				interrupts = <GIC_SPI (spi_base + 51) IRQ_TYPE_LEVEL_HIGH>;		\
+			};										\
+		};											\
+													\
+		soc##gpio8_1: gpio@c70000 {								\
+			compatible = "snps,dw-apb-gpio";						\
+			reg = <0x0 0xc70000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			clocks = <&gpio_clk>;								\
+													\
+			soc##portc: gpio-controller@0 {							\
+				compatible = "snps,dw-apb-gpio-port";					\
+				gpio-controller;							\
+				#gpio-cells = <2>;							\
+				ngpios = <8>;								\
+				reg = <0>;								\
+				interrupt-controller;							\
+				#interrupt-cells = <2>;							\
+				interrupts = <GIC_SPI (spi_base + 52) IRQ_TYPE_LEVEL_HIGH>;		\
+			};										\
+		};											\
+													\
+		soc##gpio8_2: gpio@c80000 {								\
+			compatible = "snps,dw-apb-gpio";						\
+			reg = <0x0 0xc80000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			clocks = <&gpio_clk>;								\
+													\
+			soc##portd: gpio-controller@0 {							\
+				compatible = "snps,dw-apb-gpio-port";					\
+				gpio-controller;							\
+				#gpio-cells = <2>;							\
+				ngpios = <8>;								\
+				reg = <0>;								\
+				interrupt-controller;							\
+				#interrupt-cells = <2>;							\
+				interrupts = <GIC_SPI (spi_base + 53) IRQ_TYPE_LEVEL_HIGH>;		\
+			};										\
+		};											\
+													\
+		soc##i2c5: i2c@cc0000 {									\
+			compatible = "snps,designware-i2c";						\
+			reg = <0x0 0xcc0000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			interrupts = <GIC_SPI (spi_base + 68) IRQ_TYPE_LEVEL_HIGH>;			\
+			i2c-sda-hold-time-ns = <500>;							\
+			clock-frequency = <400000>;							\
+			clocks = <&i2c_clk>;								\
+			clock-names = "ref";								\
+		};											\
+													\
+		soc##i2c6: i2c@cd0000 {									\
+			compatible = "snps,designware-i2c";						\
+			reg = <0x0 0xcd0000 0x0 0x1000>;						\
+			#address-cells = <1>;								\
+			#size-cells = <0>;								\
+			interrupts = <GIC_SPI (spi_base + 69) IRQ_TYPE_LEVEL_HIGH>;			\
+			i2c-sda-hold-time-ns = <500>;							\
+			clock-frequency = <400000>;							\
+			clocks = <&i2c_clk>;								\
+			clock-names = "ref";								\
+		};											\
+													\
+		soc##uart_s: serial@e00000 {								\
+			compatible = "snps,dw-apb-uart";						\
+			reg = <0x0 0xe00000 0x0 0x100>;							\
+			interrupts = <GIC_SPI (spi_base + 60) IRQ_TYPE_LEVEL_HIGH>;			\
+			reg-shift = <2>;								\
+			reg-io-width = <4>;								\
+			clocks = <&uart_clk>;								\
+			clock-names = "baudclk";							\
+		};											\
+	};												\
+													\
+	soc##mux0: mux0 {										\
+		compatible = "baikal,bs1000-lsp-mux-channel";						\
+		mux-controls = <&soc##mux 0>;								\
+		mux-state0 = <&soc##gpio8_1>;								\
+		mux-state1 = <&soc##uart_s &soc##i2c5 &soc##i2c6>;					\
+		status = "disabled";									\
+	};												\
+													\
+	soc##mux1: mux1 {										\
+		compatible = "baikal,bs1000-lsp-mux-channel";						\
+		mux-controls = <&soc##mux 1>;								\
+		mux-state0 = <&soc##gpio8_2>;								\
+		mux-state1 = <&soc##qspi2>;								\
+		status = "disabled";									\
+	};												\
+													\
+	soc##mux2: mux2 {										\
+		compatible = "baikal,bs1000-lsp-mux-channel";						\
+		mux-controls = <&soc##mux 2>;								\
+		mux-state0 = <&soc##gpio16>;								\
+		mux-state1 = <&soc##espi>;								\
+		status = "disabled";									\
 	}
 
 / {
@@ -81,79 +1132,17 @@
 		method = "smc";
 	};
 
-	cpus {
-		#address-cells = <2>;
-		#size-cells = <0>;
+	pmu {
+		compatible = "arm,cortex-a75-pmu", "arm,armv8-pmuv3";
+		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
+	};
 
-		cpu-map {
-			CA75_CLUSTER(0,  0, 1, 2, 3 );
-			CA75_CLUSTER(1,  4, 5, 6, 7 );
-			CA75_CLUSTER(2,  8, 9, 10,11);
-			CA75_CLUSTER(3,  12,13,14,15);
-			CA75_CLUSTER(4,  16,17,18,19);
-			CA75_CLUSTER(5,  20,21,22,23);
-			CA75_CLUSTER(6,  24,25,26,27);
-			CA75_CLUSTER(7,  28,29,30,31);
-			CA75_CLUSTER(8,  32,33,34,35);
-			CA75_CLUSTER(9,  36,37,38,39);
-			CA75_CLUSTER(10, 40,41,42,43);
-			CA75_CLUSTER(11, 44,45,46,47);
-		};
-
-		CA75_CPU(0,0,0);
-		CA75_CPU(1,0,100);
-		CA75_CPU(2,0,200);
-		CA75_CPU(3,0,300);
-		CA75_CPU(4,1,10000);
-		CA75_CPU(5,1,10100);
-		CA75_CPU(6,1,10200);
-		CA75_CPU(7,1,10300);
-		CA75_CPU(8,2,20000);
-		CA75_CPU(9,2,20100);
-		CA75_CPU(10,2,20200);
-		CA75_CPU(11,2,20300);
-		CA75_CPU(12,3,30000);
-		CA75_CPU(13,3,30100);
-		CA75_CPU(14,3,30200);
-		CA75_CPU(15,3,30300);
-		CA75_CPU(16,4,40000);
-		CA75_CPU(17,4,40100);
-		CA75_CPU(18,4,40200);
-		CA75_CPU(19,4,40300);
-		CA75_CPU(20,5,50000);
-		CA75_CPU(21,5,50100);
-		CA75_CPU(22,5,50200);
-		CA75_CPU(23,5,50300);
-		CA75_CPU(24,6,60000);
-		CA75_CPU(25,6,60100);
-		CA75_CPU(26,6,60200);
-		CA75_CPU(27,6,60300);
-		CA75_CPU(28,7,70000);
-		CA75_CPU(29,7,70100);
-		CA75_CPU(30,7,70200);
-		CA75_CPU(31,7,70300);
-		CA75_CPU(32,8,80000);
-		CA75_CPU(33,8,80100);
-		CA75_CPU(34,8,80200);
-		CA75_CPU(35,8,80300);
-		CA75_CPU(36,9,90000);
-		CA75_CPU(37,9,90100);
-		CA75_CPU(38,9,90200);
-		CA75_CPU(39,9,90300);
-		CA75_CPU(40,10,a0000);
-		CA75_CPU(41,10,a0100);
-		CA75_CPU(42,10,a0200);
-		CA75_CPU(43,10,a0300);
-		CA75_CPU(44,11,b0000);
-		CA75_CPU(45,11,b0100);
-		CA75_CPU(46,11,b0200);
-		CA75_CPU(47,11,b0300);
-
-		l4: l4-cache {
-			cache-size = <0x2000000>;
-			cache-unified;
-			cache-level = <4>;
-		};
+	timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	cpu_opp_table: opp_table {
@@ -172,17 +1161,81 @@
 		};
 	};
 
-	pmu {
-		compatible = "arm,cortex-a75-pmu", "arm,armv8-pmuv3";
-		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
-	};
+	cpus {
+		#address-cells = <2>;
+		#size-cells = <0>;
 
-	timer {
-		compatible = "arm,armv8-timer";
-		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
+		cpu-map {
+			socket0 {
+				CA75_CLUSTER(,0,0,1,2,3);
+				CA75_CLUSTER(,1,4,5,6,7);
+				CA75_CLUSTER(,2,8,9,10,11);
+				CA75_CLUSTER(,3,12,13,14,15);
+				CA75_CLUSTER(,4,16,17,18,19);
+				CA75_CLUSTER(,5,20,21,22,23);
+				CA75_CLUSTER(,6,24,25,26,27);
+				CA75_CLUSTER(,7,28,29,30,31);
+				CA75_CLUSTER(,8,32,33,34,35);
+				CA75_CLUSTER(,9,36,37,38,39);
+				CA75_CLUSTER(,a,40,41,42,43);
+				CA75_CLUSTER(,b,44,45,46,47);
+
+				l4: l4-cache {
+					cache-size = <0x2000000>;
+					cache-unified;
+					cache-level = <4>;
+				};
+			};
+		};
+
+		CA75_CPU(,,0,0,0);
+		CA75_CPU(,,0,1,100);
+		CA75_CPU(,,0,2,200);
+		CA75_CPU(,,0,3,300);
+		CA75_CPU(,,1,4,10000);
+		CA75_CPU(,,1,5,10100);
+		CA75_CPU(,,1,6,10200);
+		CA75_CPU(,,1,7,10300);
+		CA75_CPU(,,2,8,20000);
+		CA75_CPU(,,2,9,20100);
+		CA75_CPU(,,2,10,20200);
+		CA75_CPU(,,2,11,20300);
+		CA75_CPU(,,3,12,30000);
+		CA75_CPU(,,3,13,30100);
+		CA75_CPU(,,3,14,30200);
+		CA75_CPU(,,3,15,30300);
+		CA75_CPU(,,4,16,40000);
+		CA75_CPU(,,4,17,40100);
+		CA75_CPU(,,4,18,40200);
+		CA75_CPU(,,4,19,40300);
+		CA75_CPU(,,5,20,50000);
+		CA75_CPU(,,5,21,50100);
+		CA75_CPU(,,5,22,50200);
+		CA75_CPU(,,5,23,50300);
+		CA75_CPU(,,6,24,60000);
+		CA75_CPU(,,6,25,60100);
+		CA75_CPU(,,6,26,60200);
+		CA75_CPU(,,6,27,60300);
+		CA75_CPU(,,7,28,70000);
+		CA75_CPU(,,7,29,70100);
+		CA75_CPU(,,7,30,70200);
+		CA75_CPU(,,7,31,70300);
+		CA75_CPU(,,8,32,80000);
+		CA75_CPU(,,8,33,80100);
+		CA75_CPU(,,8,34,80200);
+		CA75_CPU(,,8,35,80300);
+		CA75_CPU(,,9,36,90000);
+		CA75_CPU(,,9,37,90100);
+		CA75_CPU(,,9,38,90200);
+		CA75_CPU(,,9,39,90300);
+		CA75_CPU(,,a,40,a0000);
+		CA75_CPU(,,a,41,a0100);
+		CA75_CPU(,,a,42,a0200);
+		CA75_CPU(,,a,43,a0300);
+		CA75_CPU(,,b,44,b0000);
+		CA75_CPU(,,b,45,b0100);
+		CA75_CPU(,,b,46,b0200);
+		CA75_CPU(,,b,47,b0300);
 	};
 
 	soc {
@@ -190,214 +1243,12 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
-
-		ohci: usb@a00000 {
-			compatible = "generic-ohci";
-			reg = <0x0 0xa00000 0x0 0x1000>;
-			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
-			dma-coherent;
-			status = "disabled";
-		};
-
-		ehci: usb@a10000 {
-			compatible = "generic-ehci";
-			reg = <0x0 0xa10000 0x0 0x1000>;
-			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
-			dma-coherent;
-			status = "disabled";
-		};
-
-		gmac0: ethernet@a20000 {
-			compatible = "baikal,bs1000-gmac";
-			reg = <0x0 0xa20000 0x0 0x10000>;
-			interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "macirq";
-			clocks = <&cmu_sc_1 9>, <&cmu_sc_2 1>, <&cmu_sc_2 2>;
-			clock-names = "stmmaceth", "ptp_ref", "tx2_clk";
-			dma-coherent;
-			status = "disabled";
-
-			mdio0: mdio {
-				compatible = "snps,dwmac-mdio";
-				#address-cells = <1>;
-				#size-cells = <0>;
-			};
-		};
-
-		gmac1: ethernet@a30000 {
-			compatible = "baikal,bs1000-gmac";
-			reg = <0x0 0xa30000 0x0 0x10000>;
-			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "macirq";
-			clocks = <&cmu_sc_1 11>, <&cmu_sc_2 3>, <&cmu_sc_2 4>;
-			clock-names = "stmmaceth", "ptp_ref", "tx2_clk";
-			dma-coherent;
-			status = "disabled";
-
-			mdio1: mdio {
-				compatible = "snps,dwmac-mdio";
-				#address-cells = <1>;
-				#size-cells = <0>;
-			};
-		};
-
-		uart_a1: serial@c00000 {
-			compatible = "arm,pl011", "arm,primecell";
-			reg = <0x0 0xc00000 0x0 0x1000>;
-			interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&uart1_clk>, <&apb_clk>;
-			// clocks = <&cmu_sc_1 18>, <&cmu_sc_1 15>; // "lsp_uart_arm1", "lsp_apb"
-			clock-names = "uartclk", "apb_pclk";
-			status = "disabled";
-		};
-
-		uart_a2: serial@c10000 {
-			compatible = "arm,pl011", "arm,primecell";
-			reg = <0x0 0xc10000 0x0 0x1000>;
-			interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&uart2_clk>, <&apb_clk>;
-			// clocks = <&cmu_sc_1 19>, <&cmu_sc_1 15>; // "lsp_uart_arm2", "lsp_apb"
-			clock-names = "uartclk", "apb_pclk";
-			status = "disabled";
-		};
-
-		qspi1: spi@c20000 {
-			compatible = "snps,dw-apb-ssi";
-			reg = <0x0 0xc20000 0x0 0x1000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			interrupts = <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&spi_clk>;
-			// clocks = <&cmu_sc_1 20>; // "lsp_spi1"
-			status = "disabled";
-		};
-
-		gpio32: gpio@c50000 {
-			compatible = "snps,dw-apb-gpio";
-			reg = <0x0 0xc50000 0x0 0x1000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			clocks = <&gpio_clk>;
-			// clocks = <&cmu_sc_1 16>; // "lsp_gpio_x16"
-			status = "disabled";
-
-			porta: gpio-controller@0 {
-				compatible = "snps,dw-apb-gpio-port";
-				gpio-controller;
-				#gpio-cells = <2>;
-				ngpios = <32>;
-				reg = <0>;
-				interrupt-controller;
-				#interrupt-cells = <2>;
-				interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
-			};
-		};
-
-		i2c2: i2c@c90000 {
-			compatible = "snps,designware-i2c";
-			reg = <0x0 0xc90000 0x0 0x1000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-			i2c-sda-hold-time-ns = <500>;
-			clock-frequency = <400000>;
-			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 23>; // "lsp_smbus_i2c2"
-			clock-names = "ref";
-			status = "disabled";
-		};
-
-		i2c3: i2c@ca0000 {
-			compatible = "snps,designware-i2c";
-			reg = <0x0 0xca0000 0x0 0x1000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
-			i2c-sda-hold-time-ns = <500>;
-			clock-frequency = <400000>;
-			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 24>; // "lsp_smbus_i2c3"
-			clock-names = "ref";
-			status = "disabled";
-		};
-
-		i2c4: i2c@cb0000 {
-			compatible = "snps,designware-i2c";
-			reg = <0x0 0xcb0000 0x0 0x1000>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
-			i2c-sda-hold-time-ns = <500>;
-			clock-frequency = <400000>;
-			clocks = <&i2c_clk>;
-			// clocks = <&cmu_sc_1 25>; // "lsp_smbus_i2c4"
-			clock-names = "ref";
-			status = "disabled";
-		};
-
-		wdt: watchdog@ce0000 {
-			compatible = "snps,dw-wdt";
-			reg = <0x0 0xce0000 0x0 0x1000>;
-			interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
-			clocks = <&wdt_clk 0>;
-			// clocks = <&cmu_sc_1 32>; // "lsp_wdt_x16"
-			clock-names = "tclk";
-			snps,watchdog-tops = <0x000000ff 0x000001ff 0x000003ff 0x000007ff
-					      0x0000ffff 0x0001ffff 0x0003ffff 0x0007ffff
-					      0x000fffff 0x001fffff 0x003fffff 0x007fffff
-					      0x00ffffff 0x01ffffff 0x03ffffff 0x07ffffff>;
-			status = "disabled";
-		};
-
-		timer1: timer@cf0000 {
-			compatible = "snps,dw-apb-timer";
-			reg = <0x0 0xcf0000 0x0 0x14>;
-			interrupts = <GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>;
-			clock-frequency = <50000000>;
-			clocks = <&timer1_clk>;
-			// clocks = <&cmu_sc_1 28>; // "lsp_timer1"
-			clock-names = "timer";
-			status = "disabled";
-		};
-
-		timer2: timer@cf0014 {
-			compatible = "snps,dw-apb-timer";
-			reg = <0x0 0xcf0014 0x0 0x14>;
-			interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
-			clock-frequency = <50000000>;
-			clocks = <&timer2_clk>;
-			// clocks = <&cmu_sc_1 29>; // "lsp_timer2"
-			clock-names = "timer";
-			status = "disabled";
-		};
-
-		timer3: timer@cf0028 {
-			compatible = "snps,dw-apb-timer";
-			reg = <0x0 0xcf0028 0x0 0x14>;
-			interrupts = <GIC_SPI 57 IRQ_TYPE_LEVEL_HIGH>;
-			clock-frequency = <50000000>;
-			clocks = <&timer3_clk>;
-			// clocks = <&cmu_sc_1 30>; // "lsp_timer3"
-			clock-names = "timer";
-			status = "disabled";
-		};
-
-		timer4: timer@cf003c {
-			compatible = "snps,dw-apb-timer";
-			reg = <0x0 0xcf003c 0x0 0x14>;
-			interrupts = <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>;
-			clock-frequency = <50000000>;
-			clocks = <&timer4_clk>;
-			//clocks = <&cmu_sc_1 31>; // "lsp_timer4"
-			clock-names = "timer";
-			status = "disabled";
-		};
+		numa-node-id = <0x0>;
 
 		gic: interrupt-controller@1000000 {
 			compatible = "arm,gic-v3";
 			reg = <0x0 0x1000000 0x0 0x10000>,  /* GICD */
 			      <0x0 0x1240000 0x0 0x600000>; /* GICR */
-			      /* TODO: optional ranges - GICC, GICH, GICV */
 			#interrupt-cells = <3>;
 			#address-cells = <2>;
 			#size-cells = <2>;
@@ -409,785 +1260,117 @@
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1040000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its1: interrupt-controller@1060000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1060000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its2: interrupt-controller@1080000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1080000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its3: interrupt-controller@10a0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x10a0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its4: interrupt-controller@10c0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x10c0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its5: interrupt-controller@10e0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x10e0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its6: interrupt-controller@1100000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1100000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its7: interrupt-controller@1120000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1120000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its8: interrupt-controller@1140000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1140000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its9: interrupt-controller@1160000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1160000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its10: interrupt-controller@1180000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1180000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its11: interrupt-controller@11a0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x11a0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its12: interrupt-controller@11c0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x11c0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its13: interrupt-controller@11e0000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x11e0000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its14: interrupt-controller@1200000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1200000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 			its15: interrupt-controller@1220000 {
 				compatible = "arm,gic-v3-its";
 				reg = <0x0 0x1220000 0x0 0x20000>;
 				msi-controller;
+				#msi-cells = <1>;
+				numa-node-id = <0>;
 			};
 		};
 
-		pcie0_p0: pcie@39000000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x39000000 0x0 0x400000>,
-			      <0x00000000 0x38d40000 0x0 0x100>,
-			      <0x00000700 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 145 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its0 0x0 0x10000>;
-			status = "disabled";
-		};
-
-		pcie0_p0_ep: pcie-ep@39000000 {
-			compatible = "baikal,bs1000-pcie-ep";
-			reg = <0x00000000 0x39000000 0x0 0x400000>,
-			      <0x00000000 0x38d40000 0x0 0x100>,
-			      <0x00000700 0x00000000 0x1 0x00000000>;
-			reg-names = "dbi", "apb", "addr_space";
-			num-ib-windows = <4>;
-			num-ob-windows = <4>;
-			status = "disabled";
-		};
-
-		pcie0_p1: pcie@39400000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x39400000 0x0 0x400000>,
-			      <0x00000000 0x38d41000 0x0 0x100>,
-			      <0x00000740 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x741 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x742 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its0 0x10000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie1_p0: pcie@3d000000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x3d000000 0x0 0x400000>,
-			      <0x00000000 0x3cd40000 0x0 0x100>,
-			      <0x00000780 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x781 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x782 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its2 0x0 0x10000>;
-			status = "disabled";
-		};
-
-		pcie1_p0_ep: pcie-ep@3d000000 {
-			compatible = "baikal,bs1000-pcie-ep";
-			reg = <0x00000000 0x3d000000 0x0 0x400000>,
-			      <0x00000000 0x3cd40000 0x0 0x100>,
-			      <0x00000780 0x00000000 0x1 0x00000000>;
-			reg-names = "dbi", "apb", "addr_space";
-			num-ib-windows = <4>;
-			num-ob-windows = <4>;
-			status = "disabled";
-		};
-
-		pcie1_p1: pcie@3d400000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x3d400000 0x0 0x400000>,
-			      <0x00000000 0x3cd41000 0x0 0x100>,
-			      <0x000007c0 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x7c1 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x7c2 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its2 0x10000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie2_p0: pcie@45000000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x45000000 0x0 0x400000>,
-			      <0x00000000 0x44d40000 0x0 0x100>,
-			      <0x00000500 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x501 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its4 0x0 0x10000>;
-			status = "disabled";
-		};
-
-		pcie2_p0_ep: pcie-ep@45000000 {
-			compatible = "baikal,bs1000-pcie-ep";
-			reg = <0x00000000 0x45000000 0x0 0x400000>,
-			      <0x00000000 0x44d40000 0x0 0x100>,
-			      <0x00000500 0x00000000 0x1 0x00000000>;
-			reg-names = "dbi", "apb", "addr_space";
-			num-ib-windows = <4>;
-			num-ob-windows = <4>;
-			status = "disabled";
-		};
-
-		pcie2_p1: pcie@45400000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x45400000 0x0 0x400000>,
-			      <0x00000000 0x44d41000 0x0 0x100>,
-			      <0x00000540 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x541 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x542 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its4 0x10000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie3_p0: pcie@49000000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x49000000 0x0 0x400000>,
-			      <0x00000000 0x48d40000 0x0 0x100>,
-			      <0x00000400 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 253 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 249 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x401 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x402 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its6 0x0 0x10000>;
-			status = "disabled";
-		};
-
-		pcie3_p1: pcie@49400000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x49400000 0x0 0x400000>,
-			      <0x00000000 0x48d41000 0x0 0x100>,
-			      <0x00000440 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 254 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 250 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x441 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x442 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its7 0x10000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie3_p2: pcie@49800000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x49800000 0x0 0x400000>,
-			      <0x00000000 0x48d42000 0x0 0x100>,
-			      <0x00000480 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 255 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x481 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x482 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its8 0x20000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie3_p3: pcie@49c00000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x49c00000 0x0 0x400000>,
-			      <0x00000000 0x48d43000 0x0 0x100>,
-			      <0x000004c0 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 256 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x4c1 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x4c2 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its9 0x30000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie4_p0: pcie@4d000000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x4d000000 0x0 0x400000>,
-			      <0x00000000 0x4cd40000 0x0 0x100>,
-			      <0x00000600 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 322 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 318 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x601 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x602 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its11 0x0 0x10000>;
-			status = "disabled";
-		};
-
-		pcie4_p1: pcie@4d400000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x4d400000 0x0 0x400000>,
-			      <0x00000000 0x4cd41000 0x0 0x100>,
-			      <0x00000640 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 323 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 319 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x641 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x642 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its12 0x10000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie4_p2: pcie@4d800000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x4d800000 0x0 0x400000>,
-			      <0x00000000 0x4cd42000 0x0 0x100>,
-			      <0x00000680 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 324 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 320 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x681 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x682 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its13 0x20000 0x10000>;
-			status = "disabled";
-		};
-
-		pcie4_p3: pcie@4dc00000 {
-			device_type = "pci";
-			compatible = "baikal,bs1000-pcie";
-			reg = <0x00000000 0x4dc00000 0x0 0x400000>,
-			      <0x00000000 0x4cd43000 0x0 0x100>,
-			      <0x000006c0 0x00000000 0x0 0x10000000>;
-			reg-names = "dbi", "apb", "config";
-			bus-range = <0x0 0xff>;
-			interrupts = <GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>,
-				     <GIC_SPI 325 IRQ_TYPE_LEVEL_HIGH>;
-			interrupt-names = "intr", "msi";
-			interrupt-map = <0 0 0 1 &gic 0 0 GIC_SPI 321 IRQ_TYPE_LEVEL_HIGH>;
-			#interrupt-cells = <1>;
-			#address-cells = <3>;
-			#size-cells = <2>;
-			ranges = <0x81000000 0x0 0x00000000 0x6c1 0x00000000 0x0 0x100000>,
-				 <0x82000000 0x0 0x40000000 0x6c2 0x00000000 0x0 0x40000000>;
-			num-viewport = <4>;
-			msi-map = <0x0 &its14 0x30000 0x10000>;
-			status = "disabled";
-		};
-
-		ddr0: memory-controller@53000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x53000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 358 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 356 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 355 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 352 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 354 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 353 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_0 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		ddr1: memory-controller@57000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x57000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 375 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 373 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 372 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 369 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 371 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 370 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_1 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		ddr2: memory-controller@5b000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x5b000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 392 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 390 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 389 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 386 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 388 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 387 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_2 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		ddr3: memory-controller@63000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x63000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 409 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 407 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 406 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 403 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 405 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 404 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_3 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		ddr4: memory-controller@67000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x67000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 426 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 424 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 422 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_4 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		ddr5: memory-controller@6b000000 {
-			compatible = "baikal,bs1000-edac-mc";
-			reg = <0x0 0x6b000000 0x0 0x10000>;
-			interrupts = <GIC_SPI 443 IRQ_TYPE_LEVEL_HIGH>, /* dfi_alert_err */
-				     <GIC_SPI 441 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err */
-				     <GIC_SPI 440 IRQ_TYPE_LEVEL_HIGH>, /* ecc_uncorrected_err */
-				     <GIC_SPI 437 IRQ_TYPE_LEVEL_HIGH>, /* sbr_done */
-				     <GIC_SPI 439 IRQ_TYPE_LEVEL_HIGH>, /* ecc_corrected_err_fault */
-				     <GIC_SPI 438 IRQ_TYPE_LEVEL_HIGH>; /* ecc_uncorrected_err_fault */
-			// clocks = <&cmu_ddr_5 0>;
-			// clock-names = "apb_pclk";
-			status = "disabled";
-		};
-
-		pvt_cluster0: pvt@4030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x4030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster1: pvt@8030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x8030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster2: pvt@c030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0xc030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster3: pvt@10030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x10030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster4: pvt@14030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x14030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster5: pvt@18030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x18030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster6: pvt@1c030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x1c030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster7: pvt@20030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x20030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster8: pvt@24030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x24030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster9: pvt@28030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x28030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster10: pvt@2c030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x2c030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_cluster11: pvt@30030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x30030000 0x0 0x1000>;
-			status = "disabled";
-		};
-		pvt_pcie0: pvt@38030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x38030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_pcie1: pvt@3c030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x3c030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_pcie2: pvt@44030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x44030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_pcie3: pvt@48030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x48030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 275 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_pcie4: pvt@4c030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x4c030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 344 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr0: pvt@50030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x50030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 363 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr1: pvt@54030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x54030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 380 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr2: pvt@58030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x58030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 397 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr3: pvt@60030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x60030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 414 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr4: pvt@64030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x64030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 431 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-		pvt_ddr5: pvt@68030000 {
-			compatible = "baikal,bs1000-pvt";
-			reg = <0x0 0x68030000 0x0 0x1000>;
-			interrupts = <GIC_SPI 448 IRQ_TYPE_LEVEL_HIGH>;
-			status = "disabled";
-		};
-
-		mux: mux-controller {
-			compatible = "baikal,bs1000-lsp-mux";
-			#address-cells = <2>;
-			#size-cells = <2>;
-			ranges;
-			#mux-control-cells = <1>;
-			status = "disabled";
-
-			qspi2: spi@c30000 {
-				compatible = "snps,dw-apb-ssi";
-				reg = <0x0 0xc30000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&spi_clk>;
-				// clocks = <&cmu_sc_1 21>; // "lsp_spi2"
-			};
-
-			espi: spi@c40000 {
-				compatible = "baikal,bs1000-espi";
-				reg = <0x0 0xc40000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&spi_clk>;
-				// clocks = <&cmu_sc_1 22>; // "lsp_espi"
-			};
-
-			gpio16: gpio@c60000 {
-				compatible = "snps,dw-apb-gpio";
-				reg = <0x0 0xc60000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				clocks = <&gpio_clk>;
-				// clocks = <&cmu_sc_1 16>; // "lsp_gpio_x16"
-
-				portb: gpio-controller@0 {
-					compatible = "snps,dw-apb-gpio-port";
-					gpio-controller;
-					#gpio-cells = <2>;
-					ngpios = <16>;
-					reg = <0>;
-					interrupt-controller;
-					#interrupt-cells = <2>;
-					interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
-				};
-			};
-
-			gpio8_1: gpio@c70000 {
-				compatible = "snps,dw-apb-gpio";
-				reg = <0x0 0xc70000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				clocks = <&gpio_clk>;
-				// clocks = <&cmu_sc_1 16>; // "lsp_gpio_x16"
-
-				portc: gpio-controller@0 {
-					compatible = "snps,dw-apb-gpio-port";
-					gpio-controller;
-					#gpio-cells = <2>;
-					ngpios = <8>;
-					reg = <0>;
-					interrupt-controller;
-					#interrupt-cells = <2>;
-					interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
-				};
-			};
-
-			gpio8_2: gpio@c80000 {
-				compatible = "snps,dw-apb-gpio";
-				reg = <0x0 0xc80000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				clocks = <&gpio_clk>;
-				// clocks = <&cmu_sc_1 16>; // "lsp_gpio_x16"
-
-				portd: gpio-controller@0 {
-					compatible = "snps,dw-apb-gpio-port";
-					gpio-controller;
-					#gpio-cells = <2>;
-					ngpios = <8>;
-					reg = <0>;
-					interrupt-controller;
-					#interrupt-cells = <2>;
-					interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
-				};
-			};
-
-			i2c5: i2c@cc0000 {
-				compatible = "snps,designware-i2c";
-				reg = <0x0 0xcc0000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
-				i2c-sda-hold-time-ns = <500>;
-				clock-frequency = <400000>;
-				clocks = <&i2c_clk>;
-				// clocks = <&cmu_sc_1 26>; // "lsp_smbus_i2c5"
-				clock-names = "ref";
-			};
-
-			i2c6: i2c@cd0000 {
-				compatible = "snps,designware-i2c";
-				reg = <0x0 0xcd0000 0x0 0x1000>;
-				#address-cells = <1>;
-				#size-cells = <0>;
-				interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
-				i2c-sda-hold-time-ns = <500>;
-				clock-frequency = <400000>;
-				clocks = <&i2c_clk>;
-				// clocks = <&cmu_sc_1 27>; // "lsp_smbus_i2c6"
-				clock-names = "ref";
-			};
-
-			uart_s: serial@e00000 {
-				compatible = "snps,dw-apb-uart";
-				reg = <0x0 0xe00000 0x0 0x100>;
-				interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
-				reg-shift = <2>;
-				reg-io-width = <4>;
-				clocks = <&uart_clk>, <&apb_clk>;
-				// clocks = <&cmu_sc_1 17>, <&cmu_sc_1 15>; // "lsp_uart", "lsp_apb"
-				clock-names = "baudclk", "apb_pclk";
-			};
-		};
-
-		mux0: mux0 {
-			compatible = "baikal,bs1000-lsp-mux-channel";
-			mux-controls = <&mux 0>;
-			mux-state0 = <&gpio8_1>;
-			mux-state1 = <&uart_s &i2c5 &i2c6>;
-			status = "disabled";
-		};
-
-		mux1: mux1 {
-			compatible = "baikal,bs1000-lsp-mux-channel";
-			mux-controls = <&mux 1>;
-			mux-state0 = <&gpio8_2>;
-			mux-state1 = <&qspi2>;
-			status = "disabled";
-		};
-
-		mux2: mux2 {
-			compatible = "baikal,bs1000-lsp-mux-channel";
-			mux-controls = <&mux 2>;
-			mux-state0 = <&gpio16>;
-			mux-state1 = <&espi>;
-			status = "disabled";
-		};
+		SOC(,0,0);
 	};
 };
 

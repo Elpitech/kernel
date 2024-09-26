@@ -1,363 +1,370 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Device tree include file for BE-M1000 SoC Coresight subsystem 
+ * Device tree include file for BE-S1000 SoC CoreSight subsystem
  * Copyright (C) 2023 Baikal Electronics, JSC
  */
 
 #include <dt-bindings/arm/coresight-cti-dt.h>
 
-#define CA75_DEBUG(cl, c, base, n)						\
-	debug##c: debug@##base##n##10000 {					\
-		compatible = "arm,coresight-cpu-debug", "arm,primecell";	\
-		reg = <0x0 0x##base##n##10000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>;				\
-		clock-names = "apb_pclk";					\
-		cpu = <&cpu##c>;						\
-	};									\
-										\
-	etm##c: etm@##base##n##40000 {						\
-		compatible = "arm,coresight-etm4x", "arm,primecell";		\
-		reg = <0x0 0x##base##n##40000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>, <&cluster##cl##_cmu0 3>;	\
-		clock-names = "apb_pclk", "atclk";				\
-		cpu = <&cpu##c>;						\
-										\
-		out-ports {							\
-			port {							\
-				etm##c##_out_port: endpoint {			\
-					remote-endpoint =			\
-						<&funnel##cl##_in_port##n>;	\
-				};						\
-			};							\
-		};								\
-	};									\
-										\
-	cti##cl##_##n: cti@##base##n##20000 {					\
-		compatible = "arm,coresight-cti-v8-arch", "arm,coresight-cti",	\
-			     "arm,primecell";					\
-		reg = <0x0 0x##base##n##20000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>;				\
-		clock-names = "apb_pclk";					\
-		cpu = <&cpu##c>;						\
-		arm,cs-dev-assoc = <&etm##c>;					\
+#define CA75_DEBUG(soc, cl, c, base, n)								\
+	debug##c: debug@base##n##10000 {							\
+		compatible = "arm,coresight-cpu-debug", "arm,primecell";			\
+		reg = <0x0 0x##base##n##10000 0x0 0x1000>;					\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;						\
+		clock-names = "apb_pclk";							\
+		cpu = <&cpu##c>;								\
+	};											\
+												\
+	etm##c: etm@base##n##40000 {								\
+		compatible = "arm,coresight-etm4x", "arm,primecell";				\
+		reg = <0x0 0x##base##n##40000 0x0 0x1000>;					\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;						\
+		clock-names = "apb_pclk";							\
+		cpu = <&cpu##c>;								\
+												\
+		out-ports {									\
+			port {									\
+				etm##c##_out_port: endpoint {					\
+					remote-endpoint =					\
+						<&soc##funnel##cl##_in_port##n>;		\
+				};								\
+			};									\
+		};										\
+	};											\
+												\
+	cti__##c: cti@base##n##20000 {								\
+		compatible = "arm,coresight-cti-v8-arch", "arm,coresight-cti",			\
+			     "arm,primecell";							\
+		reg = <0x0 0x##base##n##20000 0x0 0x1000>;					\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;						\
+		clock-names = "apb_pclk";							\
+		cpu = <&cpu##c>;								\
+		arm,cs-dev-assoc = <&etm##c>;							\
 	}
 
-#define CA75_CS(cl, c0, c1, c2, c3, cs_base, debug_base)			\
-	CA75_DEBUG(cl,c0,debug_base,0);						\
-	CA75_DEBUG(cl,c1,debug_base,1);						\
-	CA75_DEBUG(cl,c2,debug_base,2);						\
-	CA75_DEBUG(cl,c3,debug_base,3);						\
-										\
-	funnel##cl: funnel@##cs_base##020000 {					\
-		compatible = "arm,coresight-dynamic-funnel", "arm,primecell";	\
-		reg = <0x0 0x##cs_base##020000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>, <&cluster##cl##_cmu0 3>;	\
-		clock-names = "apb_pclk", "atclk";				\
-										\
-		out-ports {							\
-			port {							\
-				funnel##cl##_out_port: endpoint {		\
-					remote-endpoint =			\
-						<&etb##cl##_in_port>;		\
-				};						\
-			};							\
-		};								\
-										\
-		in-ports {							\
-			#address-cells = <1>;					\
-			#size-cells = <0>;					\
-										\
-			port@0 {						\
-				reg = <0>;					\
-				funnel##cl##_in_port0: endpoint {		\
-					remote-endpoint =			\
-						<&etm##c0##_out_port>;		\
-				};						\
-			};							\
-										\
-			port@1 {						\
-				reg = <1>;					\
-				funnel##cl##_in_port1: endpoint {		\
-					remote-endpoint =			\
-						<&etm##c1##_out_port>;		\
-				};						\
-			};							\
-										\
-			port@2 {						\
-				reg = <2>;					\
-				funnel##cl##_in_port2: endpoint {		\
-					remote-endpoint =			\
-						<&etm##c2##_out_port>;		\
-				};						\
-			};							\
-										\
-			port@3 {						\
-				reg = <3>;					\
-				funnel##cl##_in_port3: endpoint {		\
-					remote-endpoint =			\
-						<&etm##c3##_out_port>;		\
-				};						\
-			};							\
-		};								\
-	};									\
-										\
-	etb##cl: etb@##cs_base##030000 {					\
-		compatible = "arm,coresight-tmc", "arm,primecell";		\
-		reg = <0x0 0x##cs_base##030000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>, <&cluster##cl##_cmu0 3>;	\
-		clock-names = "apb_pclk", "atclk";				\
-										\
-		in-ports {							\
-			port {							\
-				etb##cl##_in_port: endpoint {			\
-					remote-endpoint =			\
-						<&funnel##cl##_out_port>;	\
-				};						\
-			};							\
-		};								\
-	};									\
-										\
-	cti##cl: cti@##cs_base##010000 {					\
-		compatible = "arm,coresight-cti", "arm,primecell";		\
-		reg = <0x0 0x##cs_base##010000 0x0 0x1000>;			\
-		clocks = <&cluster##cl##_cmu0 2>;				\
-		clock-names = "apb_pclk";					\
-										\
-		#address-cells = <1>;						\
-		#size-cells = <0>;						\
-										\
-		trig-conns@0 {							\
-			reg = <0>;						\
-			arm,trig-in-sigs = <0 1 2>;				\
-			arm,trig-in-types = <SNK_ACQCOMP SNK_FULL		\
-					     SNK_FLUSHCOMP>;			\
-			arm,trig-out-sigs = <0 1>;				\
-			arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;		\
-			arm,cs-dev-assoc = <&etb##cl>;				\
-		};								\
-										\
-		trig-conns@1 {							\
-			reg = <1>;						\
-			arm,trig-out-sigs = <2>;				\
-			arm,trig-conn-name = "pmu_snapshot";			\
-		};								\
+#define CA75_CS(soc, cl, c0, c1, c2, c3, cs_base, debug_base)				\
+	CA75_DEBUG(soc,cl,c0,debug_base,0);						\
+	CA75_DEBUG(soc,cl,c1,debug_base,1);						\
+	CA75_DEBUG(soc,cl,c2,debug_base,2);						\
+	CA75_DEBUG(soc,cl,c3,debug_base,3);						\
+											\
+	soc##funnel##cl: funnel@cs_base##020000 {					\
+		compatible = "arm,coresight-dynamic-funnel", "arm,primecell";		\
+		reg = <0x0 0x##cs_base##020000 0x0 0x1000>;				\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;					\
+		clock-names = "apb_pclk";						\
+											\
+		out-ports {								\
+			port {								\
+				soc##funnel##cl##_out_port: endpoint {			\
+					remote-endpoint =				\
+						<&soc##etb##cl##_in_port>;		\
+				};							\
+			};								\
+		};									\
+											\
+		in-ports {								\
+			#address-cells = <1>;						\
+			#size-cells = <0>;						\
+											\
+			port@0 {							\
+				reg = <0>;						\
+				soc##funnel##cl##_in_port0: endpoint {			\
+					remote-endpoint =				\
+						<&etm##c0##_out_port>;			\
+				};							\
+			};								\
+											\
+			port@1 {							\
+				reg = <1>;						\
+				soc##funnel##cl##_in_port1: endpoint {			\
+					remote-endpoint =				\
+						<&etm##c1##_out_port>;			\
+				};							\
+			};								\
+											\
+			port@2 {							\
+				reg = <2>;						\
+				soc##funnel##cl##_in_port2: endpoint {			\
+					remote-endpoint =				\
+						<&etm##c2##_out_port>;			\
+				};							\
+			};								\
+											\
+			port@3 {							\
+				reg = <3>;						\
+				soc##funnel##cl##_in_port3: endpoint {			\
+					remote-endpoint =				\
+						<&etm##c3##_out_port>;			\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	soc##etb##cl: etb@cs_base##030000 {						\
+		compatible = "arm,coresight-tmc", "arm,primecell";			\
+		reg = <0x0 0x##cs_base##030000 0x0 0x1000>;				\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;					\
+		clock-names = "apb_pclk";						\
+											\
+		in-ports {								\
+			port {								\
+				soc##etb##cl##_in_port: endpoint {			\
+					remote-endpoint =				\
+						<&soc##funnel##cl##_out_port>;		\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	soc##cti_##cl: cti@cs_base##010000 {						\
+		compatible = "arm,coresight-cti", "arm,primecell";			\
+		reg = <0x0 0x##cs_base##010000 0x0 0x1000>;				\
+		clocks = <&soc##ca75_##cl##_cmu0 2>;					\
+		clock-names = "apb_pclk";						\
+											\
+		#address-cells = <1>;							\
+		#size-cells = <0>;							\
+											\
+		trig-conns@0 {								\
+			reg = <0>;							\
+			arm,trig-in-sigs = <0 1 2>;					\
+			arm,trig-in-types = <SNK_ACQCOMP SNK_FULL			\
+					     SNK_FLUSHCOMP>;				\
+			arm,trig-out-sigs = <0 1>;					\
+			arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;			\
+			arm,cs-dev-assoc = <&soc##etb##cl>;				\
+		};									\
+											\
+		trig-conns@1 {								\
+			reg = <1>;							\
+			arm,trig-out-sigs = <2>;					\
+			arm,trig-conn-name = "pmu_snapshot";				\
+		};									\
+	}
+
+#define SOC_CS(soc)									\
+	/* STM Block */									\
+											\
+	soc##etr: etr@2080000 {								\
+		compatible = "arm,coresight-tmc", "arm,primecell";			\
+		reg = <0x0 0x2080000 0x0 0x1000>;					\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		in-ports {								\
+			port {								\
+				soc##etr_in_port: endpoint {				\
+					remote-endpoint =				\
+						<&soc##etf_out_port>;			\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	soc##etf: etf@2070000 {								\
+		compatible = "arm,coresight-tmc", "arm,primecell";			\
+		reg = <0x0 0x2070000 0x0 0x1000>;					\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		out-ports {								\
+			port {								\
+				soc##etf_out_port: endpoint {				\
+					remote-endpoint =				\
+						<&soc##etr_in_port>;			\
+				};							\
+			};								\
+		};									\
+											\
+		in-ports {								\
+			port {								\
+				soc##etf_in_port: endpoint {				\
+					remote-endpoint =				\
+						<&soc##stm_out_port>;			\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	soc##stm: stm@2060000 {								\
+		compatible = "arm,coresight-stm", "arm,primecell";			\
+		reg = <0x0 0x2060000 0x0 0x1000>,					\
+		      <0x0 0x3000000 0x0 0x1000000>;					\
+		reg-names = "stm-base", "stm-stimulus-base";				\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		out-ports {								\
+			port {								\
+				soc##stm_out_port: endpoint {				\
+					remote-endpoint =				\
+						<&soc##etf_in_port>;			\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	/* CMN Block */									\
+											\
+	soc##funnel: funnel@2050000 {							\
+		compatible = "arm,coresight-dynamic-funnel",				\
+			     "arm,primecell";						\
+		reg = <0x0 0x2050000 0x0 0x1000>;					\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		out-ports {								\
+			port {								\
+				soc##funnel_out_port: endpoint {			\
+					remote-endpoint =				\
+						<&soc##etb_in_port>;			\
+				};							\
+			};								\
+		};									\
+											\
+		in-ports {								\
+			#address-cells = <1>;						\
+			#size-cells = <0>;						\
+											\
+			port@0 {							\
+				reg = <0>;						\
+				soc##funnel_in_port0: endpoint {			\
+				};							\
+			};								\
+											\
+			port@1 {							\
+				reg = <1>;						\
+				soc##funnel_in_port1: endpoint {			\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	soc##etb: etb@2040000 {								\
+		compatible = "arm,coresight-tmc", "arm,primecell";			\
+		reg = <0x0 0x2040000 0x0 0x1000>;					\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		in-ports {								\
+			port {								\
+				soc##etb_in_port: endpoint {				\
+					remote-endpoint =				\
+						<&soc##funnel_out_port>;		\
+				};							\
+			};								\
+		};									\
+	};										\
+											\
+	/* CTI */									\
+											\
+	soc##cti: cti@2010000 {								\
+		compatible = "arm,coresight-cti", "arm,primecell";			\
+		reg = <0x0 0x2010000 0x0 0x1000>;					\
+		clocks = <&soc##sc_cmu1 6>;						\
+		clock-names = "apb_pclk";						\
+											\
+		#address-cells = <1>;							\
+		#size-cells = <0>;							\
+											\
+		trig-conns@0 {								\
+			reg = <0>;							\
+			arm,trig-out-sigs = <0 1>;					\
+			arm,trig-out-types = <GEN_HALTREQ				\
+					      GEN_RESTARTREQ>;				\
+			arm,trig-conn-name = "tsgen";					\
+		};									\
+											\
+		trig-conns@1 {								\
+			reg = <1>;							\
+			arm,trig-in-sigs = <0 1 2>;					\
+			arm,trig-in-types = <SNK_FULL SNK_ACQCOMP			\
+					     SNK_FLUSHCOMP>;				\
+			arm,trig-out-sigs = <2 3>;					\
+			arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;			\
+			arm,cs-dev-assoc = <&soc##etb>;					\
+		};									\
+											\
+		trig-conns@2 {								\
+			reg = <2>;							\
+			arm,trig-in-sigs = <3 4>;					\
+			arm,trig-conn-name = "cmn_debug_watchtrig";			\
+		};									\
+											\
+		trig-conns@3 {								\
+			reg = <3>;							\
+			arm,trig-out-sigs = <4>;					\
+			arm,trig-conn-name = "cmn_pmu_snapshot";			\
+		};									\
+											\
+		trig-conns@4 {								\
+			reg = <4>;							\
+			arm,trig-in-sigs = <5 6 7>;					\
+			arm,trig-in-types = <SNK_ACQCOMP SNK_FULL			\
+					     SNK_FLUSHCOMP>;				\
+			arm,trig-out-sigs = <5 6>;					\
+			arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;			\
+			arm,cs-dev-assoc = <&soc##etf>;					\
+		};									\
+											\
+		trig-conns@5 {								\
+			reg = <5>;							\
+			arm,trig-in-sigs = <8 9 10>;					\
+			arm,trig-in-types = <SNK_ACQCOMP SNK_FULL			\
+					     SNK_FLUSHCOMP>;				\
+			arm,trig-out-sigs = <7 8>;					\
+			arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;			\
+			arm,cs-dev-assoc = <&soc##etr>;					\
+		};									\
+											\
+		trig-conns@6 {								\
+			reg = <6>;							\
+			arm,trig-in-sigs = <11 12 13 14>;				\
+			arm,trig-in-types = <STM_TOUT_SPTE STM_TOUT_SW			\
+					     STM_TOUT_HETE STM_ASYNCOUT>;		\
+			arm,trig-out-sigs = <9 10 11 12>;				\
+			arm,trig-out-types = <STM_HWEVENT STM_HWEVENT			\
+					      STM_HWEVENT STM_HWEVENT>;			\
+			arm,cs-dev-assoc = <&soc##stm>;					\
+		};									\
+											\
+		trig-conns@7 {								\
+			reg = <7>;							\
+			arm,trig-out-sigs = <13>;					\
+			arm,trig-conn-name = "dpeventstatus";				\
+		};									\
+											\
+		trig-conns@8 {								\
+			reg = <8>;							\
+			arm,trig-out-sigs = <14 15 16 17>;				\
+			arm,trig-out-types = <GEN_INTREQ GEN_INTREQ			\
+					      GEN_INTREQ GEN_INTREQ>;			\
+			arm,trig-conn-name = "cti_interrupt";				\
+		};									\
 	}
 
 / {
 	soc {
-		/* CA75 Blocks */
+		coresight {
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges;
 
-		CA75_CS(0,0,1,2,3,6,7);
-		CA75_CS(1,4,5,6,7,a,b);
-		CA75_CS(2,8,9,10,11,e,f);
-		CA75_CS(3,12,13,14,15,12,13);
-		CA75_CS(4,16,17,18,19,16,17);
-		CA75_CS(5,20,21,22,23,1a,1b);
-		CA75_CS(6,24,25,26,27,1e,1f);
-		CA75_CS(7,28,29,30,31,22,23);
-		CA75_CS(8,32,33,34,35,26,27);
-		CA75_CS(9,36,37,38,39,2a,2b);
-		CA75_CS(10,40,41,42,43,2e,2f);
-		CA75_CS(11,44,45,46,47,32,33);
-		
-		/* STM Block */
+			CA75_CS(,0,0,1,2,3,6,7);
+			CA75_CS(,1,4,5,6,7,a,b);
+			CA75_CS(,2,8,9,10,11,e,f);
+			CA75_CS(,3,12,13,14,15,12,13);
+			CA75_CS(,4,16,17,18,19,16,17);
+			CA75_CS(,5,20,21,22,23,1a,1b);
+			CA75_CS(,6,24,25,26,27,1e,1f);
+			CA75_CS(,7,28,29,30,31,22,23);
+			CA75_CS(,8,32,33,34,35,26,27);
+			CA75_CS(,9,36,37,38,39,2a,2b);
+			CA75_CS(,a,40,41,42,43,2e,2f);
+			CA75_CS(,b,44,45,46,47,32,33);
 
-		etr: etr@2080000 {
-			compatible = "arm,coresight-tmc", "arm,primecell";
-			reg = <0x0 0x2080000 0x0 0x1000>;
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			in-ports {
-				port {
-					etr_in_port: endpoint {
-						remote-endpoint =
-							<&etf_out_port>;
-					};
-				};
-			};
-		};
-
-		etf: etf@2070000 {
-			compatible = "arm,coresight-tmc", "arm,primecell";
-			reg = <0x0 0x2070000 0x0 0x1000>;
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			out-ports {
-				port {
-					etf_out_port: endpoint {
-						remote-endpoint =
-							<&etr_in_port>;
-					};
-				};
-			};
-
-			in-ports {
-				port {
-					etf_in_port: endpoint {
-						remote-endpoint =
-							<&stm_out_port>;
-					};
-				};
-			};
-		};
-
-		stm: stm@2060000 {
-			compatible = "arm,coresight-stm", "arm,primecell";
-			reg = <0x0 0x2060000 0x0 0x1000>,
-			      <0x0 0x3000000 0x0 0x1000000>;
-			reg-names = "stm-base", "stm-stimulus-base";
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			out-ports {
-				port {
-					stm_out_port: endpoint {
-						remote-endpoint =
-							<&etf_in_port>;
-					};
-				};
-			};
-		};
-
-		/* CMN Block */
-
-		funnel: funnel@2050000 {
-			compatible = "arm,coresight-dynamic-funnel",
-				     "arm,primecell";
-			reg = <0x0 0x2050000 0x0 0x1000>;
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			out-ports {
-				port {
-					funnel_out_port: endpoint {
-						remote-endpoint =
-							<&etb_in_port>;
-					};
-				};
-			};
-
-			in-ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-
-				port@0 {
-					reg = <0>;
-					funnel_in_port0: endpoint {
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-					funnel_in_port1: endpoint {
-					};
-				};
-			};
-		};
-
-		etb: etb@2040000 {
-			compatible = "arm,coresight-tmc", "arm,primecell";
-			reg = <0x0 0x2040000 0x0 0x1000>;
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			in-ports {
-				port {
-					etb_in_port: endpoint {
-						remote-endpoint =
-							<&funnel_out_port>;
-					};
-				};
-			};
-		};
-
-		/* CTI */
-
-		cti: cti@2010000 {
-			compatible = "arm,coresight-cti", "arm,primecell";
-			reg = <0x0 0x2010000 0x0 0x1000>;
-			clocks = <&cmu_sc_1 6>;
-			clock-names = "apb_pclk";
-
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			trig-conns@0 {
-				reg = <0>;
-				arm,trig-out-sigs = <0 1>;
-				arm,trig-out-types = <GEN_HALTREQ
-						      GEN_RESTARTREQ>;
-				arm,trig-conn-name = "tsgen";
-			};
-
-			trig-conns@1 {
-				reg = <1>;
-				arm,trig-in-sigs = <0 1 2>;
-				arm,trig-in-types = <SNK_FULL SNK_ACQCOMP
-						     SNK_FLUSHCOMP>;
-				arm,trig-out-sigs = <2 3>;
-				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
-				arm,cs-dev-assoc = <&etb>;
-			};
-
-			trig-conns@2 {
-				reg = <2>;
-				arm,trig-in-sigs = <3 4>;
-				arm,trig-conn-name = "cmn_debug_watchtrig";
-			};
-
-			trig-conns@3 {
-				reg = <3>;
-				arm,trig-out-sigs = <4>;
-				arm,trig-conn-name = "cmn_pmu_snapshot";
-			};
-
-			trig-conns@4 {
-				reg = <4>;
-				arm,trig-in-sigs = <5 6 7>;
-				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL
-						     SNK_FLUSHCOMP>;
-				arm,trig-out-sigs = <5 6>;
-				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
-				arm,cs-dev-assoc = <&etf>;
-			};
-
-			trig-conns@5 {
-				reg = <5>;
-				arm,trig-in-sigs = <8 9 10>;
-				arm,trig-in-types = <SNK_ACQCOMP SNK_FULL
-						     SNK_FLUSHCOMP>;
-				arm,trig-out-sigs = <7 8>;
-				arm,trig-out-types = <SNK_FLUSHIN SNK_TRIGIN>;
-				arm,cs-dev-assoc = <&etr>;
-			};
-
-			trig-conns@6 {
-				reg = <6>;
-				arm,trig-in-sigs = <11 12 13 14>;
-				arm,trig-in-types = <STM_TOUT_SPTE STM_TOUT_SW
-						     STM_TOUT_HETE STM_ASYNCOUT>;
-				arm,trig-out-sigs = <9 10 11 12>;
-				arm,trig-out-types = <STM_HWEVENT STM_HWEVENT
-						      STM_HWEVENT STM_HWEVENT>;
-				arm,cs-dev-assoc = <&stm>;
-			};
-
-			trig-conns@7 {
-				reg = <7>;
-				arm,trig-out-sigs = <13>;
-				arm,trig-conn-name = "dpeventstatus";
-			};
-
-			trig-conns@8 {
-				reg = <8>;
-				arm,trig-out-sigs = <14 15 16 17>;
-				arm,trig-out-types = <GEN_INTREQ GEN_INTREQ
-						      GEN_INTREQ GEN_INTREQ>;
-				arm,trig-conn-name = "cti_interrupt";
-			};
+			SOC_CS();
 		};
 	};
 };
