@@ -12,7 +12,7 @@
 
 / {
 
-	model = "Elpitech ET151 mITX board";
+	model = "Elpitech ET171";
 	compatible = "baikal,baikal-m";
 	#address-cells = <2>;
 	#size-cells = <2>;
@@ -200,7 +200,7 @@
 	patch-data = "[codec]\n\
 0x111d76d5 0x00000100 0\n\
 [model]\n\
-et151\n\
+et171\n\
 [pincfg]\n\
 0x0a 0x012b101f\n\
 0x0b 0x02014010\n\
