@@ -451,7 +451,7 @@ static int baikal_acpi_clk_probe(struct platform_device *pdev)
 	union acpi_object *package, *element;
 	acpi_status status;
 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
-	int osc27, i, index, ret = 0;
+	int osc27, i, ret = 0;
 	char *str, *str2;
 
 	cmu = devm_kzalloc(dev, sizeof(*cmu), GFP_KERNEL);
@@ -667,14 +667,6 @@ clk_channels:
 		}
 
 		element = &package->package.elements[4 * i + 2];
-		if (element->type == ACPI_TYPE_INTEGER) {
-			index = element->integer.value;
-		} else {
-			dev_err(dev, "failed to process clock device id #%i\n", i);
-			continue;
-		}
-
-		element = &(package->package.elements[4 * i + 3]);
 		if (element->type == ACPI_TYPE_INTEGER) {
 			if (element->integer.value != BAIKAL_CMU_CLK) {
 				init_ch[i].parent_names = &cmu->name;
