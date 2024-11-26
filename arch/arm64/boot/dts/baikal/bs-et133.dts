@@ -1,0 +1,378 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Elpitech ET133 board
+ * Copyright (C) 2023 Elpitech
+ */
+
+/dts-v1/;
+
+#include "bs1000.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/gpio-keys.h>
+#include <dt-bindings/net/realtek-phy-rtl8211f.h>
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+	model = "Elpitech ET133";
+	compatible = "baikal,bs1000";
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+		fru = &fru;
+	};
+
+	chosen { };
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pwr {
+			label = "PWR Button";
+			linux,code = <116>;
+			gpios = <&portb 11 GPIO_ACTIVE_LOW>;
+			wakeup-source;
+			wakeup-event-action = <EV_ACT_DEASSERTED>;
+		};
+	};
+};
+
+&ehci {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&gmac0 {
+	status = "okay";
+	snps,reset-gpios = <&portb 4 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gmac1 {
+	status = "okay";
+	snps,reset-gpios = <&portb 5 GPIO_ACTIVE_LOW>;
+	snps,reset-delays-us = <10>, <10000>, <50000>;
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gpio32 {
+	status = "okay";
+};
+
+&gpio16 {
+	status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+};
+
+&i2c4 {
+	status = "okay";
+};
+
+&i2c6 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	fru: eeprom@50 {
+		compatible = "atmel,24c32";
+		reg = <0x50>;
+	};
+
+	rtc@54 {
+		compatible = "nxp,pcf2129", "nxp,pcf2127";
+		reg = <0x54>;
+	};
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_1000_ACT>;
+		realtek,led1-control = <RTL8211F_LINK100_1000>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		realtek,led-mode = <RTL8211F_LED_MODE_B>;
+		realtek,led0-control = <RTL8211F_LINK10_1000_ACT>;
+		realtek,led1-control = <RTL8211F_LINK100_1000>;
+	};
+};
+
+&ohci {
+	status = "okay";
+	reset-gpios = <&porta 6 GPIO_ACTIVE_LOW>;
+};
+
+&pcie0_p0 {
+	status = "okay";
+	num-lanes = <16>;
+	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <39>;
+};
+
+&pcie1_p0 {
+	status = "okay";
+	num-lanes = <16>;
+	reset-gpios = <&porta 25 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <39>;
+};
+
+&pcie2_p0 {
+	status = "okay";
+	num-lanes = <8>;
+	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <39>;
+};
+
+&pcie2_p1 {
+	status = "okay";
+	num-lanes = <8>;
+	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <39>;
+};
+
+&pcie3_p1 {
+	status = "okay";
+	num-lanes = <4>;
+	reset-gpios = <&porta 20 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pcie3_p2 {
+	status = "okay";
+	num-lanes = <4>;
+	reset-gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pcie3_p3 {
+	status = "okay";
+	num-lanes = <4>;
+	reset-gpios = <&porta 12 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pcie4_p0 {
+	status = "okay";
+	num-lanes = <8>;
+	reset-gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pcie4_p2 {
+	status = "okay";
+	num-lanes = <1>;
+	reset-gpios = <&porta 31 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pcie4_p3 {
+	status = "okay";
+	num-lanes = <1>;
+	reset-gpios = <&porta 21 GPIO_ACTIVE_LOW>;
+	cpu-addr-bits = <40>;
+};
+
+&pvt_cluster0 {
+	status = "okay";
+};
+
+&pvt_cluster1 {
+	status = "okay";
+};
+
+&pvt_cluster2 {
+	status = "okay";
+};
+
+&pvt_cluster3 {
+	status = "okay";
+};
+
+&pvt_cluster4 {
+	status = "okay";
+};
+
+&pvt_cluster5 {
+	status = "okay";
+};
+
+&pvt_cluster6 {
+	status = "okay";
+};
+
+&pvt_cluster7 {
+	status = "okay";
+};
+
+&pvt_cluster8 {
+	status = "okay";
+};
+
+&pvt_cluster9 {
+	status = "okay";
+};
+
+&pvt_cluster10 {
+	status = "okay";
+};
+
+&pvt_cluster11 {
+	status = "okay";
+};
+
+&pvt_ddr0 {
+	status = "okay";
+};
+
+&pvt_ddr1 {
+	status = "okay";
+};
+
+&pvt_ddr2 {
+	status = "okay";
+};
+
+&pvt_ddr3 {
+	status = "okay";
+};
+
+&pvt_ddr4 {
+	status = "okay";
+};
+
+&pvt_ddr5 {
+	status = "okay";
+};
+
+&pvt_pcie0 {
+	status = "okay";
+};
+
+&pvt_pcie1 {
+	status = "okay";
+};
+
+&pvt_pcie2 {
+	status = "okay";
+};
+
+&pvt_pcie3 {
+	status = "okay";
+};
+
+&pvt_pcie4 {
+	status = "okay";
+};
+
+&qspi1 {
+	num-cs = <4>;
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "bl1";
+				reg = <0x000000 0x40000>;
+			};
+
+			partition@40000 {
+				label = "dtb";
+				reg = <0x040000 0x40000>;
+			};
+
+			partition@80000 {
+				label = "uefi-vars";
+				reg = <0x080000 0xc0000>;
+			};
+
+			partition@140000 {
+				label = "fip";
+				reg = <0x140000 0x6c0000>;
+			};
+		};
+	};
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart_a1 {
+	status = "okay";
+};
+
+&uart_a2 {
+	status = "okay";
+};
+
+&wdt {
+	status = "okay";
+};
+
+&mux {
+	compatible = "simple-bus";
+	status = "okay";
+	uart-smbus-enabled;
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
+	status = "okay";
+};
+
+&porta {
+	pcieclk {
+		line_name = "post-complete";
+		gpio-hog;
+		gpios = <14 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
