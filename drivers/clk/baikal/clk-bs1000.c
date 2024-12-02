@@ -17,16 +17,16 @@
 #include <linux/platform_device.h>
 #include <linux/spinlock.h>
 
-#define BAIKAL_SMC_CLK_ROUND		0x82000400
-#define BAIKAL_SMC_CLK_SET		0x82000401
-#define BAIKAL_SMC_CLK_GET		0x82000402
-#define BAIKAL_SMC_CLK_ENABLE		0x82000403
-#define BAIKAL_SMC_CLK_DISABLE		0x82000404
-#define BAIKAL_SMC_CLK_IS_ENABLED	0x82000405
+#define BAIKAL_SMC_CLK_ROUND		0xC2000400
+#define BAIKAL_SMC_CLK_SET		0xC2000401
+#define BAIKAL_SMC_CLK_GET		0xC2000402
+#define BAIKAL_SMC_CLK_ENABLE		0xC2000403
+#define BAIKAL_SMC_CLK_DISABLE		0xC2000404
+#define BAIKAL_SMC_CLK_IS_ENABLED	0xC2000405
 
 struct baikal_clk {
 	struct clk_hw	hw;
-	u32		base;
+	u64		base;
 };
 
 #define to_baikal_clk(_hw) container_of(_hw, struct baikal_clk, hw)
@@ -96,9 +96,8 @@ static const struct clk_ops baikal_clk_ops = {
 	.round_rate  = baikal_clk_round_rate,
 };
 
-static int baikal_clk_probe(struct platform_device *pdev)
+static void __init baikal_s_clk_init(struct device_node *node)
 {
-	struct device_node *node = pdev->dev.of_node;
 	struct clk_init_data init;
 	struct baikal_clk *cmu;
 	struct clk_onecell_data *clk_data;
@@ -111,12 +110,18 @@ static int baikal_clk_probe(struct platform_device *pdev)
 	int clk_name_cnt;
 	int clk_cnt;
 	int i;
-	u32 base;
+	u64 base;
+	u32 base32;
 	struct clk *clk;
 	int ret;
 	int multi;
 
-	ret = of_property_read_u32(node, "reg", &base);
+	ret = of_property_read_u64(node, "reg", &base);
+	if (ret) {
+		ret = of_property_read_u32(node, "reg", &base32);
+		if (!ret)
+			base = base32;
+	}
 	if (ret)
 		base = 0;
 
@@ -173,17 +178,11 @@ static int baikal_clk_probe(struct platform_device *pdev)
 	}
 
 	if (multi)
-		ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_onecell_get, clk_data);
+		ret = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	else
-		ret = of_clk_add_provider(pdev->dev.of_node, of_clk_src_simple_get, clk);
+		ret = of_clk_add_provider(node, of_clk_src_simple_get, clk);
 
-	return ret;
-}
-
-static int baikal_clk_remove(struct platform_device *pdev)
-{
-	of_clk_del_provider(pdev->dev.of_node);
-	return 0;
+	return;
 }
 
 #ifdef CONFIG_ACPI
@@ -477,22 +476,4 @@ static int __init baikal_acpi_clk_driver_init(void)
 device_initcall(baikal_acpi_clk_driver_init);
 #endif
 
-static const struct of_device_id baikal_clk_of_match[] = {
-	{ .compatible = "baikal,bs1000-cmu" },
-	{ /* sentinel */ }
-};
-
-static struct platform_driver bs1000_cmu_driver = {
-	.probe	= baikal_clk_probe,
-	.remove	= baikal_clk_remove,
-	.driver	= {
-		.name = "bs1000-cmu",
-		.of_match_table = baikal_clk_of_match
-	}
-};
-module_platform_driver(bs1000_cmu_driver);
-
-MODULE_DESCRIPTION("Baikal BE-S1000 clock driver");
-MODULE_AUTHOR("Ekaterina Skachko <ekaterina.skachko@baikalelectronics.ru>");
-MODULE_LICENSE("GPL");
-MODULE_ALIAS("platform:bs1000-cmu");
+CLK_OF_DECLARE(bs1000_cmu, "baikal,bs1000-cmu", baikal_s_clk_init);
