@@ -16,7 +16,7 @@ variables:
     - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- ${DEFCONFIG}
     - make ARCH=arm64 O=./build CROSS_COMPILE=/usr/bin/aarch64-linux-gnu- bindeb-pkg -j $(nproc)
     - |
-      VERSION=$(git describe --tags)
+      VERSION=$(git rev-parse --short HEAD)
       echo "Uploading version ${VERSION}"
       echo "          branch ${CI_COMMIT_BRANCH}"
       echo "          board ${CPU_TYPE}"
