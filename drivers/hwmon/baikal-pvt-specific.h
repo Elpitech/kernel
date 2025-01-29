@@ -1,0 +1,52 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (C) 2020 BAIKAL ELECTRONICS, JSC
+ *
+ * Baikal-M/S Process, Voltage, Temperature sensor driver
+ */
+#ifndef __HWMON_BAIKAL_SPECIFIC_PVT_H__
+#define __HWMON_BAIKAL_SPECIFIC_PVT_H__
+
+#if defined(CONFIG_SENSORS_BT1_PVT_ALARMS)
+# define PVT_TOUT_DEF	1200000
+#else
+# define PVT_TOUT_DEF	0
+#endif
+
+#define BAIKAL_SMC_PVT_CMD	0x82000001
+#define PVT_READ		0
+#define PVT_WRITE		1
+
+/* "baikal,bm1000-pvt" base addresses */
+#define MMCA57_0_PVT_BASE	0x28200000
+#define MMCA57_1_PVT_BASE	0xc200000
+#define MMCA57_2_PVT_BASE	0xa200000
+#define MMCA57_3_PVT_BASE	0x26200000
+#define MMMALI_PVT_BASE		0x2a060000
+
+/* "baikal,bs1000-pvt" base addresses */
+#define CA75_0_PVT_BASE		0x4030000
+#define CA75_1_PVT_BASE		0x8030000
+#define CA75_2_PVT_BASE		0xc030000
+#define CA75_3_PVT_BASE		0x10030000
+#define CA75_4_PVT_BASE		0x14030000
+#define CA75_5_PVT_BASE		0x18030000
+#define CA75_6_PVT_BASE		0x1c030000
+#define CA75_7_PVT_BASE		0x20030000
+#define CA75_8_PVT_BASE		0x24030000
+#define CA75_9_PVT_BASE		0x28030000
+#define CA75_10_PVT_BASE	0x2c030000
+#define CA75_11_PVT_BASE	0x30030000
+#define PCIE0_PVT_BASE		0x38030000
+#define PCIE1_PVT_BASE		0x3c030000
+#define PCIE2_PVT_BASE		0x44030000
+#define PCIE3_PVT_BASE		0x48030000
+#define PCIE4_PVT_BASE		0x4c030000
+#define DDR0_PVT_BASE		0x50030000
+#define DDR1_PVT_BASE		0x54030000
+#define DDR2_PVT_BASE		0x58030000
+#define DDR3_PVT_BASE		0x60030000
+#define DDR4_PVT_BASE		0x64030000
+#define DDR5_PVT_BASE		0x68030000
+
+#endif /* __HWMON_BAIKAL_SPECIFIC_PVT_H__ */
