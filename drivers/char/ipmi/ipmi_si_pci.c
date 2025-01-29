@@ -21,6 +21,9 @@ MODULE_PARM_DESC(trypci,
 
 #define PCI_DEVICE_ID_HP_MMC 0x121A
 
+#define PCI_VENDOR_ID_ASPEED 0x1a03
+#define PCI_DEVICE_ID_ASPEED_BMC 0x2402
+
 static int ipmi_pci_probe_regspacing(struct si_sm_io *io)
 {
 	if (io->si_type == SI_KCS) {
@@ -59,6 +62,52 @@ static struct pci_device_id ipmi_pci_blacklist[] = {
 	{ 0, }
 };
 
+static int ipmi_pci_aspeed_probe(struct pci_dev *pdev,
+					struct si_sm_io *io)
+{
+	int rv;
+	unsigned long addr_data;
+	void *map;
+	static int channel_offsets[4] =
+		{0x3a0 * 4, 0x3a8 * 4, 0x3a2 * 4, 0x3a4 * 4};
+
+	rv = pcim_enable_device(pdev);
+	if (rv) {
+		dev_err(&pdev->dev, "couldn't enable PCI device\n");
+		return rv;
+	}
+
+	io->si_type = SI_KCS;
+	io->addr_space = IPMI_MEM_ADDR_SPACE;
+	io->io_setup = ipmi_si_mem_setup;
+	addr_data = pci_resource_start(pdev, 1);
+
+	io->dev = &pdev->dev;
+
+	io->regspacing = 4;
+	io->regsize = 4;
+	io->regshift = 0;
+
+	dev_info(&pdev->dev, "%pR regsize %d spacing %d irq %d\n",
+		 &pdev->resource[1], io->regsize, io->regspacing, io->irq);
+
+	/* First read returns 0xFF... Do it now before detection. */
+	map = ioremap(addr_data, PAGE_SIZE);
+	if (IS_ERR_OR_NULL(map)) {
+		dev_err(&pdev->dev, "ioremap error: %lx\n", PTR_ERR(map));
+		return PTR_ERR(map);
+	}
+	rv = readl(map + channel_offsets[0]);
+	dev_info(&pdev->dev, "status reg = %x\n", rv);
+	iounmap(map);
+
+	io->addr_data = addr_data + channel_offsets[0];
+	io->slave_addr = 1;
+	rv = ipmi_si_add_smi(io);
+
+	return rv;
+}
+
 static int ipmi_pci_probe(struct pci_dev *pdev,
 				    const struct pci_device_id *ent)
 {
@@ -71,6 +120,9 @@ static int ipmi_pci_probe(struct pci_dev *pdev,
 	memset(&io, 0, sizeof(io));
 	io.addr_source = SI_PCI;
 	dev_info(&pdev->dev, "probing via PCI");
+
+	if (pdev->vendor == PCI_VENDOR_ID_ASPEED)
+		return ipmi_pci_aspeed_probe(pdev, &io);
 
 	switch (pdev->class) {
 	case PCI_CLASS_SERIAL_IPMI_SMIC:
@@ -128,6 +180,7 @@ static void ipmi_pci_remove(struct pci_dev *pdev)
 
 static const struct pci_device_id ipmi_pci_devices[] = {
 	{ PCI_VDEVICE(HP, PCI_DEVICE_ID_HP_MMC) },
+	{ PCI_VDEVICE(ASPEED, PCI_DEVICE_ID_ASPEED_BMC) },
 	{ PCI_DEVICE_CLASS(PCI_CLASS_SERIAL_IPMI_SMIC, ~0) },
 	{ PCI_DEVICE_CLASS(PCI_CLASS_SERIAL_IPMI_KCS, ~0) },
 	{ PCI_DEVICE_CLASS(PCI_CLASS_SERIAL_IPMI_BT, ~0) },
