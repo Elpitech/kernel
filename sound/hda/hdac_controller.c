@@ -149,6 +149,8 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 
 	spin_lock_irq(&bus->reg_lock);
 
+	if (bus->baikal_codec_addr_quirk)
+		val = val + 0x10000000;
 	bus->last_cmd[azx_command_addr(val)] = val;
 
 	/* add command to corb */

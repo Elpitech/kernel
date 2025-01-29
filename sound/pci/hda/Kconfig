@@ -42,6 +42,18 @@ config SND_HDA_TEGRA
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-hda-tegra.
 
+config SND_HDA_BAIKAL
+	tristate "Baikal HD Audio"
+	depends on ARCH_BAIKAL
+	select SND_HDA
+	select SND_HDA_ALIGNED_MMIO
+	help
+	  Say Y here to support the HDA controller present in Baikal
+	  SoCs
+
+	  This options enables support for the HD Audio controller
+	  present in Baikal SoCs.
+
 if SND_HDA
 
 config SND_HDA_HWDEP
