@@ -137,6 +137,8 @@ static void panfrost_job_write_affinity(struct panfrost_device *pfdev,
 	 * multiple (2) coherent core groups
 	 */
 	affinity = pfdev->features.shader_present;
+	if (js == 1)
+		affinity &= pfdev->core_mask;
 
 	job_write(pfdev, JS_AFFINITY_NEXT_LO(js), lower_32_bits(affinity));
 	job_write(pfdev, JS_AFFINITY_NEXT_HI(js), upper_32_bits(affinity));

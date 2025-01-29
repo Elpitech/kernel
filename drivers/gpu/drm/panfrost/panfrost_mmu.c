@@ -136,6 +136,10 @@ static void panfrost_mmu_enable(struct panfrost_device *pfdev, struct panfrost_m
 	/* Need to revisit mem attrs.
 	 * NC is the default, Mali driver is inner WT.
 	 */
+	if (panfrost_model_eq(pfdev, 0x620) && !pfdev->coherent) {
+		memattr &= ~0xf0f0f0ULL;
+		memattr |= 0x404040;
+	}
 	mmu_write(pfdev, AS_MEMATTR_LO(as_nr), lower_32_bits(memattr));
 	mmu_write(pfdev, AS_MEMATTR_HI(as_nr), upper_32_bits(memattr));
 
