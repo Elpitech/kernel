@@ -1,0 +1,25 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+#ifndef _DT_BINDINGS_REALTEK_PHY_RTL8211F_H
+#define _DT_BINDINGS_REALTEK_PHY_RTL8211F_H
+
+/* LED modes for RTL8211F PHY */
+
+#define RTL8211F_LED_MODE_A 0
+#define RTL8211F_LED_MODE_B 1
+
+#define RTL8211F_LINK10_100_1000_ACT 0
+#define RTL8211F_LINK10_100_1000     1
+#define RTL8211F_LINK10_100_ACT      2
+#define RTL8211F_LINK10_100          3
+#define RTL8211F_LINK10_1000_ACT     4
+#define RTL8211F_LINK10_1000         5
+#define RTL8211F_LINK10_ACT          6
+#define RTL8211F_LINK10              7
+#define RTL8211F_LINK100_1000_ACT    8
+#define RTL8211F_LINK100_1000        9
+#define RTL8211F_LINK100_ACT         10
+#define RTL8211F_LINK100             11
+#define RTL8211F_LINK1000_ACT        12
+#define RTL8211F_LINK1000            13
+
+#endif
