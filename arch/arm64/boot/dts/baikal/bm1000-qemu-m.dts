@@ -1,0 +1,146 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics QEMU-M virtual platform
+ * Copyright (C) 2018-2024 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bm1000.dtsi"
+
+/ {
+	model = "Baikal Electronics QEMU-M";
+	compatible = "baikal,qemu-m", "baikal,bm1000";
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
+	chosen { };
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x00000000 0x80000000 0x0 0x80000000>; /* 2 GiB */
+	};
+
+	/*
+	 * Device is necessary for UEFI to boot on QEMU,
+	 * need to replace it with something later.
+	 */
+	flash@0 {
+		compatible = "cfi-flash";
+		reg = <0x0 0x4000000 0x0 0x4000000>;
+		bank-width = <0x4>;
+	};
+
+	panel: panel {
+		compatible = "auo,b133htn01";		/* 1920x1080 */
+		port {
+			lcd_panel: endpoint {
+				remote-endpoint = <&vdu_pads>;
+			};
+		};
+	};
+};
+
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+	};
+};
+
+&mmc {
+	/* SD */
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	disable-wp;
+	no-mmc;
+	no-sdio;
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&spi {
+	status = "okay";
+	num-cs = <6>;
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL1";
+				reg = <0x000000 0x10000>;
+			};
+
+			partition@40000 {
+				label = "FIP";
+				reg = <0x40000 0x200000>;
+			};
+
+			partition@240000 {
+				label = "DDR-CFG0";
+				reg = <0x240000 0x40000>;
+			};
+
+			partition@280000 {
+				label = "DDR-CFG1";
+				reg = <0x280000 0x40000>;
+			};
+
+			partition@2c0000 {
+				label = "UEFI vars";
+				reg = <0x2c0000 0xc0000>;
+			};
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&vdu0 {
+	port {
+		vdu_pads: endpoint {
+			remote-endpoint = <&lcd_panel>;
+		};
+	};
+};

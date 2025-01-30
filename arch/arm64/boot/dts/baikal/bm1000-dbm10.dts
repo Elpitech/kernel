@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics DBM 1.0 board
+ * Copyright (C) 2022-2023 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bm1000-dbm.dtsi"
+
+/ {
+	model = "Baikal Electronics DBM 1.0";
+	compatible = "baikal,dbm10", "baikal,bm1000";
+};
+
+&i2c1 {
+	rtc@56 {
+		compatible = "abracon,abeoz9";
+		reg = <0x56>;
+	};
+};
+
+&porta {
+	gpio-line-names =
+		"",		/* GPIO32_0 */
+		"",		/* GPIO32_1 */
+		"",		/* GPIO32_2 */
+		"",		/* GPIO32_3 */
+		"",		/* GPIO32_4 */
+		"",		/* GPIO32_5 */
+		"",		/* GPIO32_6 */
+		"",		/* GPIO32_7 */
+		"",		/* GPIO32_8 */
+		"",		/* GPIO32_9 */
+		"",		/* GPIO32_10 */
+		"",		/* GPIO32_11 */
+		"",		/* GPIO32_12 */
+		"",		/* GPIO32_13 */
+		"",		/* GPIO32_14 */
+		"",		/* GPIO32_15 */
+		"",		/* GPIO32_16 */
+		"",		/* GPIO32_17 */
+		"",		/* GPIO32_18 */
+		"",		/* GPIO32_19 */
+		"",		/* GPIO32_20 */
+		"",		/* GPIO32_21 */
+		"",		/* GPIO32_22 */
+		"",		/* GPIO32_23 */
+		"FLASH0_CS#",	/* GPIO32_24 */
+		"",		/* GPIO32_25 */
+		"",		/* GPIO32_26 */
+		"",		/* GPIO32_27 */
+		"",		/* GPIO32_28 */
+		"",		/* GPIO32_29 */
+		"",		/* GPIO32_30 */
+		"";		/* GPIO32_31 */
+};

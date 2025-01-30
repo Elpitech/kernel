@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree include file for DBS socket X6.16 mezzanine board
+ * Copyright (C) 2023 Baikal Electronics, JSC
+ */
+
+&espi {
+	num-cs = <4>;
+	status = "okay";
+
+	flash@0 {
+		compatible = "rohm,dh2228fv";
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+
+	flash@1 {
+		compatible = "rohm,dh2228fv";
+		reg = <1>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+
+	flash@2 {
+		compatible = "rohm,dh2228fv";
+		reg = <2>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+
+	flash@3 {
+		compatible = "rohm,dh2228fv";
+		reg = <3>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+};

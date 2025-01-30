@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for audio/SD/EMMC/LVDS mezzanine for Baikal Electronics DBM boards
+ * Copyright (C) 2019-2023 Baikal Electronics, JSC
+ */
+
+#include <dt-bindings/input/input.h>
+
+/ {
+#ifdef USE_I2S
+	sound {
+		compatible = "baikal,snd-soc-baikal";
+		baikal,cpu-dai = <&i2s>;
+		baikal,audio-codec = <&tlv320aic3x>;
+		baikal,dai-name = "tlv320aic3x";
+		baikal,codec-name = "tlv320aic3x-hifi";
+		baikal,stream-name = "tlv320aic3x hifi";
+	};
+#endif
+
+#ifdef USE_LVDS
+	buttons-backlight {
+		compatible = "gpio-keys";
+		autorepeat;
+		button-brightness-down {
+			label = "Brightness Down Button";
+			linux,code = <KEY_BRIGHTNESSDOWN>;
+			gpios = <&porta 18 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+		button-brightness-up {
+			label = "Brightness Up Button";
+			linux,code = <KEY_BRIGHTNESSUP>;
+			gpios = <&porta 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <50>;
+		};
+	};
+
+	panel {
+		compatible = "panel-lvds";
+		width-mm = <223>;
+		height-mm = <125>;
+		data-mapping = "vesa-24";
+		/*
+		 * In order to utilize LVDS LCD panel, make sure that
+		 * 'status' is "okay" along with &vdu 'status' (see below).
+		 */
+		status = "okay";
+		panel-timing {
+			/* 1920x1080 @ 60 Hz */
+			/* Replace values below with actual panel timings */
+			clock-frequency = <148500000>;
+			hactive = <1920>;
+			vactive = <1080>;
+			hsync-len = <44>;
+			hfront-porch = <88>;
+			hback-porch = <148>;
+			vsync-len = <5>;
+			vfront-porch = <4>;
+			vback-porch = <36>;
+		};
+		port {
+			panel_in: endpoint@0 {
+				remote-endpoint = <&vdu_lvds_out>;
+			};
+		};
+	};
+#endif
+};
+
+#ifdef USE_I2S
+&i2c0 {
+	tlv320aic3x: tlv320aic3x@18 {
+		compatible = "ti,tlv320aic3x";
+		reg = <0x18>;
+		#sound-dai-cells = <0>;
+		reset-gpios = <&porta 4 GPIO_ACTIVE_LOW>;
+		ai3x-micbias-vg = <1>;
+		ai3x-ocmv = <1>;
+		status = "okay";
+	};
+};
+
+&i2s {
+	status = "okay";
+	sound-dai = <&tlv320aic3x>;
+};
+#endif
+
+#ifdef USE_HDA
+&hda {
+	status = "okay";
+};
+#endif
+
+#ifdef USE_EMMC
+&mmc {
+	/* eMMC */
+	status = "okay";
+	bus-width = <8>;
+	max-frequency = <200000000>;
+	no-sd;
+	no-sdio;
+	non-removable;
+};
+#endif
+
+#ifdef USE_SD
+&mmc {
+	/* SD */
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	disable-wp;
+	no-mmc;
+	no-sdio;
+};
+#endif
+
+#ifdef USE_LVDS
+&vdu {
+	/*
+	 * 'lvds-lanes' property is mandatory to enable LVDS. Valid values are 1, 2 or 4.
+	 * It is also mandatory to provide actual values for 'enable-gpios' property.
+	 * Also make sure that panel's 'status' (see above) is "okay".
+	 */
+	enable-gpios = <&porta 16 GPIO_ACTIVE_LOW>;
+	lvds-lanes = <2>;
+	backlight {
+		min-brightness-level = <10>;
+		default-brightness-level = <60>;
+		brightness-level-step = <2>;
+		pwm-frequency = <20000>;
+	};
+	ports {
+		port@1 {
+			reg = <1>;
+			vdu_lvds_out: endpoint@0 {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
+#endif

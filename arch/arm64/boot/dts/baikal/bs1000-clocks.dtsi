@@ -1,0 +1,349 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree include file for BE-S1000 SoC clocks
+ * Copyright (C) 2021-2023 Baikal Electronics, JSC
+ */
+
+#define CLK_TYPE_NO	0
+#define CLK_TYPE_REFCLK	1 /* fout = 25 MHz or 100 MHz		*/
+#define CLK_TYPE_PLL	2 /* fout = fref * NF / (NR * OD)	*/
+#define CLK_TYPE_CLKCH	3 /* fout = fref / (VAL_CLKDIV + 1)	*/
+#define CLK_TYPE_CLKEN	4 /* fout = fref / DIV_VAL		*/
+#define CLK_TYPE_CLKDIV	5 /* fout = fref / 2^(DIV_VAL - 1)	*/
+
+#define CA75_CLOCKS(soc, group, hbase, lbase)						\
+	/* pll */									\
+	soc##ca75_##group##_cmu0_pll:							\
+	soc##ca75_##group##_cmu0_pll {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase 0x##lbase>;						\
+		type = <CLK_TYPE_PLL>;							\
+		clocks = <&clk_ref>;							\
+		#clock-cells = <0>;							\
+		clock-output-names = "ca75_pll0";					\
+	};										\
+	soc##ca75_##group##_cmu1_pll:							\
+	soc##ca75_##group##_cmu1_pll {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase (0x##lbase + 0x10000)>;				\
+		type = <CLK_TYPE_PLL>;							\
+		clocks = <&clk_ref>;							\
+		#clock-cells = <0>;							\
+		clock-output-names = "ca75_pll1";					\
+	};										\
+	/* clkch */									\
+	soc##ca75_##group##_cmu0:							\
+	soc##ca75_##group##_cmu0 {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase (0x##lbase + 0x100)>;					\
+		type = <CLK_TYPE_CLKCH>;						\
+		clocks = <&soc##ca75_##group##_cmu0_pll>;				\
+		#clock-cells = <1>;							\
+		clock-output-names =							\
+			"sclk",		/* 0 */						\
+			"periph",	/* 1 */						\
+			"pclk",		/* 2 */						\
+			"at",		/* 3 */						\
+			"gic",		/* 4 */						\
+			"cfg_int",	/* 5 */						\
+			"cfg_out",	/* 6 */						\
+			"bisr",		/* 7 */						\
+			"crp";		/* 8 */						\
+	};										\
+	/* clken */									\
+	soc##ca75_##group##_cmu0_en0:							\
+	soc##ca75_##group##_cmu0_en0 {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase (0x##lbase + 0x500)>;					\
+		type = <CLK_TYPE_CLKEN>;						\
+		clocks = <&soc##ca75_##group##_cmu0 0>; /* "sclk" */			\
+		#clock-cells = <0>;							\
+		clock-output-names = "clken";						\
+	};										\
+	soc##ca75_##group##_cmu0_en1:							\
+	soc##ca75_##group##_cmu0_en1 {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase (0x##lbase + 0x510)>;					\
+		type = <CLK_TYPE_CLKEN>;						\
+		clocks = <&soc##ca75_##group##_cmu0 1>; /* "periph" */			\
+		#clock-cells = <1>;							\
+		clock-output-names =							\
+			"cntclken",	/* 0 */						\
+			"tsclken";	/* 1 */						\
+	};										\
+	/* core */									\
+	soc##ca75_##group##_cmu1:							\
+	soc##ca75_##group##_cmu1 {							\
+		compatible = "baikal,bs1000-cmu";					\
+		reg = <0x##hbase (0x##lbase + 0x10020)>;				\
+		type = <CLK_TYPE_CLKDIV>;						\
+		clocks = <&soc##ca75_##group##_cmu1_pll>;				\
+		#clock-cells = <1>;							\
+		clock-output-names =							\
+			"core0",	/* 0 */						\
+			"core1",	/* 1 */						\
+			"core2",	/* 2 */						\
+			"core3";	/* 3 */						\
+	}
+
+#define MM_CLOCKS(soc, num, hbase, lbase, ...)				\
+	/* pll */							\
+	soc##_cmu##num##_pll:						\
+	soc##_cmu##num##_pll {						\
+		compatible = "baikal,bs1000-cmu";			\
+		reg = <0x##hbase 0x##lbase>;				\
+		type = <CLK_TYPE_PLL>;					\
+		clocks = <&clk_ref>;					\
+		#clock-cells = <0>;					\
+		clock-output-names = "pll";				\
+	};								\
+	/* clkch */							\
+	soc##_cmu##num##:						\
+	soc##_cmu##num## {						\
+		compatible = "baikal,bs1000-cmu";			\
+		reg = <0x##hbase (0x##lbase + 0x20)>;			\
+		type = <CLK_TYPE_CLKCH>;				\
+		clocks = <&soc##_cmu##num##_pll>;			\
+		#clock-cells = <1>;					\
+		clock-output-names = __VA_ARGS__;			\
+	}
+
+#define CLOCKS(soc, hbase)							\
+	/* CA75 */								\
+	CA75_CLOCKS(soc, 0, hbase, 04000000);					\
+	CA75_CLOCKS(soc, 1, hbase, 08000000);					\
+	CA75_CLOCKS(soc, 2, hbase, 0c000000);					\
+	CA75_CLOCKS(soc, 3, hbase, 10000000);					\
+	CA75_CLOCKS(soc, 4, hbase, 14000000);					\
+	CA75_CLOCKS(soc, 5, hbase, 18000000);					\
+	CA75_CLOCKS(soc, 6, hbase, 1c000000);					\
+	CA75_CLOCKS(soc, 7, hbase, 20000000);					\
+	CA75_CLOCKS(soc, 8, hbase, 24000000);					\
+	CA75_CLOCKS(soc, 9, hbase, 28000000);					\
+	CA75_CLOCKS(soc, a, hbase, 2c000000);					\
+	CA75_CLOCKS(soc, b, hbase, 30000000);					\
+										\
+	/* PCIe */								\
+	MM_CLOCKS(soc##pci_0,, hbase, 38000000,					\
+		"nic_cfg0m_ssa_x16p0s",		/* 0  */			\
+		"nic_cfg1m_ssa_x8p1s",		/* 1  */			\
+		"nic_cfg2m_mmu_tcus",		/* 2  */			\
+		"nic_cfg3m_ssa_apbs",		/* 3  */			\
+		"nic_cfg4m_nic_slv_gpvs",	/* 4  */			\
+		"nic_slv0m_ssa_x16p0s",		/* 5  */			\
+		"nic_slv1m_ssa_x8p1s",		/* 6  */			\
+		"ssa_x16p0m_nic_mstr0s",	/* 7  */			\
+		"ssa_x8p1m_nic_mstr1s",		/* 8  */			\
+		"nic_mstrm_mmu_tbu0s",		/* 9  */			\
+		"a4sw_intern",			/* 10 */			\
+		"phy_ref",			/* 11 */			\
+		"ssa_aux",			/* 12 */			\
+		"ahb2axim_axi2ahbs",		/* 13 */			\
+		"ahb2ahbm_outp_ahbs",		/* 14 */			\
+		"ssa_x16p0m_cxlas"		/* 15 */			\
+	);									\
+	MM_CLOCKS(soc##pci_1,, hbase, 3c000000,					\
+		"nic_cfg0m_ssa_x16p0s",		/* 0  */			\
+		"nic_cfg1m_ssa_x8p1s",		/* 1  */			\
+		"nic_cfg2m_mmu_tcus",		/* 2  */			\
+		"nic_cfg3m_ssa_apbs",		/* 3  */			\
+		"nic_cfg4m_nic_slv_gpvs",	/* 4  */			\
+		"nic_slv0m_ssa_x16p0s",		/* 5  */			\
+		"nic_slv1m_ssa_x8p1s",		/* 6  */			\
+		"ssa_x16p0m_nic_mstr0s",	/* 7  */			\
+		"ssa_x8p1m_nic_mstr1s",		/* 8  */			\
+		"nic_mstrm_mmu_tbu0s",		/* 9  */			\
+		"a4sw_intern",			/* 10 */			\
+		"phy_ref",			/* 11 */			\
+		"ssa_aux",			/* 12 */			\
+		"ahb2axim_axi2ahbs",		/* 13 */			\
+		"ahb2ahbm_outp_ahbs",		/* 14 */			\
+		"ssa_x16p0m_cxlas"		/* 15 */			\
+	);									\
+	MM_CLOCKS(soc##pci_2,, hbase, 44000000,					\
+		"a", /* 0 */							\
+		"b"  /* 1 */							\
+	);									\
+	MM_CLOCKS(soc##pci_3,, hbase, 48000000,					\
+		"a", /* 0 */							\
+		"b"  /* 1 */							\
+	);									\
+	MM_CLOCKS(soc##pci_4,, hbase, 4c000000,					\
+		"a", /* 0 */							\
+		"b"  /* 1 */							\
+	);									\
+										\
+	/* DDR */								\
+	MM_CLOCKS(soc##ddr_0,, hbase, 50000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv"		/* 2 */					\
+	);									\
+	MM_CLOCKS(soc##ddr_1,, hbase, 54000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv",		/* 2 */					\
+		"axi_ext_cfg",		/* 3 */					\
+		"axi_middle_cfg",	/* 4 */					\
+		"axi_top_cfg",		/* 5 */					\
+		"axi_bottom_cfg"	/* 6 */					\
+	);									\
+	MM_CLOCKS(soc##ddr_2,, hbase, 58000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv"		/* 2 */					\
+	);									\
+	MM_CLOCKS(soc##ddr_3,, hbase, 60000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv"		/* 2 */					\
+	);									\
+	MM_CLOCKS(soc##ddr_4,, hbase, 64000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv",		/* 2 */					\
+		"axi_ext_cfg",		/* 3 */					\
+		"axi_middle_cfg",	/* 4 */					\
+		"axi_top_cfg",		/* 5 */					\
+		"axi_bottom_cfg"	/* 6 */					\
+	);									\
+	MM_CLOCKS(soc##ddr_5,, hbase, 68000000,					\
+		"ddr_ctrl_phy",		/* 0 */					\
+		"ddr_axi_slv",		/* 1 */					\
+		"ddr_apb_slv"		/* 2 */					\
+	);									\
+										\
+	/* System Control */							\
+	MM_CLOCKS(soc##sc, 0, hbase, 00400000,					\
+		"cmn",			/* 0 */					\
+		"cmn_cs"		/* 1 */					\
+	);									\
+	MM_CLOCKS(soc##sc, 1, hbase, 00410000,					\
+		"apb_cfg",		/* 0  */				\
+		"scp_efuse",		/* 1  */				\
+		"scp_ext_cfg",		/* 2  */				\
+		"scp_apb_spi",		/* 3  */				\
+		"scp_uart",		/* 4  */				\
+		"scp_gpio8_x16",	/* 5, additional divisor by 16 */	\
+		"scp_spi",		/* 6  */				\
+		"scp_smbus_i2c0",	/* 7  */				\
+		"scp_smbus_i2c1",	/* 8  */				\
+		"gmac1_apb",		/* 9  */				\
+		"gmac1_axi",		/* 10 */				\
+		"gmac2_apb",		/* 11 */				\
+		"gmac2_axi",		/* 12 */				\
+		"usb_h",		/* 13 */				\
+		"usb_ohci",		/* 14 */				\
+		"lsp_apb",		/* 15 */				\
+		"lsp_gpio_x16",		/* 16, additional divisor by 16 */	\
+		"lsp_uart",		/* 17 */				\
+		"lsp_uart_arm1",	/* 18 */				\
+		"lsp_uart_arm2",	/* 19 */				\
+		"lsp_spi1",		/* 20 */				\
+		"lsp_spi2",		/* 21 */				\
+		"lsp_espi",		/* 22 */				\
+		"lsp_smbus_i2c2",	/* 23 */				\
+		"lsp_smbus_i2c3",	/* 24 */				\
+		"lsp_smbus_i2c4",	/* 25 */				\
+		"lsp_smbus_i2c5",	/* 26 */				\
+		"lsp_smbus_i2c6",	/* 27 */				\
+		"lsp_timer1",		/* 28 */				\
+		"lsp_timer2",		/* 29 */				\
+		"lsp_timer3",		/* 30 */				\
+		"lsp_timer4",		/* 31 */				\
+		"lsp_wdt_x16",		/* 32, additional divisor by 16 */	\
+		"tcu",			/* 33 */				\
+		"sc_axi_cfg",		/* 34 */				\
+		"ca75_ahb_cfg"		/* 35 */				\
+	);									\
+	MM_CLOCKS(soc##sc, 2, hbase, 00420000,					\
+		"scp",			/* 0  */				\
+		"gmac1_ptp",		/* 1  */				\
+		"gmac1_txx2",		/* 2  */				\
+		"gmac2_ptp",		/* 3  */				\
+		"gmac2_txx2",		/* 4  */				\
+		"gic_distr",		/* 5  */				\
+		"dbg",			/* 6  */				\
+		"cnt_valueb",		/* 7  */				\
+		"ts_valueb",		/* 8  */				\
+		"lpd",			/* 9  */				\
+		"tbu",			/* 10 */				\
+		"hs_cfg",		/* 11 */				\
+		"scp_bisr"		/* 12 */				\
+	)
+
+/ {
+	clocks {
+		#address-cells = <2>;
+		#size-cells = <0>;
+
+		/* CLK_REF */
+		clk_ref: clk_ref {
+			compatible = "fixed-clock";
+			reg = <0x0 0xdead>;
+			type = <CLK_TYPE_REFCLK>;
+			#clock-cells = <0>;
+			clock-frequency = <25000000>; // 25 or 100 MHz
+			clock-output-names = "clk_ref";
+		};
+
+		apb_clk: apb_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <200000000>;
+			clock-output-names = "apb_pclk";
+		};
+		uart_a_clk: uart_a_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <100000000>;
+			clock-output-names = "uart_a_clk";
+		};
+		uart_clk: uart_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <7372800>;
+			clock-output-names = "uartclk";
+		};
+		i2c_clk: i2c_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <200000000>;
+			clock-output-names = "i2c_clk";
+		};
+		timer_clk: timer_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <50000000>;
+			clock-output-names = "timer_clk";
+		};
+		wdt_clk: wdt_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <1000000>;
+			clock-output-names = "wdtclk";
+		};
+		gpio_clk: gpio_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <1000000>;
+			clock-output-names = "soc_gpioclk";
+		};
+		spi_clk: spi_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <50000000>;
+			clock-output-names = "soc_spiclk";
+		};
+	};
+
+	soc {
+		clocks {
+			compatible = "simple-bus";
+			#address-cells = <2>;
+			#size-cells = <0>;
+
+			CLOCKS(,0);
+		};
+	};
+};

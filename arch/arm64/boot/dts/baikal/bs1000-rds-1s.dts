@@ -1,0 +1,255 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics RDS-1S board
+ * Copyright (C) 2023-2024 Baikal Electronics, JSC
+ */
+
+/dts-v1/;
+
+#include "bs1000.dtsi"
+
+/ {
+	model = "Baikal Electronics RDS-1S";
+	compatible = "baikal,rds-1s", "baikal,bs1000";
+
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
+	chosen { };
+};
+
+&ehci {
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-rxid";
+};
+
+&gpio32 {
+	status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+};
+
+&i2c4 {
+	status = "okay";
+};
+
+&i2c6 {
+	status = "okay";
+
+	rtc@6f {
+		compatible = "microchip,mcp7940x";
+		reg = <0x6f>;
+	};
+};
+
+#if 0
+&mailbox {
+	status = "okay";
+};
+#endif
+
+&mdio0 {
+	ethphy0: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x1>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x1>;
+	};
+};
+
+&mux {
+	status = "okay";
+	uart-smbus-enabled;
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
+	status = "okay";
+};
+
+&ohci {
+	status = "okay";
+};
+
+&pcie0_p0 {
+	status = "okay";
+	num-lanes = <16>;
+};
+
+&pcie0_p0_ep {
+	status = "okay";
+	num-lanes = <16>;
+};
+
+/delete-node/ &pcie0_p0_ep;
+
+&pcie1_p0 {
+	status = "okay";
+	num-lanes = <16>;
+};
+
+&pcie1_p0_ep {
+	status = "okay";
+	num-lanes = <16>;
+};
+
+/delete-node/ &pcie1_p0_ep;
+
+&pcie2_p0 {
+	status = "okay";
+	num-lanes = <8>;
+};
+
+&pcie2_p0_ep {
+	status = "okay";
+	num-lanes = <8>;
+};
+
+/delete-node/ &pcie2_p0_ep;
+
+&pcie2_p1 {
+	status = "okay";
+	num-lanes = <8>;
+};
+
+&pcie3_p0 {
+	status = "okay";
+	num-lanes = <16>;
+};
+
+&pcie4_p0 {
+	status = "okay";
+	num-lanes = <4>;
+};
+
+&pcie4_p1 {
+	status = "okay";
+	num-lanes = <4>;
+};
+
+&pcie4_p2 {
+	status = "okay";
+	num-lanes = <4>;
+};
+
+&pcie4_p3 {
+	status = "okay";
+	num-lanes = <4>;
+};
+
+&pvt {
+	status = "okay";
+};
+
+&qspi1 {
+	status = "okay";
+	num-cs = <4>;
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <1000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL1";
+				reg = <0x000000 0x20000>;
+			};
+
+			partition@20000 {
+				label = "DDR-FW";
+				reg = <0x020000 0x20000>;
+			};
+
+			partition@40000 {
+				label = "FIP";
+				reg = <0x40000 0x200000>;
+			};
+
+			partition@240000 {
+				label = "DDR-CFG0";
+				reg = <0x240000 0x40000>;
+			};
+
+			partition@280000 {
+				label = "DDR-CFG1";
+				reg = <0x280000 0x40000>;
+			};
+
+			partition@2c0000 {
+				label = "UEFI vars";
+				reg = <0x2c0000 0xc0000>;
+			};
+		};
+	};
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart_a1 {
+	status = "okay";
+};
+
+&uart_a2 {
+	status = "okay";
+};
+
+&uart_s {
+	status = "okay";
+};
+
+&wdt {
+	status = "okay";
+};

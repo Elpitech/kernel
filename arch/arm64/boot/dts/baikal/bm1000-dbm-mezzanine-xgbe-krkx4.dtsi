@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for XGbE KR/KX4 mezzanine for Baikal Electronics DBM boards
+ * Copyright (C) 2019-2023 Baikal Electronics, JSC
+ */
+
+#ifdef USE_KRKX4
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/net/mv-phy-88x2222.h>
+
+/ {
+	aliases {
+		mdio-gpio0 = &mdio_gpio;
+	};
+
+	mdio_gpio: mdio {
+		compatible = "baikal,mdio-gpio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		mdc-pin = <&porta 28 GPIO_ACTIVE_HIGH>;
+		mdio-pin = <&porta 29 GPIO_ACTIVE_HIGH>;
+		rst-pin = <&porta 30 GPIO_ACTIVE_LOW>;
+		clocks = <&gpio_clk>;
+		clock-names = "gpioclk";
+		status = "okay";
+
+		xgmac0_phy: ethernet-phy@c {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <0x0c>;
+
+			interrupt-parent = <&porta>;
+			interrupts = <31 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			gpio-controller; /* 12 pins */
+			#gpio-cells = <2>;
+			gpio-reserved-ranges = <MV_88X2222_LED0 1>,
+						   <MV_88X2222_LED1 1>,
+						   <MV_88X2222_SDA 1>,
+						   <MV_88X2222_SCL 1>;
+
+			sfp = <&xgmac0_sfp>;
+		};
+
+		xgmac1_phy: ethernet-phy@e {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <0x0e>;
+
+			interrupt-parent = <&porta>;
+			interrupts = <31 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			gpio-controller; /* 12 pins */
+			#gpio-cells = <2>;
+			gpio-reserved-ranges = <MV_88X2222_LED0 1>,
+						   <MV_88X2222_LED1 1>,
+						   <MV_88X2222_SDA 1>,
+						   <MV_88X2222_SCL 1>;
+
+			sfp = <&xgmac1_sfp>;
+		};
+	};
+
+	xgmac0_sfp: sfp0 {
+		compatible = "sff,sfp";
+
+		i2c-bus = <&xgmac0_phy>;
+
+		mod-def0-gpios = <&xgmac0_phy MV_88X2222_MOD_ABS GPIO_ACTIVE_LOW>;
+		tx-fault-gpios = <&xgmac0_phy MV_88X2222_TX_FAULT GPIO_ACTIVE_HIGH>;
+		los-gpios = <&xgmac0_phy MV_88X2222_RX_LOS GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&xgmac0_phy MV_88X2222_TX_DISABLE GPIO_ACTIVE_HIGH>;
+	};
+
+	xgmac1_sfp: sfp1 {
+		compatible = "sff,sfp";
+
+		i2c-bus = <&xgmac1_phy>;
+
+		mod-def0-gpios = <&xgmac1_phy MV_88X2222_MOD_ABS GPIO_ACTIVE_LOW>;
+		tx-fault-gpios = <&xgmac1_phy MV_88X2222_TX_FAULT GPIO_ACTIVE_HIGH>;
+		los-gpios = <&xgmac1_phy MV_88X2222_RX_LOS GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&xgmac1_phy MV_88X2222_TX_DISABLE GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&xgmac0 {
+	phy-mode = "xaui";
+	managed = "auto";
+
+	phy-handle = <&xgmac0_phy>;
+
+	status = "okay";
+};
+
+&xgmac1 {
+	phy-mode = "xaui";
+	managed = "auto";
+
+	phy-handle = <&xgmac1_phy>;
+
+	status = "okay";
+};
+#endif

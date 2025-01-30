@@ -1,0 +1,246 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device tree source for Baikal Electronics DBM boards
+ * Copyright (C) 2019-2024 Baikal Electronics, JSC
+ */
+
+#include "bm1000.dtsi"
+#include "bm1000-dbm-mezzanine-multimedia.dtsi"
+#include "bm1000-dbm-mezzanine-xgbe-krkx4.dtsi"
+
+/ {
+	aliases {
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
+	chosen { };
+};
+
+&dmac_lsp {
+	status = "okay";
+};
+
+&dmac_m2m {
+	status = "okay";
+};
+
+&espi {
+	status = "okay";
+	num-cs = <8>;
+	cs-gpios = <&porta 0 GPIO_ACTIVE_LOW>;
+
+	espi_test0@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>; /* CS #0 */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		spi-max-frequency = <10000000>;
+		spi-cpha;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+	};
+};
+
+&gmac0 {
+	status = "okay";
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+};
+
+&gmac1 {
+	status = "okay";
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+};
+
+&gpio32 {
+	status = "okay";
+};
+
+&hdmi {
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+};
+
+&mdio0 {
+	ethphy0: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&mdio1 {
+	ethphy1: ethernet-phy@3 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x3>;
+		txd0-skew-ps = <0>;
+		txd1-skew-ps = <0>;
+		txd2-skew-ps = <0>;
+		txd3-skew-ps = <0>;
+		txc-skew-ps = <0xff>;
+	};
+};
+
+&pcie0 {
+	status = "okay";
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0xf4>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pcie1 {
+	status = "okay";
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0x64>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pcie2 {
+	status = "okay";
+	bm1000,gen3-eq-fb-mode = <0>;
+	bm1000,phy-rx-ctle = <0x34>;
+	bm1000,phy-rx-dfe = <0>;
+};
+
+&pvt_cluster0 {
+	status = "okay";
+};
+
+&pvt_cluster1 {
+	status = "okay";
+};
+
+&pvt_cluster2 {
+	status = "okay";
+};
+
+&pvt_cluster3 {
+	status = "okay";
+};
+
+&pvt_mali {
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
+&sata1 {
+	status = "okay";
+};
+
+&smbus0 {
+	status = "okay";
+};
+
+&smbus1 {
+	status = "okay";
+};
+
+&spi {
+	status = "okay";
+	num-cs = <4>;
+	cs-gpios = <&porta 24 GPIO_ACTIVE_LOW>, /* SS0 XP8 - DD53 normal flash */
+		   <&porta 25 GPIO_ACTIVE_LOW>, /* SS1 XP9 */
+		   <&porta 26 GPIO_ACTIVE_LOW>, /* SS2 XP10 */
+		   <&porta 27 GPIO_ACTIVE_LOW>; /* SS3 XP11 */
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <12500000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL1";
+				reg = <0x000000 0x10000>;
+			};
+
+			partition@40000 {
+				label = "FIP";
+				reg = <0x40000 0x200000>;
+			};
+
+			partition@240000 {
+				label = "DDR-CFG0";
+				reg = <0x240000 0x40000>;
+			};
+
+			partition@280000 {
+				label = "DDR-CFG1";
+				reg = <0x280000 0x40000>;
+			};
+
+			partition@2c0000 {
+				label = "UEFI vars";
+				reg = <0x2c0000 0xc0000>;
+			};
+		};
+	};
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&usb2 {
+	status = "okay";
+};
+
+&usb3 {
+	status = "okay";
+};
+
+&usb_phy {
+	status = "okay";
+};
+
+&vdec {
+	status = "okay";
+};
+
+&vdu1 {
+	status = "okay";
+};
