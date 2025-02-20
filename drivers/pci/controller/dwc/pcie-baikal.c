@@ -24,7 +24,7 @@ struct baikal_pcie_of_data {
 	void				(*prog_ob_atu)(struct dw_pcie *pci,
 						int index, int type,
 		                                u64 cpu_addr, u64 pci_addr,
-						u32 size, u32 cr2);
+						u64 size, u32 cr2);
 	int				(*get_link)(struct baikal_pcie *);
 };
 
@@ -35,7 +35,24 @@ struct baikal_pcie {
 	void __iomem			*gpr; // BM1000 only
 	void __iomem			*apb_base; // BS1000 only
 	int				cpu_addr_bits;
+	int				atu_conf;
+	int				atu_state;	// bus currently mapped
 };
+/*
+ * iATU restrictions (atu_conf):
+ * - If NO_ATU1 then we have to use and reprogram ATU0 for bus=1 and bus>1;
+ * - If NO_ECAM then we have to reprogram ATU1 (or ATU0) when accessing
+ *   to different bus>1.
+ * atu_state:
+ *   if ECAM but NO_ATU1:
+ *     > 1  - bus 2..255 ECAM in ATU0;
+ *     0 or 1 - bus = 1 ECAM in ATU0;
+ *   if NO_ECAM:
+ *     0 - Not configured, yet;
+ *     B/D/F - BDF in ATU0 (ATU1 is not used even if available);
+ */
+#define ATU_CONF_NO_ECAM	BIT(0)	// Do not use ECAM
+#define ATU_CONF_NO_ATU1	BIT(1)	// Do not use ATU1
 
 #define to_baikal_pcie(x)	dev_get_drvdata((x)->dev)
 
@@ -71,7 +88,7 @@ static int bm_pcie_get_link(struct baikal_pcie *bp)
 }
 
 static void bm_prog_ob_atu(struct dw_pcie *pcie, int index, int type,
-				 u64 cpu_addr, u64 pci_addr, u32 size, u32 cr2)
+				 u64 cpu_addr, u64 pci_addr, u64 size, u32 cr2)
 {
 	u64 limit_addr = cpu_addr + size - 1;
 
@@ -147,13 +164,15 @@ static void bs_writel_ob_atu(struct dw_pcie *pci, u32 index,
 }
 
 static void bs_prog_ob_atu(struct dw_pcie *pci, int index, int type,
-				 u64 cpu_addr, u64 pci_addr, u32 size, u32 cr2)
+				 u64 cpu_addr, u64 pci_addr, u64 size, u32 cr2)
 {
 	struct baikal_pcie *bp = to_baikal_pcie(pci);
 	u64 limit_addr;
 
 	cpu_addr &= (1ULL << bp->cpu_addr_bits) - 1;
 	limit_addr = cpu_addr + size - 1;
+	if (size > (1ULL << 32))
+		type |= PCIE_ATU_INCREASE_REGION_SIZE;
 
 	bs_writel_ob_atu(pci, index, PCIE_ATU_UNR_LOWER_BASE,
 			 lower_32_bits(cpu_addr));
@@ -254,6 +273,10 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus,
 {
 	struct dw_pcie_rp *pp = bus->sysdata;
 	struct dw_pcie *pci = to_dw_pcie_from_pp(pp);
+	struct baikal_pcie *bp = to_baikal_pcie(pci);
+	void (*prog_ob_atu)(struct dw_pcie *pci, int index, int type,
+			    u64 cpu_addr, u64 pci_addr, u64 size, u32 cr2) =
+		bp->of_data->prog_ob_atu;
 
 	if (!baikal_pcie_link_up_internal(pci)) {
 		return NULL;
@@ -261,11 +284,42 @@ static void __iomem *baikal_pcie_map_bus(struct pci_bus *bus,
 
 	if (bus->number == 1 && PCI_SLOT(devfn) > 0) {
 		return NULL;
-	} else {
+	} else if (bp->atu_conf == 0) {
 		return pp->va_cfg0_base +
 			(bus->number << PCIE_ECAM_BUS_SHIFT) +
 			(devfn << PCIE_ECAM_DEVFN_SHIFT) +
 			where;
+	} else if (!(bp->atu_conf & ATU_CONF_NO_ECAM)) {
+		if (bus->number == 1 && bp->atu_state > 1) {
+			/* CFG0 for bus 1 */
+			prog_ob_atu(pci, 0, PCIE_ATU_TYPE_CFG0,
+				    pp->cfg0_base + (1 << PCIE_ECAM_BUS_SHIFT),
+				    0, PCIE_ATU_MIN_SIZE, PCIE_ATU_CR2_CFG_SHIFT);
+			bp->atu_state = 1;
+		} else if (bus->number > 1 && bp->atu_state <= 1) {
+			/* CFG1 for bus > 1 into iATU0 */
+			prog_ob_atu(pci, 0, PCIE_ATU_TYPE_CFG1,
+				    pp->cfg0_base + (2 << PCIE_ECAM_BUS_SHIFT),
+				    0, PCIE_ECAM_SIZE - (2 << PCIE_ECAM_BUS_SHIFT),
+				    PCIE_ATU_CR2_CFG_SHIFT);
+			bp->atu_state = 2;
+		}
+		return pp->va_cfg0_base +
+			(bus->number << PCIE_ECAM_BUS_SHIFT) +
+			(devfn << PCIE_ECAM_DEVFN_SHIFT) +
+			where;
+	} else {
+		int bdf = (bus->number << 8) | devfn;
+		if (bp->atu_state != bdf) {
+			prog_ob_atu(pci, 0,
+				    (bus->number == 1)?
+					PCIE_ATU_TYPE_CFG0:
+					PCIE_ATU_TYPE_CFG1,
+				    pp->cfg0_base,
+				    bdf << 16, PCIE_ATU_MIN_SIZE, 0);
+			bp->atu_state = bdf;
+		}
+		return pp->va_cfg0_base + where;
 	}
 }
 
@@ -296,37 +350,55 @@ static int baikal_pcie_host_init(struct dw_pcie_rp *pp)
 	struct baikal_pcie *bp = to_baikal_pcie(pci);
 	struct resource_entry *tmp, *entry = NULL;
 	void (*prog_ob_atu)(struct dw_pcie *pci, int index, int type,
-			    u64 cpu_addr, u64 pci_addr, u32 size, u32 cr2) =
+			    u64 cpu_addr, u64 pci_addr, u64 size, u32 cr2) =
 		bp->of_data->prog_ob_atu;
 
+	if (pp->cfg0_base & (PCIE_ATU_MIN_SIZE - 1) ||
+	    pp->cfg0_size < 2 * PCIE_ATU_MIN_SIZE) {
+		dev_warn(pci->dev, "Bad config region size/alignment!\n");
+		return -EINVAL;
+	}
 	if (pp->cfg0_base & PCIE_ECAM_MASK ||
 	    pp->cfg0_size < PCIE_ECAM_SIZE) {
 		dev_warn(pci->dev, "No ECAM due to config region size/alignment!\n");
-		goto skip_atu;
+		bp->atu_conf |= ATU_CONF_NO_ECAM;
 	}
 	if (!prog_ob_atu)
 		goto skip_atu;
 
 	/* Initialize all outbound iATU regions */
-	/* CFG0 for bus 1 */
-	prog_ob_atu(pci, 0, PCIE_ATU_TYPE_CFG0,
-		    pp->cfg0_base + (1 << PCIE_ECAM_BUS_SHIFT),
-		    0, PCIE_ATU_MIN_SIZE, PCIE_ATU_CR2_CFG_SHIFT);
-	/* CFG1 for bus > 1 */
-	prog_ob_atu(pci, 1, PCIE_ATU_TYPE_CFG1,
-		    pp->cfg0_base + (2 << PCIE_ECAM_BUS_SHIFT),
-		    0, PCIE_ECAM_SIZE - (2 << PCIE_ECAM_BUS_SHIFT),
-		    PCIE_ATU_CR2_CFG_SHIFT);
+	if (!(bp->atu_conf & ATU_CONF_NO_ECAM)) {
+		/* CFG0 for bus 1 */
+		prog_ob_atu(pci, 0, PCIE_ATU_TYPE_CFG0,
+			    pp->cfg0_base + (1 << PCIE_ECAM_BUS_SHIFT),
+			    0, PCIE_ATU_MIN_SIZE, PCIE_ATU_CR2_CFG_SHIFT);
+		/* CFG1 for bus > 1 */
+		prog_ob_atu(pci, 1, PCIE_ATU_TYPE_CFG1,
+			    pp->cfg0_base + (2 << PCIE_ECAM_BUS_SHIFT),
+			    0, PCIE_ECAM_SIZE - (2 << PCIE_ECAM_BUS_SHIFT),
+			    PCIE_ATU_CR2_CFG_SHIFT);
+	}
 
 	/* Get last memory resource entry */
-	resource_list_for_each_entry(tmp, &pp->bridge->windows)
-		if (resource_type(tmp->res) == IORESOURCE_MEM)
-			entry = tmp;
-
-	prog_ob_atu(pci, 2, PCIE_ATU_TYPE_MEM,
-		    entry->res->start,
-		    entry->res->start - entry->offset,
-		    resource_size(entry->res), 0);
+	resource_list_for_each_entry(tmp, &pp->bridge->windows) {
+		if (resource_type(tmp->res) == IORESOURCE_MEM) {
+			if (!entry) {
+				entry = tmp;
+				prog_ob_atu(pci, 2, PCIE_ATU_TYPE_MEM,
+					    entry->res->start,
+					    entry->res->start - entry->offset,
+					    resource_size(entry->res), 0);
+			} else {
+				entry = tmp;
+				prog_ob_atu(pci, 1, PCIE_ATU_TYPE_MEM,
+					    entry->res->start,
+					    entry->res->start - entry->offset,
+					    resource_size(entry->res), 0);
+				bp->atu_conf |= ATU_CONF_NO_ATU1;
+				break;
+			}
+		}
+	}
 
 	prog_ob_atu(pci, 3, PCIE_ATU_TYPE_IO,
 		    pp->io_base,
