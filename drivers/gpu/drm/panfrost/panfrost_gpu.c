@@ -338,6 +338,8 @@ static u64 panfrost_get_core_mask(struct panfrost_device *pfdev)
 		      hweight64(core_mask),
 		      hweight64(pfdev->features.shader_present));
 
+	pfdev->core_mask = core_mask;
+
 	return core_mask;
 }
 
@@ -350,7 +352,8 @@ void panfrost_gpu_power_on(struct panfrost_device *pfdev)
 	panfrost_gpu_init_quirks(pfdev);
 	core_mask = panfrost_get_core_mask(pfdev);
 
-	gpu_write(pfdev, L2_PWRON_LO, pfdev->features.l2_present & core_mask);
+	/* Just turn on everything for now */
+	gpu_write(pfdev, L2_PWRON_LO, pfdev->features.l2_present);
 	ret = readl_relaxed_poll_timeout(pfdev->iomem + L2_READY_LO,
 		val, val == pfdev->features.l2_present, 100, 20000);
 	if (ret)
