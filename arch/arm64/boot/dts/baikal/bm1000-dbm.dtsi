@@ -277,7 +277,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 	cs-gpios = <&porta 24 GPIO_ACTIVE_LOW>, /* SS0 XP8 - DD53 normal flash */
 		   <&porta 25 GPIO_ACTIVE_LOW>, /* SS1 XP9 */
@@ -323,7 +323,7 @@
 	};
 };
 
-&spi1 {
+&espi {
 	num-cs = <8>;
 	cs-gpios = <&porta 0 GPIO_ACTIVE_LOW>;
 	status = "okay";

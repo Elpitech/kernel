@@ -103,7 +103,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <6>;
 	status = "okay";
 
