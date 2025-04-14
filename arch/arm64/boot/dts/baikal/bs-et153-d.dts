@@ -53,6 +53,7 @@
 			#size-cells = <2>;
 			ranges;
 
+#ifdef ENABLE_CORESIGHT
 			CA75_CS(s1_,0,48,49,50,51,6,7);
 			CA75_CS(s1_,1,52,53,54,55,a,b);
 			CA75_CS(s1_,2,56,57,58,59,e,f);
@@ -67,6 +68,7 @@
 			CA75_CS(s1_,b,92,93,94,95,32,33);
 
 			SOC_CS(s1_);
+#endif
 		};
 
 		clocks {
@@ -151,6 +153,32 @@
 		CA75_CPU(s1_,1,b,93,000b0100);
 		CA75_CPU(s1_,1,b,94,000b0200);
 		CA75_CPU(s1_,1,b,95,000b0300);
+	};
+
+	thermal-zones {
+		CA75_THERMAL(s1_,0,0,1,2,3);
+		CA75_THERMAL(s1_,1,4,5,6,7);
+		CA75_THERMAL(s1_,2,8,9,10,11);
+		CA75_THERMAL(s1_,3,12,13,14,15);
+		CA75_THERMAL(s1_,4,16,17,18,19);
+		CA75_THERMAL(s1_,5,20,21,22,23);
+		CA75_THERMAL(s1_,6,24,25,26,27);
+		CA75_THERMAL(s1_,7,28,29,30,31);
+		CA75_THERMAL(s1_,8,32,33,34,35);
+		CA75_THERMAL(s1_,9,36,37,38,39);
+		CA75_THERMAL(s1_,10,40,41,42,43);
+		CA75_THERMAL(s1_,11,44,45,46,47);
+		PVT_THERMAL(s1_,pcie0);
+		PVT_THERMAL(s1_,pcie1);
+		PVT_THERMAL(s1_,pcie2);
+		PVT_THERMAL(s1_,pcie3);
+		PVT_THERMAL(s1_,pcie4);
+		PVT_THERMAL(s1_,ddr0);
+		PVT_THERMAL(s1_,ddr1);
+		PVT_THERMAL(s1_,ddr2);
+		PVT_THERMAL(s1_,ddr3);
+		PVT_THERMAL(s1_,ddr4);
+		PVT_THERMAL(s1_,ddr5);
 	};
 
 	distance-map {

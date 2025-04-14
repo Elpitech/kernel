@@ -113,6 +113,9 @@
 	num-lanes = <16>;
 	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,
+		 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>,
+		 <0x83000000 0x720 0x00000000 0x720 0x00000000 0x20 0x00000000>;
 };
 
 &pcie1_p0 {
@@ -185,6 +188,7 @@
 	cpu-addr-bits = <40>;
 };
 
+#if 0
 &pvt_cluster0 {
 	status = "okay";
 };
@@ -276,6 +280,7 @@
 &pvt_pcie4 {
 	status = "okay";
 };
+#endif
 
 &qspi1 {
 	num-cs = <4>;
@@ -297,23 +302,28 @@
 			#size-cells = <1>;
 
 			partition@0 {
-				label = "bl1";
-				reg = <0x000000 0x40000>;
+				label = "BL1";
+				reg = <0x000000 0x20000>;
+			};
+
+			partition@20000 {
+				label = "DDR-FW";
+				reg = <0x020000 0x20000>;
 			};
 
 			partition@40000 {
-				label = "dtb";
-				reg = <0x040000 0x40000>;
+				label = "FIP";
+				reg = <0x040000 0x200000>;
 			};
 
-			partition@80000 {
-				label = "uefi-vars";
-				reg = <0x080000 0xc0000>;
+			partition@240000 {
+				label = "DDR-CFG0";
+				reg = <0x240000 0x40000>;
 			};
 
-			partition@140000 {
-				label = "fip";
-				reg = <0x140000 0x6c0000>;
+			partition@280000 {
+				label = "DDR-CFG1";
+				reg = <0x280000 0x40000>;
 			};
 		};
 	};

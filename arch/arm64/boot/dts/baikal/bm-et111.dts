@@ -283,7 +283,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 
 	status = "okay";

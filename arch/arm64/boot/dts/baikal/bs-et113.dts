@@ -119,6 +119,7 @@
 	reset-gpios = <&porta 23 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
 	max-link-speed = <3>;
+	dma-coherent;
 };
 
 &pcie1_p0 {
@@ -193,6 +194,7 @@
 	cpu-addr-bits = <40>;
 };
 
+#if 0 // Temporarily disable - pvt driver is incompatible with new xcp
 &pvt_cluster0 {
 	status = "okay";
 };
@@ -284,6 +286,7 @@
 &pvt_pcie4 {
 	status = "okay";
 };
+#endif
 
 &qspi1 {
 	num-cs = <4>;

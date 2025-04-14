@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Device tree include file for BE-S1000 SoC
- * Copyright (C) 2021-2023 Baikal Electronics, JSC
+ * Copyright (C) 2021-2024 Baikal Electronics, JSC
  */
 
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/thermal/thermal.h>
 #include "bs1000-clocks.dtsi"
 
 #define CA75_CLUSTER(soc, group, a,b,c,d)				\
@@ -48,6 +49,7 @@
 		operating-points-v2 = <&cpu_opp_table>;				\
 		clocks = <&soc##ca75_##group##_cmu1 (core%4)>;			\
 		numa-node-id = <0x0##chip>;					\
+		#cooling-cells = <2>; /* min followed by max */			\
 		l2_##core: l2-cache {						\
 			compatible = "cache";					\
 			cache-size = <0x80000>;					\
@@ -305,7 +307,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x701 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x702 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its0 0x0>;								\
 		msi-map = <0x0 &soc##its0 0x0 0x10000>;							\
 		iommu-map = <0x0 &soc##pcie0_smmu 0x0 0x10000>;						\
 		numa-node-id = <chip>;									\
@@ -354,7 +355,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x741 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x742 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its0 0x10000>;							\
 		msi-map = <0x0 &soc##its0 0x10000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie0_smmu 0x10000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -392,7 +392,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x781 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x782 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its2 0x0>;								\
 		msi-map = <0x0 &soc##its2 0x0 0x10000>;							\
 		iommu-map = <0x0 &soc##pcie1_smmu 0x0 0x10000>;						\
 		numa-node-id = <chip>;									\
@@ -441,7 +440,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x7c1 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x7c2 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its2 0x10000>;							\
 		msi-map = <0x0 &soc##its2 0x10000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie1_smmu 0x10000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -479,7 +477,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x501 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x502 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its4 0x0>;								\
 		msi-map = <0x0 &soc##its4 0x0 0x10000>;							\
 		iommu-map = <0x0 &soc##pcie2_smmu 0x0 0x10000>;						\
 		numa-node-id = <chip>;									\
@@ -528,7 +525,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x541 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x542 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its4 0x10000>;							\
 		msi-map = <0x0 &soc##its4 0x10000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie2_smmu 0x10000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -566,7 +562,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x401 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x402 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its6 0x0>;								\
 		msi-map = <0x0 &soc##its6 0x0 0x10000>;							\
 		iommu-map = <0x0 &soc##pcie3_smmu 0x0 0x10000>;						\
 		numa-node-id = <chip>;									\
@@ -592,7 +587,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x441 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x442 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its7 0x10000>;							\
 		msi-map = <0x0 &soc##its7 0x10000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie3_smmu 0x10000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -618,7 +612,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x481 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x482 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its8 0x20000>;							\
 		msi-map = <0x0 &soc##its8 0x20000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie3_smmu 0x20000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -644,7 +637,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x4c1 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x4c2 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its9 0x30000>;							\
 		msi-map = <0x0 &soc##its9 0x30000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie3_smmu 0x30000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -682,7 +674,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x601 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x602 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its11 0x0>;								\
 		msi-map = <0x0 &soc##its11 0x0 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie4_smmu 0x0 0x10000>;						\
 		numa-node-id = <chip>;									\
@@ -708,7 +699,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x641 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x642 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its12 0x10000>;							\
 		msi-map = <0x0 &soc##its12 0x10000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie4_smmu 0x10000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -734,7 +724,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x681 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x682 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its13 0x20000>;							\
 		msi-map = <0x0 &soc##its13 0x20000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie4_smmu 0x20000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -760,7 +749,6 @@
 		ranges = <0x81000000 0x0 0x00000000 0x6c1 0x00000000 0x0 0x100000>,			\
 			 <0x82000000 0x0 0x40000000 0x6c2 0x00000000 0x0 0x40000000>;			\
 		num-viewport = <4>;									\
-		msi-parent = <&soc##its14 0x30000>;							\
 		msi-map = <0x0 &soc##its14 0x30000 0x10000>;						\
 		iommu-map = <0x0 &soc##pcie4_smmu 0x30000 0x10000>;					\
 		numa-node-id = <chip>;									\
@@ -843,126 +831,149 @@
 	soc##pvt_cluster0: pvt@04030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x4030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster1: pvt@8030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x8030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster2: pvt@c030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0xc030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster3: pvt@10030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x10030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster4: pvt@14030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x14030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster5: pvt@18030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x18030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster6: pvt@1c030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x1c030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster7: pvt@20030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x20030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster8: pvt@24030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x24030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster9: pvt@28030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x28030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster10: pvt@2c030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x2c030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_cluster11: pvt@30030000 {								\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x30030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		status = "disabled";									\
 	};												\
 	soc##pvt_pcie0: pvt@38030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x38030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 163) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_pcie1: pvt@3c030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x3c030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 206) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_pcie2: pvt@44030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x44030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 120) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_pcie3: pvt@48030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x48030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 275) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_pcie4: pvt@4c030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x4c030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 344) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr0: pvt@50030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x50030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 363) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr1: pvt@54030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x54030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 380) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr2: pvt@58030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x58030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 397) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr3: pvt@60030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x60030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 414) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr4: pvt@64030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x64030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 431) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
 	soc##pvt_ddr5: pvt@68030000 {									\
 		compatible = "baikal,bs1000-pvt";							\
 		reg = <0x0 0x68030000 0x0 0x1000>;							\
+		#thermal-sensor-cells = <0>;								\
 		interrupts = <GIC_SPI (spi_base + 448) IRQ_TYPE_LEVEL_HIGH>;				\
 		status = "disabled";									\
 	};												\
@@ -1110,11 +1121,59 @@
 		status = "disabled";									\
 	}
 
+#define CA75_THERMAL(soc, group, a,b,c,d)							\
+	soc##cluster##group##-thermal {								\
+		polling-delay-passive = <1000>;							\
+		polling-delay = <5000>;								\
+												\
+		thermal-sensors = <&soc##pvt_cluster##group>;					\
+												\
+		trips {										\
+			soc##cluster##group##_alert: cluster-alert {				\
+				temperature = <75000>;						\
+				hysteresis = <2000>;						\
+				type = "passive";						\
+			};									\
+			crit {									\
+				temperature = <85000>;						\
+				hysteresis = <2000>;						\
+				type = "critical";						\
+			};									\
+		};										\
+												\
+		cooling-maps {									\
+			map0 {									\
+				trip = <&soc##cluster##group##_alert>;				\
+				cooling-device = <&cpu##a THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,	\
+						 <&cpu##b THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,	\
+						 <&cpu##c THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,	\
+						 <&cpu##d THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;	\
+			};									\
+		};										\
+	}
+
+#define PVT_THERMAL(soc, name)					\
+	soc##pvt##name##-thermal {				\
+		polling-delay-passive = <1000>;			\
+		polling-delay = <5000>;				\
+								\
+		thermal-sensors = <&soc##pvt_##name>;		\
+								\
+		trips {						\
+			crit {					\
+				temperature = <85000>;		\
+				hysteresis = <2000>;		\
+				type = "critical";		\
+			};					\
+		};						\
+	}
+
 / {
 	compatible = "baikal,bs1000";
 	#address-cells = <2>;
 	#size-cells = <2>;
 	interrupt-parent = <&gic>;
+	dma-coherent;
 
 	aliases {
 		i2c2	= &i2c2;
@@ -1237,6 +1296,34 @@
 		CA75_CPU(,,b,46,b0200);
 		CA75_CPU(,,b,47,b0300);
 	};
+
+#if 0 // Temporarily disable - pvt driver is incompatible with new xcp.
+	thermal-zones {
+		CA75_THERMAL(,0,0,1,2,3);
+		CA75_THERMAL(,1,4,5,6,7);
+		CA75_THERMAL(,2,8,9,10,11);
+		CA75_THERMAL(,3,12,13,14,15);
+		CA75_THERMAL(,4,16,17,18,19);
+		CA75_THERMAL(,5,20,21,22,23);
+		CA75_THERMAL(,6,24,25,26,27);
+		CA75_THERMAL(,7,28,29,30,31);
+		CA75_THERMAL(,8,32,33,34,35);
+		CA75_THERMAL(,9,36,37,38,39);
+		CA75_THERMAL(,10,40,41,42,43);
+		CA75_THERMAL(,11,44,45,46,47);
+		PVT_THERMAL(,pcie0);
+		PVT_THERMAL(,pcie1);
+		PVT_THERMAL(,pcie2);
+		PVT_THERMAL(,pcie3);
+		PVT_THERMAL(,pcie4);
+		PVT_THERMAL(,ddr0);
+		PVT_THERMAL(,ddr1);
+		PVT_THERMAL(,ddr2);
+		PVT_THERMAL(,ddr3);
+		PVT_THERMAL(,ddr4);
+		PVT_THERMAL(,ddr5);
+	};
+#endif
 
 	soc {
 		compatible = "simple-bus";
@@ -1374,4 +1461,6 @@
 	};
 };
 
+#ifdef ENABLE_CORESIGHT
 #include "bs1000-coresight.dtsi"
+#endif

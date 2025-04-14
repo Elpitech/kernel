@@ -293,7 +293,7 @@
 	status = "okay";
 };
 
-&spi0 {
+&spi {
 	num-cs = <4>;
 
 	cs-gpios = <&porta 15 GPIO_ACTIVE_LOW>, <0>;
