@@ -31,6 +31,22 @@
 			cache-level = <3>;				\
 			next-level-cache = <&soc##l4>;			\
 		};							\
+		cpu_opp_table_##soc##group: opp_table {			\
+			compatible = "operating-points-v2";		\
+			opp-shared;					\
+			opp-1800000000 {				\
+				opp-hz = /bits/ 64 <1800000000>;	\
+			};						\
+			opp-1900000000 {				\
+				opp-hz = /bits/ 64 <1900000000>;	\
+			};						\
+			opp-2000000000 {				\
+				opp-hz = /bits/ 64 <2000000000>;	\
+			};						\
+			opp-2500000000 {				\
+				opp-hz = /bits/ 64 <2500000000>;	\
+			};						\
+		};							\
 	}
 
 #define CA75_CPU(soc, chip, group, core, affinity)				\
@@ -46,8 +62,8 @@
 		d-cache-line-size = <64>;					\
 		d-cache-sets = <64>;						\
 		next-level-cache = <&l2_##core>;				\
-		operating-points-v2 = <&cpu_opp_table>;				\
-		clocks = <&soc##ca75_##group##_cmu1 (core%4)>;			\
+		operating-points-v2 = <&cpu_opp_table_##soc##group>;		\
+		clocks = <&soc##ca75_##group##_cmu1_pll>;			\
 		numa-node-id = <0x0##chip>;					\
 		#cooling-cells = <2>; /* min followed by max */			\
 		l2_##core: l2-cache {						\
@@ -828,154 +844,121 @@
 		status = "disabled";									\
 	};												\
 													\
-	soc##pvt_cluster0: pvt@04030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x4030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
+	soc##pvt: pvt##chip {										\
+		compatible = "baikal,bs1000-xcp-pvt";							\
+		numa-node-id = <chip>;									\
+		#address-cells = <1>;									\
+		#size-cells = <0>;									\
 		status = "disabled";									\
-	};												\
-	soc##pvt_cluster1: pvt@8030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x8030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster2: pvt@c030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0xc030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster3: pvt@10030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x10030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster4: pvt@14030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x14030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster5: pvt@18030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x18030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster6: pvt@1c030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x1c030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster7: pvt@20030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x20030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster8: pvt@24030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x24030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster9: pvt@28030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x28030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster10: pvt@2c030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x2c030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_cluster11: pvt@30030000 {								\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x30030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		status = "disabled";									\
-	};												\
-	soc##pvt_pcie0: pvt@38030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x38030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 163) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_pcie1: pvt@3c030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x3c030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 206) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_pcie2: pvt@44030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x44030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 120) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_pcie3: pvt@48030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x48030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 275) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_pcie4: pvt@4c030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x4c030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 344) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr0: pvt@50030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x50030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 363) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr1: pvt@54030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x54030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 380) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr2: pvt@58030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x58030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 397) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr3: pvt@60030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x60030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 414) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr4: pvt@64030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x64030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 431) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
-	};												\
-	soc##pvt_ddr5: pvt@68030000 {									\
-		compatible = "baikal,bs1000-pvt";							\
-		reg = <0x0 0x68030000 0x0 0x1000>;							\
-		#thermal-sensor-cells = <0>;								\
-		interrupts = <GIC_SPI (spi_base + 448) IRQ_TYPE_LEVEL_HIGH>;				\
-		status = "disabled";									\
+													\
+		soc##pvt0: pvt@0 {									\
+			reg = <0x0>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt1: pvt@1 {									\
+			reg = <0x1>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt2: pvt@2 {									\
+			reg = <0x2>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt3: pvt@3 {									\
+			reg = <0x3>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt4: pvt@4 {									\
+			reg = <0x4>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt5: pvt@5 {									\
+			reg = <0x5>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt6: pvt@6 {									\
+			reg = <0x6>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt7: pvt@7 {									\
+			reg = <0x7>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt8: pvt@8 {									\
+			reg = <0x8>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt9: pvt@9 {									\
+			reg = <0x9>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt10: pvt@a {									\
+			reg = <0xa>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt11: pvt@b {									\
+			reg = <0xb>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt12: pvt@c {									\
+			reg = <0xc>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt13: pvt@d {									\
+			reg = <0xd>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt14: pvt@e {									\
+			reg = <0xe>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt15: pvt@f {									\
+			reg = <0xf>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt16: pvt@10 {									\
+			reg = <0x10>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt17: pvt@11 {									\
+			reg = <0x11>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt18: pvt@12 {									\
+			reg = <0x12>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt19: pvt@13 {									\
+			reg = <0x13>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt20: pvt@14 {									\
+			reg = <0x14>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt21: pvt@15 {									\
+			reg = <0x15>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt22: pvt@16 {									\
+			reg = <0x16>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt23: pvt@17 {									\
+			reg = <0x17>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt24: pvt@18 {									\
+			reg = <0x18>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt25: pvt@19 {									\
+			reg = <0x19>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
+		soc##pvt26: pvt@1a {									\
+			reg = <0x1a>;									\
+			#thermal-sensor-cells = <0>;							\
+		};											\
 	};												\
 													\
 	soc##mux: mux-controller {									\
@@ -1121,12 +1104,12 @@
 		status = "disabled";									\
 	}
 
-#define CA75_THERMAL(soc, group, a,b,c,d)							\
+#define CA75_THERMAL(soc, group, id, a,b,c,d)							\
 	soc##cluster##group##-thermal {								\
 		polling-delay-passive = <1000>;							\
 		polling-delay = <5000>;								\
 												\
-		thermal-sensors = <&soc##pvt_cluster##group>;					\
+		thermal-sensors = <&soc##pvt##id>;						\
 												\
 		trips {										\
 			soc##cluster##group##_alert: cluster-alert {				\
@@ -1152,12 +1135,12 @@
 		};										\
 	}
 
-#define PVT_THERMAL(soc, name)					\
-	soc##pvt##name##-thermal {				\
+#define PVT_THERMAL(soc, id)					\
+	soc##pvt##id##-thermal {				\
 		polling-delay-passive = <1000>;			\
 		polling-delay = <5000>;				\
 								\
-		thermal-sensors = <&soc##pvt_##name>;		\
+		thermal-sensors = <&soc##pvt##id>;		\
 								\
 		trips {						\
 			crit {					\
@@ -1202,22 +1185,6 @@
 			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	cpu_opp_table: opp_table {
-		compatible = "operating-points-v2";
-		opp-250000000 {
-			opp-hz = /bits/ 64 <250000000>;
-		};
-		opp-500000000 {
-			opp-hz = /bits/ 64 <500000000>;
-		};
-		opp-1000000000 {
-			opp-hz = /bits/ 64 <1000000000>;
-		};
-		opp-2000000000 {
-			opp-hz = /bits/ 64 <2000000000>;
-		};
 	};
 
 	cpus {
@@ -1297,33 +1264,32 @@
 		CA75_CPU(,,b,47,b0300);
 	};
 
-#if 0 // Temporarily disable - pvt driver is incompatible with new xcp.
 	thermal-zones {
-		CA75_THERMAL(,0,0,1,2,3);
-		CA75_THERMAL(,1,4,5,6,7);
-		CA75_THERMAL(,2,8,9,10,11);
-		CA75_THERMAL(,3,12,13,14,15);
-		CA75_THERMAL(,4,16,17,18,19);
-		CA75_THERMAL(,5,20,21,22,23);
-		CA75_THERMAL(,6,24,25,26,27);
-		CA75_THERMAL(,7,28,29,30,31);
-		CA75_THERMAL(,8,32,33,34,35);
-		CA75_THERMAL(,9,36,37,38,39);
-		CA75_THERMAL(,10,40,41,42,43);
-		CA75_THERMAL(,11,44,45,46,47);
-		PVT_THERMAL(,pcie0);
-		PVT_THERMAL(,pcie1);
-		PVT_THERMAL(,pcie2);
-		PVT_THERMAL(,pcie3);
-		PVT_THERMAL(,pcie4);
-		PVT_THERMAL(,ddr0);
-		PVT_THERMAL(,ddr1);
-		PVT_THERMAL(,ddr2);
-		PVT_THERMAL(,ddr3);
-		PVT_THERMAL(,ddr4);
-		PVT_THERMAL(,ddr5);
+		CA75_THERMAL(,0,1,0,1,2,3);
+		CA75_THERMAL(,1,2,4,5,6,7);
+		CA75_THERMAL(,2,3,8,9,10,11);
+		CA75_THERMAL(,3,4,12,13,14,15);
+		CA75_THERMAL(,4,5,16,17,18,19);
+		CA75_THERMAL(,5,6,20,21,22,23);
+		CA75_THERMAL(,6,7,24,25,26,27);
+		CA75_THERMAL(,7,8,28,29,30,31);
+		CA75_THERMAL(,8,9,32,33,34,35);
+		CA75_THERMAL(,9,10,36,37,38,39);
+		CA75_THERMAL(,10,11,40,41,42,43);
+		CA75_THERMAL(,11,12,44,45,46,47);
+		PVT_THERMAL(,0);
+		PVT_THERMAL(,13);
+		PVT_THERMAL(,14);
+		PVT_THERMAL(,15);
+		PVT_THERMAL(,16);
+		PVT_THERMAL(,17);
+		PVT_THERMAL(,18);
+		PVT_THERMAL(,19);
+		PVT_THERMAL(,20);
+		PVT_THERMAL(,21);
+		PVT_THERMAL(,22);
+		PVT_THERMAL(,23);
 	};
-#endif
 
 	soc {
 		compatible = "simple-bus";

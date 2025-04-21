@@ -54,6 +54,16 @@
 
 &i2c4 {
 	status = "okay";
+
+	fru: eeprom@50 {
+		compatible = "atmel,24c32";
+		reg = <0x50>;
+	};
+
+	rtc@54 {
+		compatible = "nxp,pcf2129";
+		reg = <0x54>;
+	};
 };
 
 &i2c5 {
@@ -143,95 +153,7 @@
 	cpu-addr-bits = <40>;
 };
 
-&pvt_cluster0 {
-	status = "okay";
-};
-
-&pvt_cluster1 {
-	status = "okay";
-};
-
-&pvt_cluster2 {
-	status = "okay";
-};
-
-&pvt_cluster3 {
-	status = "okay";
-};
-
-&pvt_cluster4 {
-	status = "okay";
-};
-
-&pvt_cluster5 {
-	status = "okay";
-};
-
-&pvt_cluster6 {
-	status = "okay";
-};
-
-&pvt_cluster7 {
-	status = "okay";
-};
-
-&pvt_cluster8 {
-	status = "okay";
-};
-
-&pvt_cluster9 {
-	status = "okay";
-};
-
-&pvt_cluster10 {
-	status = "okay";
-};
-
-&pvt_cluster11 {
-	status = "okay";
-};
-
-&pvt_ddr0 {
-	status = "okay";
-};
-
-&pvt_ddr1 {
-	status = "okay";
-};
-
-&pvt_ddr2 {
-	status = "okay";
-};
-
-&pvt_ddr3 {
-	status = "okay";
-};
-
-&pvt_ddr4 {
-	status = "okay";
-};
-
-&pvt_ddr5 {
-	status = "okay";
-};
-
-&pvt_pcie0 {
-	status = "okay";
-};
-
-&pvt_pcie1 {
-	status = "okay";
-};
-
-&pvt_pcie2 {
-	status = "okay";
-};
-
-&pvt_pcie3 {
-	status = "okay";
-};
-
-&pvt_pcie4 {
+&pvt {
 	status = "okay";
 };
 
