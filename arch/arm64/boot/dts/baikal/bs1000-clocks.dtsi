@@ -273,94 +273,72 @@
 	)
 
 / {
+	clocks {
+		/* CLK_REF */
+		clk_ref: clk_ref {
+			compatible = "fixed-clock";
+			reg = <0x0 0xdead>;
+			type = <CLK_TYPE_REFCLK>;
+			#clock-cells = <0>;
+			clock-frequency = <25000000>; // 25 or 100 MHz
+			clock-output-names = "clk_ref";
+		};
+
+		apb_clk: apb_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <200000000>;
+			clock-output-names = "apb_pclk";
+		};
+		uart_a_clk: uart_a_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <100000000>;
+			clock-output-names = "uart_a_clk";
+		};
+		uart_clk: uart_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <7372800>;
+			clock-output-names = "uartclk";
+		};
+		i2c_clk: i2c_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <200000000>;
+			clock-output-names = "i2c_clk";
+		};
+		timer_clk: timer_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <50000000>;
+			clock-output-names = "timer_clk";
+		};
+		wdt_clk: wdt_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <1000000>;
+			clock-output-names = "wdtclk";
+		};
+		gpio_clk: gpio_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <1000000>;
+			clock-output-names = "soc_gpioclk";
+		};
+		spi_clk: spi_clk {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <50000000>;
+			clock-output-names = "soc_spiclk";
+		};
+	};
+
 	soc {
 		clocks {
 			compatible = "simple-bus";
 			#address-cells = <2>;
 			#size-cells = <0>;
-
-			/* CLK_REF */
-			clk_ref: clk_ref {
-				compatible = "fixed-clock";
-				reg = <0x0 0xdead>;
-				type = <CLK_TYPE_REFCLK>;
-				#clock-cells = <0>;
-				clock-frequency = <25000000>; // 25 or 100 MHz
-				clock-output-names = "clk_ref";
-			};
-
-			apb_clk: apb_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <200000000>;
-				clock-output-names = "apb_pclk";
-			};
-			uart1_clk: uart1_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <100000000>;
-				clock-output-names = "uart1_clk";
-			};
-			uart2_clk: uart2_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <100000000>;
-				clock-output-names = "uart2_clk";
-			};
-			uart_clk: uart_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <7372800>;
-				clock-output-names = "soc_uartclk";
-			};
-			i2c_clk: i2c_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <200000000>;
-				clock-output-names = "soc_i2cclk";
-			};
-			timer1_clk: timer1_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <50000000>;
-				clock-output-names = "soc_timer1clk";
-			};
-			timer2_clk: timer2_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <50000000>;
-				clock-output-names = "soc_timer2clk";
-			};
-			timer3_clk: timer3_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <50000000>;
-				clock-output-names = "soc_timer3clk";
-			};
-			timer4_clk: timer4_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <50000000>;
-				clock-output-names = "soc_timer4clk";
-			};
-			wdt_clk: wdt_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <1000000>;
-				clock-output-names = "wdtclk";
-			};
-			gpio_clk: gpio_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <1000000>;
-				clock-output-names = "soc_gpioclk";
-			};
-			spi_clk: spi_clk {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <50000000>;
-				clock-output-names = "soc_spiclk";
-			};
 
 			CLOCKS(,0);
 		};

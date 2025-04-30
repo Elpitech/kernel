@@ -1,0 +1,127 @@
+/*
+ * Devicetree data common to Elpitech [BS-] ET1x3 boards.
+ */
+
+&gpio32 {
+	status = "okay";
+};
+
+&gpio16 {
+	status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
+};
+
+&i2c3 {
+	status = "okay";
+};
+
+&i2c4 {
+	status = "okay";
+};
+
+&i2c5 {
+	status = "okay";
+};
+
+&pvt {
+	status = "okay";
+};
+
+&qspi1 {
+	num-cs = <4>;
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		status = "okay";
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "BL1";
+				reg = <0x000000 0x20000>;
+			};
+
+			partition@20000 {
+				label = "DDR-FW";
+				reg = <0x020000 0x20000>;
+			};
+
+			partition@40000 {
+				label = "FIP";
+				reg = <0x040000 0x200000>;
+			};
+
+			partition@240000 {
+				label = "DDR-CFG0";
+				reg = <0x240000 0x40000>;
+			};
+
+			partition@280000 {
+				label = "DDR-CFG1";
+				reg = <0x280000 0x40000>;
+			};
+
+			partition@2c0000 {
+				label = "UEFI vars";
+				reg = <0x2c0000 0x40000>;
+			};
+		};
+	};
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&timer2 {
+	status = "okay";
+};
+
+&timer3 {
+	status = "okay";
+};
+
+&timer4 {
+	status = "okay";
+};
+
+&uart_a1 {
+	status = "okay";
+};
+
+&uart_a2 {
+	status = "okay";
+};
+
+&wdt {
+	status = "okay";
+};
+
+&mux {
+	compatible = "simple-bus";
+	status = "okay";
+	uart-smbus-enabled;
+};
+
+&mux0 {
+	status = "okay";
+};
+
+&mux1 {
+	status = "okay";
+};
+
+&mux2 {
+	status = "okay";
+};
