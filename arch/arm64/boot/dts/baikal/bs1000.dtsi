@@ -8,6 +8,15 @@
 #include <dt-bindings/thermal/thermal.h>
 #include "bs1000-clocks.dtsi"
 
+#ifdef CPU_MAX_FREQ
+#define EXTRA_CA75_OPP					\
+	opp-##CPU_MAX_FREQ {				\
+		opp-hz = /bits/ 64 <CPU_MAX_FREQ>;	\
+	};
+#else
+#define EXTRA_CA75_OPP
+#endif
+
 #define CA75_CLUSTER(soc, group, a,b,c,d)				\
 	cluster##group {						\
 		core0 {							\
@@ -43,6 +52,7 @@
 			opp-2000000000 {				\
 				opp-hz = /bits/ 64 <2000000000>;	\
 			};						\
+			EXTRA_CA75_OPP					\
 		};							\
 	}
 
