@@ -87,7 +87,11 @@ int ast_mm_init(struct ast_device *ast)
 
 	vram_size = ast_get_vram_size(ast);
 
+#ifndef CONFIG_ARCH_BAIKAL
 	ast->vram = devm_ioremap_wc(dev->dev, base, vram_size);
+#else
+	ast->vram = devm_ioremap(dev->dev, base, vram_size);
+#endif
 	if (!ast->vram)
 		return -ENOMEM;
 
