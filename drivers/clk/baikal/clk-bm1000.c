@@ -247,7 +247,7 @@ static void __init baikal_clk_init(struct device_node *node)
 	const char *clk_ch_name;
 	const char *parent_name;
 
-	cmu = kzalloc(sizeof(struct baikal_clk_cmu *), GFP_KERNEL);
+	cmu = kzalloc(sizeof(struct baikal_clk_cmu), GFP_KERNEL);
 	if (!cmu) {
 		pr_err("%s: could not allocate CMU clk\n", __func__);
 		return;
