@@ -22,8 +22,6 @@
 #include <video/of_display_timing.h>
 #include <video/videomode.h>
 
-#define MAX_PIXEL_CLOCK 330000
-
 #define EDID_EXT_BLOCK_CNT 0x7E
 
 #define STDP4028_PRODUCT_ID_REG 0x00
@@ -148,9 +146,16 @@ static int stdp4028_get_modes(struct drm_connector *connector)
 static enum drm_mode_status stdp4028_mode_valid(
 		 struct drm_connector *connector, struct drm_display_mode *mode)
 {
-	if (mode->clock > MAX_PIXEL_CLOCK) {
-		DRM_INFO("The pixel clock for the mode %s is too high, and not supported.",
-			 mode->name);
+	struct stdp4028 *stdp = connector_to_stdp4028(connector);
+	int max_clock;
+
+	if (stdp->channels == 1)
+		max_clock = 162000;
+	else
+		max_clock = 135000 * stdp->channels;
+	if (mode->clock > max_clock) {
+		DRM_INFO("The pixel clock %d for the mode %s is too high (max clock - %d).",
+			 mode->clock, mode->name, max_clock);
 		return MODE_CLOCK_HIGH;
 	}
 
@@ -352,10 +357,6 @@ static int stdp4028_probe(struct i2c_client *stdp4028_i2c,
 	if (!bridge->edid_i2c)
 		return -ENOMEM;
 
-	bridge->bridge.funcs = &stdp4028_funcs;
-	bridge->bridge.of_node = dev->of_node;
-	drm_bridge_add(&bridge->bridge);
-
 	/* Clear pending interrupts since power up. */
 	stdp_write(bridge, STDP4028_DPTX_IRQ_STS_REG, STDP4028_DPTX_IRQ_CLEAR);
 
@@ -365,15 +366,23 @@ static int stdp4028_probe(struct i2c_client *stdp4028_i2c,
 					stdp4028_irq_handler,
 					IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
 					"stdp-lvds-dp", bridge);
-		if (ret)
+		if (ret == -EPROBE_DEFER) {
 			return ret;
-
-		/* enable DPTX IRQs */
-		stdp_write(bridge, STDP4028_IRQ_OUT_CONF_REG,
-			   STDP4028_DPTX_DP_IRQ_EN);
-		stdp_write(bridge, STDP4028_DPTX_IRQ_EN_REG,
-			   STDP4028_DPTX_IRQ_CONFIG);
+		} else if (ret) {
+			dev_warn(dev, "Can't setup irq (error %d). Continue in polling mode.", ret);
+			stdp4028_i2c->irq = 0;
+		} else {
+			/* enable DPTX IRQs */
+			stdp_write(bridge, STDP4028_IRQ_OUT_CONF_REG,
+				   STDP4028_DPTX_DP_IRQ_EN);
+			stdp_write(bridge, STDP4028_DPTX_IRQ_EN_REG,
+				   STDP4028_DPTX_IRQ_CONFIG);
+		}
 	}
+
+	bridge->bridge.funcs = &stdp4028_funcs;
+	bridge->bridge.of_node = dev->of_node;
+	drm_bridge_add(&bridge->bridge);
 
 	return 0;
 }
