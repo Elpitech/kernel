@@ -19,6 +19,7 @@
 		ethernet0 = &gmac0;
 		ethernet1 = &gmac1;
 		fru = &fru;
+		fru-alt = &fru_emu;
 	};
 
 	chosen { };
@@ -49,7 +50,12 @@
 	status = "okay";
 	clock-frequency = <100000>;
 
-	fru: eeprom@53 {
+	fru: eeprom@50 {
+		compatible = "atmel,24c256";
+		reg = <0x50>;
+	};
+
+	fru_emu: eeprom@53 {
 		compatible = "atmel,24c02";
 		reg = <0x53>;
 	};
@@ -100,6 +106,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 25 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie1_p1 {
@@ -107,6 +114,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 26 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie2_p0 {
@@ -114,6 +122,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie2_p1 {
@@ -121,6 +130,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie3_p1 {
@@ -149,6 +159,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 17 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <40>;
+	max-link-speed = <3>;
 };
 
 &pcie4_p2 {

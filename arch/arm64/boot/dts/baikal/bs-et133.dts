@@ -117,6 +117,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 27 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie2_p1 {
@@ -124,6 +125,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 29 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <39>;
+	max-link-speed = <3>;
 };
 
 &pcie3_p1 {
@@ -152,6 +154,7 @@
 	num-lanes = <8>;
 	reset-gpios = <&porta 17 GPIO_ACTIVE_LOW>;
 	cpu-addr-bits = <40>;
+	max-link-speed = <3>;
 };
 
 &pcie4_p2 {
